@@ -1,0 +1,132 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Postos de Preparação (Cozinha, Pastelaria, Bar)</h1>
+            <p class="text-gray-500">Defina os locais de produção para onde as comandas e pedidos são roteados.</p>
+        </div>
+        <button onclick="abrirModalPosto()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-plus"></i> Novo Posto de Preparação
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                <tr>
+                    <th class="p-4">Código</th>
+                    <th class="p-4">Descrição do Posto</th>
+                    <th class="p-4">Produtos Associados</th>
+                    <th class="p-4 text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaPostos" class="divide-y divide-gray-100"></tbody>
+        </table>
+    </div>
+
+    <!-- Modal Novo Posto -->
+    <div id="modalPosto" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalPostoTitulo" class="font-bold text-lg text-gray-800">Novo Posto de Preparação</h3>
+                <button type="button" onclick="fecharModal('modalPosto')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                    <input type="text" id="postoCodigo" placeholder="COZ-02" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição do Posto *</label>
+                    <input type="text" id="postoDescricao" placeholder="Ex: Grelha & Churrasqueira" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalPosto')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarPosto()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var editandoPostoId = null;
+
+function renderPostos() {
+    var tbody = document.getElementById('tabelaPostos');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.postos_preparacao;
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var p = lista[i];
+        var totalProds = window.RestauranteApp.produtos.filter(function(prod) { return prod.posto_id === p.id; }).length;
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-gray-700">' + p.codigo + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + p.descricao + '</td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">' + totalProds + ' produtos atribuídos</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarPosto(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerPosto(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+function abrirModalPosto() {
+    editandoPostoId = null;
+    document.getElementById('modalPostoTitulo').innerText = 'Novo Posto de Preparação';
+    document.getElementById('postoCodigo').value = 'PST-0' + (window.RestauranteApp.postos_preparacao.length + 1);
+    document.getElementById('postoDescricao').value = '';
+    abrirModal('modalPosto');
+}
+
+function editarPosto(id) {
+    var p = window.RestauranteApp.postos_preparacao.find(function(item) { return item.id === id; });
+    if (!p) return;
+    editandoPostoId = id;
+    document.getElementById('modalPostoTitulo').innerText = 'Editar Posto de Preparação';
+    document.getElementById('postoCodigo').value = p.codigo;
+    document.getElementById('postoDescricao').value = p.descricao;
+    abrirModal('modalPosto');
+}
+
+function salvarPosto() {
+    var codigo = document.getElementById('postoCodigo').value;
+    var desc = document.getElementById('postoDescricao').value;
+    if (!codigo || !desc) { alert('Código e Descrição são obrigatórios.'); return; }
+
+    var item = { codigo: codigo, descricao: desc };
+
+    if (editandoPostoId) {
+        var idx = window.RestauranteApp.postos_preparacao.findIndex(function(x) { return x.id === editandoPostoId; });
+        if (idx !== -1) {
+            item.id = editandoPostoId;
+            window.RestauranteApp.postos_preparacao[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.postos_preparacao.push(item);
+    }
+
+    fecharModal('modalPosto');
+    renderPostos();
+    alert('Posto de preparação gravado com sucesso!');
+}
+
+function removerPosto(idx) {
+    if (confirm('Deseja remover este posto de preparação?')) {
+        window.RestauranteApp.postos_preparacao.splice(idx, 1);
+        renderPostos();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderPostos();
+});
+</script>
+{% endblock %}

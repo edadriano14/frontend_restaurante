@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Cabeçalho -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl shadow-sm p-6 border-l-4 border-purple-600">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-purple-600"></i> Histórico de Vendas
+            </h1>
+            <p class="text-gray-500 mt-1">Registo completo de todas as vendas e pedidos facturados no PDV e balcão.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="px-4 py-2 bg-purple-50 text-purple-800 rounded-xl text-xs font-bold border border-purple-200" id="totalVendasFaturadas">
+                Total Facturado: 0.00 {{ estabelecimento.moeda }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Segregação de Vendas por Posto (Cozinha, Bar, Pastelaria, Piscina) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-orange-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-fire-burner text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Cozinha</p>
+                    <p class="text-lg font-black text-gray-800" id="totalSegregadoCozinha">0.00 {{ estabelecimento.moeda }}</p>
+                </div>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-orange-50 text-orange-700 rounded-lg border border-orange-200">Pratos & Quentes</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-blue-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-martini-glass text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Bar</p>
+                    <p class="text-lg font-black text-gray-800" id="totalSegregadoBar">0.00 {{ estabelecimento.moeda }}</p>
+                </div>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 rounded-lg border border-blue-200">Bebidas & Cafés</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-cake-candles text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Pastelaria</p>
+                    <p class="text-lg font-black text-gray-800" id="totalSegregadoPastelaria">0.00 {{ estabelecimento.moeda }}</p>
+                </div>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-purple-50 text-purple-700 rounded-lg border border-purple-200">Doces & Sobremesas</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-sky-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-person-swimming text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Piscina</p>
+                    <p class="text-lg font-black text-sky-800" id="totalSegregadoPiscina">0.00 {{ estabelecimento.moeda }}</p>
+                </div>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-sky-50 text-sky-700 rounded-lg border border-sky-200">Bilheteira & Bar</span>
+        </div>
+    </div>
+
+    <!-- Filtros Rápidos -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="filtrarVendas('TODOS')" id="btnFiltro-TODOS" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white shadow-sm cursor-pointer">
+                Todas as Vendas
+            </button>
+            <button onclick="filtrarVendas('Mesa')" id="btnFiltro-Mesa" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                Mesa
+            </button>
+            <button onclick="filtrarVendas('Takeaway')" id="btnFiltro-Takeaway" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                Takeaway
+            </button>
+            <button onclick="filtrarVendas('Delivery')" id="btnFiltro-Delivery" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                Delivery
+            </button>
+            <button onclick="filtrarVendas('Piscina')" id="btnFiltro-Piscina" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                Piscina
+            </button>
+        </div>
+        <div class="text-xs text-gray-500 font-semibold" id="contadorVendas">
+            0 vendas encontradas
+        </div>
+    </div>
+
+    <!-- Tabela de Vendas -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Nº Venda</th>
+                        <th class="p-4">Nº Recibo</th>
+                        <th class="p-4">Data & Hora</th>
+                        <th class="p-4">Tipo de Pedido</th>
+                        <th class="p-4">Mesa / Local</th>
+                        <th class="p-4">Método de Pagamento</th>
+                        <th class="p-4">Itens</th>
+                        <th class="p-4">Total</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaVendas" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Detalhe da Venda / Recibo -->
+    <div id="modalDetalheVenda" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-lg text-gray-800" id="detalheVendaTitulo">Comprovativo de Venda</h3>
+                <button type="button" onclick="fecharModal('modalDetalheVenda')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs" id="detalheVendaConteudo">
+                <!-- Preenchido dinamicamente -->
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalDetalheVenda')" class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">Fechar</button>
+                <button type="button" onclick="imprimirReciboDetalheAtual()" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-bold shadow hover:bg-purple-700 cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> Imprimir Recibo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var filtroAtual = 'TODOS';
+
+function renderHistoricoVendas() {
+    var tbody = document.getElementById('tabelaVendas');
+    var contador = document.getElementById('contadorVendas');
+    var totalSpan = document.getElementById('totalVendasFaturadas');
+    if (!tbody) return;
+
+    var lista = window.RestauranteApp.vendas || [];
+    if (filtroAtual !== 'TODOS') {
+        lista = lista.filter(function(v) {
+            return (v.tipo_pedido || '').toLowerCase().indexOf(filtroAtual.toLowerCase()) >= 0;
+        });
+    }
+
+    var totalGeral = 0;
+    var totalCozinha = 0;
+    var totalBar = 0;
+    var totalPastelaria = 0;
+    var totalPiscina = 0;
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var v = lista[i];
+        totalGeral += Number(v.total || 0);
+
+        var tipoPed = (v.tipo_pedido || '').toLowerCase();
+        var mesaLoc = (v.mesa_local || '').toLowerCase();
+        var isPiscinaVenda = tipoPed.indexOf('piscina') >= 0 || mesaLoc.indexOf('piscina') >= 0;
+
+        if (isPiscinaVenda) {
+            totalPiscina += Number(v.total || 0);
+        }
+
+        (v.itens || []).forEach(function(it) {
+            var sub = (Number(it.preco) || 0) * (Number(it.qtd) || 1);
+            var posto = (it.posto || '').toLowerCase();
+            var nomeItem = (it.nome || it.produto_nome || '').toLowerCase();
+            if (posto.indexOf('piscina') >= 0 || nomeItem.indexOf('piscina') >= 0 || nomeItem.indexOf('bilhete') >= 0) {
+                if (!isPiscinaVenda) totalPiscina += sub;
+            } else if (posto.indexOf('bar') >= 0 || posto.indexOf('bebida') >= 0 || nomeItem.indexOf('mojito') >= 0 || nomeItem.indexOf('cerveja') >= 0 || nomeItem.indexOf('água') >= 0 || nomeItem.indexOf('sumo') >= 0 || nomeItem.indexOf('refrigerante') >= 0 || nomeItem.indexOf('cocktail') >= 0 || nomeItem.indexOf('vodka') >= 0) {
+                totalBar += sub;
+            } else if (posto.indexOf('past') >= 0 || posto.indexOf('sobremesa') >= 0 || nomeItem.indexOf('cheesecake') >= 0 || nomeItem.indexOf('tarte') >= 0 || nomeItem.indexOf('bolo') >= 0 || nomeItem.indexOf('pudim') >= 0) {
+                totalPastelaria += sub;
+            } else {
+                totalCozinha += sub;
+            }
+        });
+
+        var itensResumo = (v.itens || []).map(function(it) {
+            return it.qtd + 'x ' + it.nome;
+        }).join(', ');
+        if (itensResumo.length > 40) itensResumo = itensResumo.substring(0, 40) + '...';
+
+        var numVnd = v.numero_venda || v.numero || '—';
+        var numRec = v.numero_recibo || ('REC-' + numVnd.replace('VND-', ''));
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-purple-700">' + numVnd + '</td>';
+        html += '  <td class="p-4 font-mono font-semibold text-emerald-700 text-xs">' + numRec + '</td>';
+        html += '  <td class="p-4 text-xs font-mono text-gray-500">' + v.data_hora + '</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700">' + v.tipo_pedido + '</span></td>';
+        html += '  <td class="p-4 font-semibold text-gray-900 text-xs">' + (v.mesa_local || '—') + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-emerald-800"><i class="fa-solid fa-credit-card mr-1 text-emerald-600"></i>' + v.metodo_pagamento + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-600" title="' + ((v.itens || []).map(function(x){ return x.qtd + 'x ' + x.nome; }).join(', ')) + '">' + (itensResumo || '—') + '</td>';
+        html += '  <td class="p-4 font-black text-gray-900">' + Number(v.total).toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-bold rounded-full bg-green-100 text-green-800 flex items-center gap-1 w-max"><i class="fa-solid fa-check"></i> ' + (v.estado || 'PAGO') + '</span></td>';
+        html += '  <td class="p-4 text-right">';
+        html += '    <button onclick="verDetalheVenda(\'' + v.id + '\')" class="text-purple-600 hover:text-purple-800 text-xs font-bold flex items-center gap-1 ml-auto cursor-pointer"><i class="fa-solid fa-receipt"></i> Ver Recibo</button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+
+    tbody.innerHTML = html || '<tr><td colspan="10" class="p-8 text-center text-gray-400 text-xs">Nenhuma venda registada com este filtro.</td></tr>';
+    if (contador) contador.innerText = lista.length + ' vendas encontradas';
+    if (totalSpan) totalSpan.innerText = 'Total Facturado: ' + totalGeral.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    if (document.getElementById('totalSegregadoCozinha')) {
+        document.getElementById('totalSegregadoCozinha').innerText = totalCozinha.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    }
+    if (document.getElementById('totalSegregadoBar')) {
+        document.getElementById('totalSegregadoBar').innerText = totalBar.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    }
+    if (document.getElementById('totalSegregadoPastelaria')) {
+        document.getElementById('totalSegregadoPastelaria').innerText = totalPastelaria.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    }
+    if (document.getElementById('totalSegregadoPiscina')) {
+        document.getElementById('totalSegregadoPiscina').innerText = totalPiscina.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    }
+}
+
+function filtrarVendas(tipo) {
+    filtroAtual = tipo;
+    var botoes = document.querySelectorAll('.filtro-venda-btn');
+    botoes.forEach(function(b) {
+        b.classList.remove('bg-purple-600', 'text-white', 'shadow-sm');
+        b.classList.add('text-gray-600', 'hover:bg-gray-100');
+    });
+    var ativo = document.getElementById('btnFiltro-' + tipo);
+    if (ativo) {
+        ativo.classList.add('bg-purple-600', 'text-white', 'shadow-sm');
+        ativo.classList.remove('text-gray-600', 'hover:bg-gray-100');
+    }
+    renderHistoricoVendas();
+}
+
+function verDetalheVenda(id) {
+    var v = (window.RestauranteApp.vendas || []).find(function(x) { return x.id === id; });
+    if (!v) return;
+
+    var numVnd = v.numero_venda || v.numero || '—';
+    var numRec = v.numero_recibo || ('REC-' + numVnd.replace('VND-', ''));
+
+    document.getElementById('detalheVendaTitulo').innerText = 'Factura / Recibo ' + numRec;
+    var c = document.getElementById('detalheVendaConteudo');
+    var html = '';
+    html += '<div class="p-3 bg-gray-50 rounded-xl space-y-1.5 border border-gray-200">';
+    html += '  <div class="flex justify-between font-mono"><span class="text-gray-500">Nº de Venda:</span><span class="font-bold text-purple-700">' + numVnd + '</span></div>';
+    html += '  <div class="flex justify-between font-mono"><span class="text-gray-500">Nº de Recibo:</span><span class="font-bold text-emerald-700">' + numRec + '</span></div>';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Data e Hora:</span><span class="font-mono font-bold">' + v.data_hora + '</span></div>';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Tipo de Pedido:</span><span class="font-bold">' + v.tipo_pedido + '</span></div>';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Local / Mesa:</span><span class="font-bold">' + (v.mesa_local || 'Balcão') + '</span></div>';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Método de Pagamento:</span><span class="font-bold text-emerald-700">' + v.metodo_pagamento + '</span></div>';
+    html += '</div>';
+
+    html += '<div class="space-y-1 pt-2">';
+    html += '  <span class="font-bold text-gray-700 uppercase text-[10px]">Itens do Pedido:</span>';
+    (v.itens || []).forEach(function(it) {
+        html += '<div class="flex justify-between p-2 bg-white border rounded">';
+        html += '  <div><span class="font-bold">' + it.qtd + 'x ' + it.nome + '</span>';
+        if (it.opcoes) html += '<p class="text-[10px] text-gray-400">' + it.opcoes + '</p>';
+        html += '  </div>';
+        html += '  <span class="font-bold">' + (it.preco * it.qtd).toFixed(2) + ' {{ estabelecimento.moeda }}</span>';
+        html += '</div>';
+    });
+    html += '<div class="space-y-1 pt-2 border-t text-xs">';
+    var taxaIva = v.taxa_iva || 16.0;
+    var baseTrib = v.base_tributavel || (v.total / (1 + (taxaIva / 100)));
+    var valorIva = v.valor_iva || (v.total - baseTrib);
+
+    html += '  <div class="flex justify-between text-gray-500"><span>Base de Incidência (s/ IVA):</span><span class="font-mono">' + Number(baseTrib).toFixed(2) + ' {{ estabelecimento.moeda }}</span></div>';
+    html += '  <div class="flex justify-between text-emerald-700 font-semibold"><span>IVA Deduzido (' + taxaIva + '%):</span><span class="font-mono font-bold">' + Number(valorIva).toFixed(2) + ' {{ estabelecimento.moeda }}</span></div>';
+    html += '</div>';
+
+    html += '<div class="flex justify-between items-center pt-2 border-t text-sm font-black">';
+    html += '  <span>Total Facturado:</span><span class="text-purple-700 text-base">' + Number(v.total).toFixed(2) + ' {{ estabelecimento.moeda }}</span>';
+    html += '</div>';
+
+    c.innerHTML = html;
+    vendaSelecionadaAtual = v;
+    abrirModal('modalDetalheVenda');
+}
+
+var vendaSelecionadaAtual = null;
+
+function imprimirReciboDetalheAtual() {
+    if (!vendaSelecionadaAtual) return;
+    var v = vendaSelecionadaAtual;
+    var numVnd = v.numero_venda || v.numero || 'VND-0000';
+    var numRec = v.numero_recibo || ('REC-' + numVnd.replace('VND-', ''));
+    var moeda = '{{ estabelecimento.moeda }}';
+
+    var iframe = document.getElementById('iframeImpressaoReciboHistorico');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframeImpressaoReciboHistorico';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var itensLinhas = '';
+    (v.itens || []).forEach(function(it) {
+        itensLinhas += '<tr><td style="padding:4px 0;">' + it.qtd + 'x ' + it.nome + '</td><td style="text-align:right;font-weight:bold;">' + (it.preco * it.qtd).toFixed(2) + ' ' + moeda + '</td></tr>';
+    });
+
+    var taxaIva = v.taxa_iva || 16.0;
+    var baseTrib = v.base_tributavel || (v.total / (1 + (taxaIva / 100)));
+    var valorIva = v.valor_iva || (v.total - baseTrib);
+
+    var conteudoHtml = [
+        '<html><head><title>Recibo ' + numRec + '</title>',
+        '<style>',
+        '  body { font-family: "Courier New", Courier, monospace; font-size: 12px; margin: 0; padding: 10px; width: 300px; color: #000; }',
+        '  .text-center { text-align: center; }',
+        '  hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }',
+        '  table { width: 100%; border-collapse: collapse; font-size: 11px; }',
+        '  .flex { display: flex; justify-content: space-between; }',
+        '  .total { font-size: 14px; font-weight: bold; }',
+        '</style>',
+        '</head><body>',
+        '<div class="text-center">',
+        '  <h3 style="margin:0;font-size:15px;text-transform:uppercase;">{{ estabelecimento.nome }}</h3>',
+        '  <p style="margin:2px 0;font-size:11px;">NUIT: {{ estabelecimento.nif }} | Tel: {{ estabelecimento.telefone }}</p>',
+        '  <p style="margin:2px 0;font-size:10px;">{{ estabelecimento.endereco }}</p>',
+        '  <hr>',
+        '  <p style="margin:2px 0;font-weight:bold;font-size:13px;">FACTURA / RECIBO</p>',
+        '  <p style="margin:2px 0;font-weight:bold;">Nº Recibo: ' + numRec + '</p>',
+        '  <p style="margin:2px 0;font-size:11px;">Nº Venda: ' + numVnd + '</p>',
+        '</div>',
+        '<hr>',
+        '<div style="font-size:11px;line-height:1.4;">',
+        '  <div><b>Data e Hora:</b> ' + v.data_hora + '</div>',
+        '  <div><b>Atendimento:</b> ' + (v.tipo_pedido || 'Balcão') + '</div>',
+        '  <div><b>Mesa / Local:</b> ' + (v.mesa_local || 'Balcão') + '</div>',
+        '  <div><b>Forma Pagamento:</b> ' + (v.metodo_pagamento || 'Numerário') + '</div>',
+        '</div>',
+        '<hr>',
+        '<table><tbody>' + itensLinhas + '</tbody></table>',
+        '<hr>',
+        '<div class="flex"><span>Base de Incidência:</span><span>' + Number(baseTrib).toFixed(2) + ' ' + moeda + '</span></div>',
+        '<div class="flex"><span>IVA (' + taxaIva + '%):</span><span>' + Number(valorIva).toFixed(2) + ' ' + moeda + '</span></div>',
+        '<div class="flex total" style="margin-top:4px;padding-top:4px;border-top:1px solid #000;"><span>TOTAL PAGO:</span><span>' + Number(v.total || 0).toFixed(2) + ' ' + moeda + '</span></div>',
+        '<hr>',
+        '<div class="text-center" style="font-size:10px;">Obrigado pela preferência!<br>Volte Sempre!<br><span style="font-size:9px;">Software Certificado</span></div>',
+        '</body></html>'
+    ].join('\n');
+
+    try {
+        var doc = iframe.contentWindow || iframe.contentDocument;
+        if (doc.document) doc = doc.document;
+        doc.open();
+        doc.write(conteudoHtml);
+        doc.close();
+
+        setTimeout(function() {
+            try {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                }
+            } catch(e) {
+                console.warn('Impressão direta no iframe bloqueada:', e);
+            }
+        }, 300);
+    } catch(err) {
+        console.error('Erro ao renderizar recibo:', err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderHistoricoVendas();
+});
+</script>
+{% endblock %}

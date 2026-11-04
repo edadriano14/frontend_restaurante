@@ -1,0 +1,2592 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="h-[calc(100vh-100px)] flex flex-col lg:flex-row gap-6">
+    <!-- LADO ESQUERDO: CATÁLOGO DO PDV -->
+    <div class="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        
+        <!-- Header do Caixa / Gaveta -->
+        <div class="p-3 border-b flex flex-wrap items-center justify-between gap-3 bg-gray-50">
+            <div class="flex items-center space-x-3">
+                <span class="px-2.5 py-1 text-xs font-bold rounded-md bg-green-100 text-green-800 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Caixa Aberto
+                </span>
+                <span class="text-xs text-gray-500">Saldo Abertura: <b>1,500.00 {{ estabelecimento.moeda }}</b></span>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="abrirModalVendasSuspensas()" class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-semibold hover:bg-amber-600 flex items-center gap-1.5 shadow-sm cursor-pointer relative" title="Consultar vendas e pedidos suspensos">
+                    <i class="fa-solid fa-pause"></i> Suspensos
+                    <span id="badgeVendasSuspensas" class="bg-white text-amber-700 font-black px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+                </button>
+                <button type="button" onclick="abrirModalPedidosOnline()" class="px-3 py-1.5 bg-custom-primary text-white rounded-lg text-xs font-semibold hover:opacity-90 flex items-center gap-1.5 shadow-sm cursor-pointer relative">
+                    <i class="fa-solid fa-bell animate-bounce text-amber-300"></i> Pedidos Online
+                    <span id="badgePedidosOnline" class="bg-white text-custom-primary font-black px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+                </button>
+                <button type="button" id="btnPratosProntosPDV" onclick="abrirModalPratosProntosPDV()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 flex items-center gap-1.5 shadow-sm cursor-pointer relative" title="Pratos prontos entregues da Cozinha e Bar para expedição">
+                    <i class="fa-solid fa-bell-concierge text-amber-300"></i> Pratos Prontos
+                    <span id="badgePratosProntosPDV" class="bg-white text-emerald-800 font-black px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+                </button>
+                <button type="button" onclick="abrirGaveta()" class="px-3 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-semibold hover:bg-gray-700 flex items-center gap-1.5 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-vault text-amber-400"></i> Abrir Gaveta
+                </button>
+                <button type="button" onclick="fecharCaixa()" class="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-200 cursor-pointer">
+                    Fechar Caixa
+                </button>
+            </div>
+        </div>
+
+        <!-- Alerta visual de Gaveta Aberta -->
+        <div id="alertaGaveta" class="bg-amber-100 text-amber-900 px-4 py-2 text-xs font-bold hidden items-center justify-between animate-bounce">
+            <span><i class="fa-solid fa-bell"></i> SINAL ENVIADO: GAVETA DO DINHEIRO ABERTA!</span>
+            <span class="text-[10px] font-mono">Dispositivo PDV-01</span>
+        </div>
+
+        <!-- Categorias e Filtros de Tipo e Posto -->
+        <div class="p-2.5 border-b flex items-center justify-between gap-2 overflow-x-auto bg-white">
+            <div id="filtroCategorias" class="flex space-x-1.5 overflow-x-auto">
+                <!-- Preenchido via renderFiltroCategorias() -->
+            </div>
+            <div class="flex items-center space-x-1 border-l pl-2">
+                <select id="filtroPosto" onchange="renderProdutosPDV()" class="text-xs px-2 py-1 border rounded-lg bg-gray-50 outline-none">
+                    <option value="todos">Todos os Postos</option>
+                    <option value="1">Cozinha Principal</option>
+                    <option value="2">Pastelaria</option>
+                    <option value="3">Bar</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- GRADE DE PRODUTOS COMPACTOS (LARGURA ORIGINAL, ALTURA REDUZIDA LxL) -->
+        <div id="gradeProdutosPDV" class="p-4 flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5 content-start">
+            <!-- Os cards são desenhados aqui -->
+        </div>
+    </div>
+
+    <!-- LADO DIREITO: PEDIDO DE VENDA / CARRINHO -->
+    <div class="w-full lg:w-96 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between overflow-hidden">
+        <div class="p-3.5 border-b bg-gray-50 space-y-2.5">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-receipt text-custom-primary"></i> Pedido de Venda
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="limparCarrinhoPDV()" class="text-[11px] text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-0.5 rounded font-bold transition flex items-center gap-1 cursor-pointer" title="Esvaziar todos os itens do pedido">
+                        <i class="fa-solid fa-trash-can"></i> Limpar
+                    </button>
+                    <span id="contadorItens" class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">0 itens</span>
+                </div>
+            </div>
+
+            <!-- Seleção do Tipo de Pedido (Balcão, Mesa/Salão, Takeaway, Delivery, Encomenda) -->
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase">Tipo de Atendimento *</label>
+                <select id="pdvTipoPedido" onchange="alternarCamposMesa()" class="w-full px-2.5 py-1.5 border rounded-lg text-xs font-semibold bg-white outline-none">
+                    <!-- Preenchido via carregarTiposPedidos() -->
+                </select>
+            </div>
+
+            <!-- SELEÇÃO DE SALA E MESA SE FOR CONSUMO LOCAL NA MESA -->
+            <div id="blocoSelecaoMesa" class="hidden p-2.5 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-blue-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-chair text-blue-600"></i> Selecionar Sala & Mesa
+                    </span>
+                    <a href="/mesas" class="text-[10px] text-blue-600 hover:underline">Ver Mapa ↗</a>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Sala / Área</label>
+                        <select id="pdvSalaSelect" onchange="carregarMesasDaSala()" class="w-full px-2 py-1 text-xs border rounded bg-white outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Mesa</label>
+                        <select id="pdvMesaSelect" class="w-full px-2 py-1 text-xs border rounded bg-white font-bold text-blue-900 outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SELEÇÃO DE ESPAÇO OU BILHETE DE PISCINA SE FOR ATENDIMENTO NA PISCINA / RESORT -->
+            <div id="blocoSelecaoPiscina" class="hidden p-2.5 bg-sky-50 border border-sky-200 rounded-xl space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-sky-950 flex items-center gap-1.5">
+                        <i class="fa-solid fa-person-swimming text-sky-600"></i> Cliente na Piscina / Resort
+                    </span>
+                    <a href="/piscina" class="text-[10px] text-sky-600 hover:underline">Ver Piscina ↗</a>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Espaço / Espreguiçadeira</label>
+                        <select id="pdvEspacoPiscinaSelect" class="w-full px-2 py-1 text-xs border rounded bg-white font-semibold text-sky-900 outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Vincular Bilhete (Opcional)</label>
+                        <select id="pdvBilhetePiscinaSelect" class="w-full px-2 py-1 text-xs border rounded bg-white font-mono text-gray-800 outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Itens no Pedido -->
+        <div id="itensPedidoVenda" class="p-3 flex-1 overflow-y-auto space-y-2.5">
+            <div id="carrinhoVazio" class="h-full flex flex-col items-center justify-center text-gray-400 py-10">
+                <i class="fa-solid fa-cart-shopping text-3xl mb-2 text-gray-300"></i>
+                <p class="text-xs font-semibold">Nenhum produto selecionado</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">Clique em qualquer produto ao lado.</p>
+            </div>
+        </div>
+
+        <!-- Totais e Finalização -->
+        <div class="p-3 border-t bg-gray-50 space-y-2">
+            <div class="flex justify-between text-xs">
+                <span class="text-gray-500">Valor Bruto (Inc. IVA):</span>
+                <span id="pdvSubtotal" class="font-bold text-gray-800">0.00 {{ estabelecimento.moeda }}</span>
+            </div>
+            <div class="flex justify-between text-[11px] text-gray-500">
+                <span>Incidência / Base (s/ IVA):</span>
+                <span id="pdvBaseIncidencia" class="font-mono">0.00 {{ estabelecimento.moeda }}</span>
+            </div>
+            <!-- Taxa de IVA vinda da Tabela de Configurações -->
+            <div class="flex items-center justify-between text-xs font-semibold text-emerald-800 bg-emerald-50/80 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-receipt text-emerald-600 text-xs"></i>
+                    <label for="pdvSelectTaxaIva" class="text-[11px] font-bold uppercase text-emerald-900 flex items-center gap-1">
+                        Taxa IVA <i class="fa-solid fa-lock text-[10px] text-emerald-600" title="Taxa de IVA fixada pelas configurações do sistema"></i>:
+                    </label>
+                    <select id="pdvSelectTaxaIva" disabled onchange="alterarTaxaIvaPDV()" class="px-2 py-0.5 text-xs font-black bg-emerald-100/70 border border-emerald-300 rounded text-emerald-950 outline-none cursor-not-allowed opacity-90 shadow-2xs" title="Taxa de IVA bloqueada - gerida centralmente nas Configurações">
+                        <!-- Preenchido via carregarTaxasIvaPDV() -->
+                    </select>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] text-emerald-600 block leading-none">IVA Deduzido:</span>
+                    <span id="pdvValorIva" class="font-mono font-bold text-xs">0.00 {{ estabelecimento.moeda }}</span>
+                </div>
+            </div>
+            <!-- Segregação de Vendas por Posto (Cozinha, Bar, Pastelaria, Piscina) -->
+            <div id="pdvResumoPostos" class="grid {% if estabelecimento.tem_piscina %}grid-cols-4{% else %}grid-cols-3{% endif %} gap-1.5 p-1.5 bg-gray-50 rounded-xl border border-gray-200 text-center text-[10px]">
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-1">
+                    <span class="text-orange-800 font-bold block truncate"><i class="fa-solid fa-fire-burner"></i> Cozinha</span>
+                    <span id="totalPostoCozinha" class="font-black text-orange-900 font-mono text-xs">0.00</span>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-1">
+                    <span class="text-blue-800 font-bold block truncate"><i class="fa-solid fa-martini-glass"></i> Bar</span>
+                    <span id="totalPostoBar" class="font-black text-blue-900 font-mono text-xs">0.00</span>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-1">
+                    <span class="text-purple-800 font-bold block truncate"><i class="fa-solid fa-cake-candles"></i> Pastelaria</span>
+                    <span id="totalPostoPastelaria" class="font-black text-purple-900 font-mono text-xs">0.00</span>
+                </div>
+                {% if estabelecimento.tem_piscina %}
+                <div class="bg-sky-50 border border-sky-200 rounded-lg p-1">
+                    <span class="text-sky-800 font-bold block truncate"><i class="fa-solid fa-person-swimming"></i> Piscina</span>
+                    <span id="totalPostoPiscina" class="font-black text-sky-900 font-mono text-xs">0.00</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-between text-base font-black border-t pt-1.5">
+                <span>Total a Pagar:</span>
+                <span id="pdvTotal" class="text-custom-primary">0.00 {{ estabelecimento.moeda }}</span>
+            </div>
+
+            <!-- Métodos de Pagamento Dinâmicos vindos das Configurações -->
+            <div id="containerMetodosPagamentoPDV" class="grid grid-cols-3 gap-1.5 pt-1">
+                <!-- Preenchido via renderMetodosPagamentoPDV() -->
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" onclick="suspenderVendaPDV()" class="py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center gap-1 cursor-pointer" title="Suspender venda e guardar numa tabela">
+                    <i class="fa-solid fa-pause"></i> Suspender
+                </button>
+                <button type="button" onclick="enviarParaCozinhaPDV()" class="py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center gap-1 cursor-pointer" title="Enviar para preparação">
+                    <i class="fa-solid fa-fire-burner"></i> Cozinha
+                </button>
+                <button type="button" onclick="finalizarVendaPDV()" class="py-2.5 bg-custom-primary hover:opacity-90 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center gap-1 cursor-pointer" title="Concluir Facturação">
+                    <i class="fa-solid fa-check"></i> Facturar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA ACOMPANHAMENTOS: SELECTIVOS (POR DEFEITO) E OPCIONAIS (PAGOS) -->
+<div id="modalAcompanhamentosPDV" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div>
+                <h3 id="modalAcompNomeProd" class="font-bold text-sm text-gray-800">Nome do Produto</h3>
+                <span class="text-xs text-gray-500">Personalize o prato:</span>
+            </div>
+            <button type="button" onclick="fecharModal('modalAcompanhamentosPDV')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
+
+        <div class="space-y-4 max-h-72 overflow-y-auto pr-1">
+            <!-- 1. ACOMPANHAMENTOS SELECTIVOS (Saem por defeito no prato - Radiobutton de escolha única) -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-700 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-dot text-green-600"></i> Acompanhamento Incluso (Escolha 1 Opção)
+                    </span>
+                    <span class="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">Incluso (0.00)</span>
+                </div>
+                <p class="text-[11px] text-gray-400">Selecione apenas 1 acompanhamento incluso (radiobutton):</p>
+                <div id="listaAcompSelectivos" class="space-y-1.5">
+                    <!-- Preenchido dinamicamente com radio buttons -->
+                </div>
+            </div>
+
+            <!-- 2. ACOMPANHAMENTOS OPCIONAIS (Pagos / Extras) -->
+            <div class="space-y-2 border-t pt-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-700 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus-circle text-orange-600"></i> Acompanhamentos Opcionais (Extras)
+                    </span>
+                    <span class="text-[10px] bg-orange-100 text-orange-800 px-2 py-0.5 rounded font-bold">Pagos (+)</span>
+                </div>
+                <div id="listaAcompOpcionais" class="space-y-1.5">
+                    <!-- Preenchido dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Calculado do Item -->
+        <div class="flex items-center justify-between pt-3 border-t">
+            <div>
+                <span class="text-[11px] text-gray-500">Valor do Item:</span>
+                <div id="modalItemValorFinal" class="text-sm font-black text-custom-primary">0.00 {{ estabelecimento.moeda }}</div>
+            </div>
+            <div class="flex space-x-2">
+                <button type="button" onclick="fecharModal('modalAcompanhamentosPDV')" class="px-3 py-1.5 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50">Cancelar</button>
+                <button type="button" onclick="confirmarItemComAcompanhamentos()" class="px-4 py-1.5 bg-custom-primary text-white font-bold rounded-lg text-xs shadow hover:opacity-90">Adicionar ao Pedido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE PEDIDOS ONLINE PENDENTES & VALIDAÇÃO COM BAIXA NO STOCK -->
+<div id="modalPedidosOnline" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-mobile-screen-button text-custom-primary text-xl"></i>
+                <h3 class="text-lg font-bold text-gray-900">Pedidos Recebidos do Portal do Cliente</h3>
+            </div>
+            <button type="button" onclick="fecharModal('modalPedidosOnline')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
+
+        <p class="text-xs text-gray-500">Valide os pagamentos móveis (M-Pesa, e-Mola, Conta Móvel). Ao validar, o pedido é convertido em venda e a baixa no stock é realizada automaticamente.</p>
+
+        <!-- Segmentação de Pedidos no PDV -->
+        <div class="flex items-center gap-1.5 border-b pb-2 text-xs overflow-x-auto">
+            <button type="button" onclick="segmentarPedidosPDV('todos')" id="btnSegTodos" class="px-3 py-1 bg-gray-900 text-white font-bold rounded-lg shadow-2xs whitespace-nowrap">Todos</button>
+            <button type="button" onclick="segmentarPedidosPDV('delivery')" id="btnSegDelivery" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg whitespace-nowrap">🛵 Delivery</button>
+            <button type="button" onclick="segmentarPedidosPDV('takeaway')" id="btnSegTakeaway" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg whitespace-nowrap">🛍️ Takeaway</button>
+            <button type="button" onclick="segmentarPedidosPDV('mesa')" id="btnSegMesa" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg whitespace-nowrap">🪑 Mesas</button>
+            <button type="button" onclick="segmentarPedidosPDV('reserva')" id="btnSegReserva" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg whitespace-nowrap">📅 Reservas</button>
+        </div>
+
+        <!-- Lista de Pedidos Online -->
+        <div id="listaPedidosOnlineCorpo" class="flex-1 overflow-y-auto space-y-3 pr-1">
+            <!-- Preenchido via renderPedidosOnline() -->
+        </div>
+
+        <div class="pt-3 border-t flex justify-end">
+            <button type="button" onclick="fecharModal('modalPedidosOnline')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: RECEÇÃO DE PRATOS PRONTOS DA COZINHA & EXPEDIÇÃO (MESAS, TAKEAWAY, DELIVERY) -->
+<div id="modalPratosProntosPDV" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 max-h-[88vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Receção de Pratos & Expedição ao Cliente</h3>
+                    <p class="text-xs text-gray-500">Pratos confecionados pela Cozinha e Bar aguardando entrega nas mesas, balcão takeaway ou saída de motoristas.</p>
+                </div>
+            </div>
+            <button type="button" onclick="fecharModal('modalPratosProntosPDV')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <!-- Filtros Rápidos de Expedição -->
+        <div class="flex items-center gap-2 border-b pb-2 text-xs overflow-x-auto">
+            <button type="button" onclick="filtrarPratosProntosPDV('todos')" id="btnFiltroProntos-todos" class="filtro-prontos-btn px-3 py-1 bg-gray-900 text-white font-bold rounded-lg shadow-2xs">Todos os Prontos</button>
+            <button type="button" onclick="filtrarPratosProntosPDV('mesa')" id="btnFiltroProntos-mesa" class="filtro-prontos-btn px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg">🪑 Mesas / Salão</button>
+            <button type="button" onclick="filtrarPratosProntosPDV('takeaway')" id="btnFiltroProntos-takeaway" class="filtro-prontos-btn px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg">🛍️ Takeaway / Balcão</button>
+            <button type="button" onclick="filtrarPratosProntosPDV('delivery')" id="btnFiltroProntos-delivery" class="filtro-prontos-btn px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg">🛵 Delivery / Estafetas</button>
+        </div>
+
+        <!-- Lista de Comandas Prontas da Cozinha -->
+        <div id="listaPratosProntosCorpo" class="flex-1 overflow-y-auto space-y-3 pr-1">
+            <!-- Preenchido via renderPratosProntosPDV() -->
+        </div>
+
+        <div class="pt-3 border-t flex justify-between items-center text-xs">
+            <span class="text-gray-500 font-medium"><i class="fa-solid fa-circle-info text-blue-500"></i> Ao despachar, o item é arquivado do ecrã de preparação da Cozinha e guardado no Histórico de Expedição.</span>
+            <button type="button" onclick="fecharModal('modalPratosProntosPDV')" class="px-4 py-2 border rounded-xl font-bold text-gray-600 hover:bg-gray-100">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE VENDAS / PEDIDOS SUSPENSOS (TABELA & GESTÃO) -->
+<div id="modalVendasSuspensas" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[88vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-pause text-amber-500 text-xl"></i>
+                <h3 class="text-lg font-bold text-gray-900">Vendas & Pedidos Suspensos</h3>
+            </div>
+            <button type="button" onclick="fecharModal('modalVendasSuspensas')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <p class="text-xs text-gray-500">Consulte os pedidos que foram colocados em espera. Pode pré-visualizar, imprimir comprovativo, puxar de volta para o carrinho do PDV ou cancelar.</p>
+
+        <!-- Tabela de Pedidos Suspensos -->
+        <div class="flex-1 overflow-y-auto border border-gray-200 rounded-xl">
+            <table class="w-full text-left text-xs text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b sticky top-0">
+                    <tr>
+                        <th class="p-3">Código</th>
+                        <th class="p-3">Hora / Data</th>
+                        <th class="p-3">Identificador / Mesa</th>
+                        <th class="p-3">Atendimento</th>
+                        <th class="p-3">Itens</th>
+                        <th class="p-3 text-right">Total</th>
+                        <th class="p-3 text-center">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaVendasSuspensasCorpo" class="divide-y divide-gray-100">
+                    <!-- Preenchido dinamicamente via renderTabelaVendasSuspensas() -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pt-3 border-t flex justify-end">
+            <button type="button" onclick="fecharModal('modalVendasSuspensas')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL FORMULÁRIO / PRÉ-VISUALIZAR PEDIDO SUSPENSO -->
+<div id="modalPrevisualizarSuspenso" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-receipt text-custom-primary text-xl"></i>
+                <h3 class="text-lg font-bold text-gray-900" id="prevSuspensoTitulo">Detalhes do Pedido Suspenso</h3>
+            </div>
+            <button type="button" onclick="fecharModal('modalPrevisualizarSuspenso')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <div id="prevSuspensoConteudo" class="flex-1 overflow-y-auto space-y-3 text-xs">
+            <!-- Preenchido dinamicamente -->
+        </div>
+
+        <div class="pt-3 border-t flex flex-wrap items-center justify-between gap-2">
+            <button type="button" id="btnCancelarPedidoSuspenso" class="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-ban"></i> Cancelar Pedido
+            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" id="btnImprimirPedidoSuspenso" class="px-3 py-2 bg-gray-800 text-white hover:bg-gray-900 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-print"></i> Imprimir
+                </button>
+                <button type="button" id="btnPuxarPedidoSuspenso" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
+                    <i class="fa-solid fa-arrow-down"></i> Puxar para o Carrinho
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- MODAL DE SUCESSO DE FACTURAÇÃO COM OPÇÃO DE IMPRESSÃO IMEDIATA -->
+<div id="modalSucessoFacturacao" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="text-center space-y-2">
+            <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900">Venda Facturada com Sucesso!</h3>
+            <p class="text-xs text-gray-500" id="modalSucessoFacturaSubtitulo">Factura emitida e registada no caixa.</p>
+        </div>
+
+        <!-- Recibo / Comprovativo Formatado Pré-visualização com estilo autêntico de Impressora Térmica 80mm -->
+        <div class="flex justify-center bg-gray-100 p-3 rounded-2xl">
+            <div class="border border-gray-300 rounded-lg p-3 bg-white text-xs font-mono space-y-2 overflow-y-auto max-h-[45vh] w-[290px] shadow-sm text-gray-900" id="modalSucessoFacturaRecibo">
+                <!-- Conteúdo montado via JS -->
+            </div>
+        </div>
+
+        <!-- Botões de Ação Imediata -->
+        <div class="pt-2 border-t flex items-center justify-between gap-2">
+            <button type="button" onclick="fecharModal('modalSucessoFacturacao')" class="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 transition">
+                Fechar
+            </button>
+            <button type="button" id="btnImprimirFaturaImediata" class="px-5 py-2.5 bg-custom-primary hover:opacity-90 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg transition">
+                <i class="fa-solid fa-print"></i> Imprimir Recibo / Factura
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+var carrinhoPDV = [];
+var catAtivaPDV = 'todos';
+var produtoTempParaAcomp = null;
+var moedaAtual = "{{ estabelecimento.moeda }}";
+var metodoPagamentoSelecionado = 'Dinheiro';
+
+var DADOS_ESTABELECIMENTO = {
+    nome: "{{ estabelecimento.nome or 'Restaurante Sabor Moçambicano' }}",
+    nif: "{{ estabelecimento.nif or '400192831' }}",
+    endereco: "{{ estabelecimento.endereco or 'Av. Marginal, Maputo, Moçambique' }}",
+    telefone: "{{ estabelecimento.telefone or '+258 84 123 4567' }}",
+    email: "{{ estabelecimento.email or 'contacto@restaurante.co.mz' }}",
+    moeda: "{{ estabelecimento.moeda or 'MT' }}",
+    logotipo_url: "{{ estabelecimento.logotipo_url or '' }}"
+};
+
+function renderFiltroCategorias() {
+    var container = document.getElementById('filtroCategorias');
+    if (!container) return;
+    var cats = window.RestauranteApp.categorias;
+    var html = '<button onclick="filtrarCategoriaPDV(\'todos\')" class="px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ' + (catAtivaPDV === 'todos' ? 'bg-custom-primary text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200') + '">Todos os Itens</button>';
+
+    for (var i = 0; i < cats.length; i++) {
+        var c = cats[i];
+        html += '<button onclick="filtrarCategoriaPDV(\'' + c.id + '\')" class="px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 cursor-pointer ' + (catAtivaPDV === c.id ? 'bg-custom-primary text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200') + '">';
+        html += '  <span>' + c.emoji + '</span> <span>' + c.nome + '</span>';
+        html += '</button>';
+    }
+    container.innerHTML = html;
+}
+
+function filtrarCategoriaPDV(catId) {
+    catAtivaPDV = catId;
+    renderFiltroCategorias();
+    renderProdutosPDV();
+}
+
+// Retorna { disponivel: bool, qtd: number, unidade: string, isPrato: bool, motivo: string }
+function obterStockDisponivelProduto(prod) {
+    if (!prod) return { disponivel: false, qtd: 0, unidade: 'UN', isPrato: false, motivo: 'Produto inexistente' };
+
+    var isComidaOuPrato = (prod.tipo === 'comida') || (prod.posto_nome && (prod.posto_nome.toLowerCase().indexOf('cozinha') >= 0 || prod.posto_nome.toLowerCase().indexOf('grelha') >= 0));
+
+    // 1. Estado explícito do cadastro do produto
+    if (prod.estado === 'indisponivel' || prod.estado === 'esgotado' || prod.disponivel === false) {
+        return { disponivel: false, qtd: 0, unidade: isComidaOuPrato ? 'Prato(s)' : 'UN', isPrato: isComidaOuPrato, motivo: 'Produto marcado como indisponível no sistema' };
+    }
+
+    var stockLista = window.RestauranteApp.stock || [];
+
+    // 2. Se tem Ficha Técnica (ex: pratos preparados com conjunto de insumos: hambúrgueres, frangos inteiros, 1/4, 1/2, carnes, etc.)
+    if (prod.ficha_tecnica && prod.ficha_tecnica.length > 0) {
+        var minPorcoes = Infinity;
+        var insumoEsgotado = null;
+
+        for (var i = 0; i < prod.ficha_tecnica.length; i++) {
+            var ins = prod.ficha_tecnica[i];
+            var stItem = stockLista.find(function(s) {
+                if (ins.stock_id && String(s.id) === String(ins.stock_id)) return true;
+                var sNome = (s.nome || s.item || '').toLowerCase().trim();
+                var insNome = (ins.stock_nome || '').toLowerCase().trim();
+                return sNome && insNome && (sNome === insNome || sNome.indexOf(insNome) >= 0 || insNome.indexOf(sNome) >= 0);
+            });
+
+            if (!stItem) {
+                minPorcoes = 0;
+                insumoEsgotado = ins.stock_nome || 'Insumo não encontrado';
+                break;
+            }
+
+            var dose = parseFloat(ins.quantidade || ins.qtd || 1);
+            var saldoAtual = parseFloat(stItem.qtd != null ? stItem.qtd : (stItem.quantidade != null ? stItem.quantidade : (stItem.stock_atual || 0)));
+            if (dose <= 0) dose = 1;
+
+            var porcoesDesteInsumo = Math.floor(saldoAtual / dose);
+            if (porcoesDesteInsumo < minPorcoes) {
+                minPorcoes = porcoesDesteInsumo;
+                if (saldoAtual <= 0 || porcoesDesteInsumo <= 0) {
+                    insumoEsgotado = stItem.nome || stItem.item || ins.stock_nome;
+                }
+            }
+        }
+
+        var qtdTotalFicha = (minPorcoes === Infinity) ? 0 : Math.max(0, minPorcoes);
+        return {
+            disponivel: qtdTotalFicha > 0,
+            qtd: qtdTotalFicha,
+            unidade: isComidaOuPrato ? 'Prato(s)' : 'UN',
+            isPrato: isComidaOuPrato,
+            motivo: insumoEsgotado ? ('Insumo esgotado no stock: ' + insumoEsgotado) : (qtdTotalFicha === 0 ? 'Sem ingredientes suficientes em stock' : 'OK')
+        };
+    }
+
+    // 3. Se não tem ficha técnica, buscar direto no stock pelo nome ou código
+    var pNome = (prod.nome || '').toLowerCase().trim();
+    var pNomeLimpo = pNome.split('(')[0].trim();
+
+    var stDirect = stockLista.find(function(s) {
+        if (prod.stock_id && String(s.id) === String(prod.stock_id)) return true;
+        var sNome = (s.nome || s.item || '').toLowerCase().trim();
+        var sNomeLimpo = sNome.split('(')[0].trim();
+        if (!sNome || !pNome) return false;
+        return sNome === pNome || sNomeLimpo === pNomeLimpo || sNome.indexOf(pNomeLimpo) >= 0 || pNome.indexOf(sNomeLimpo) >= 0;
+    });
+
+    if (stDirect) {
+        var saldo = parseFloat(stDirect.qtd != null ? stDirect.qtd : (stDirect.quantidade != null ? stDirect.quantidade : (stDirect.stock_atual || 0)));
+        saldo = isNaN(saldo) ? 0 : Math.max(0, saldo);
+        return {
+            disponivel: saldo > 0,
+            qtd: saldo,
+            unidade: isComidaOuPrato ? 'Prato(s)' : (stDirect.unidade || 'UN'),
+            isPrato: isComidaOuPrato,
+            motivo: saldo <= 0 ? 'Stock zerado (0 ' + (stDirect.unidade || 'UN') + ')' : 'OK'
+        };
+    }
+
+    // Se é prato/serviço sem vínculo de stock registado, mantém disponível
+    return {
+        disponivel: true,
+        qtd: 999,
+        unidade: isComidaOuPrato ? 'Prato(s)' : 'UN',
+        isPrato: isComidaOuPrato,
+        motivo: 'OK'
+    };
+}
+
+// RENDERIZAÇÃO COM CARDS DE TAMANHO REDUZIDO (LAYOUT COMPACTO E PROPORCIONAL)
+function renderProdutosPDV() {
+    var grid = document.getElementById('gradeProdutosPDV');
+    if (!grid) return;
+    var produtos = window.RestauranteApp.produtos;
+    var postoFiltro = document.getElementById('filtroPosto').value;
+    var html = '';
+
+    for (var i = 0; i < produtos.length; i++) {
+        var p = produtos[i];
+        if (catAtivaPDV !== 'todos' && p.categoria_id !== catAtivaPDV) continue;
+        if (postoFiltro !== 'todos' && p.posto_id !== postoFiltro) continue;
+        var temPiscinaEst = {% if estabelecimento.tem_piscina %}true{% else %}false{% endif %};
+        var isItemPiscina = (p.posto_nome && p.posto_nome.toLowerCase().indexOf('piscina') >= 0) || 
+                            (p.nome && p.nome.toLowerCase().indexOf('bilhete') >= 0);
+        if (!temPiscinaEst && isItemPiscina) continue;
+
+        var precoExibir = p.tem_promocao ? p.preco_promocional : p.preco;
+
+        // Calcular stock disponível em tempo real
+        var infoStock = obterStockDisponivelProduto(p);
+        var semStock = !infoStock.disponivel || infoStock.qtd <= 0;
+
+        var badgeStock = '';
+        if (infoStock.isPrato) {
+            // Para pratos/comidas: não mostrar quantidades nem KG. Mostrar apenas Disponibilidade com base nos insumos do stock
+            if (semStock) {
+                badgeStock = '<span class="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded border border-red-300 flex items-center gap-1"><i class="fa-solid fa-ban text-[9px]"></i> Esgotado</span>';
+            } else {
+                badgeStock = '<span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Disponível</span>';
+            }
+        } else if (infoStock.qtd !== 999) {
+            // Para bebidas, refrigerantes e outros artigos: exibe contagem do stock em unidades
+            if (semStock) {
+                badgeStock = '<span class="text-[10px] bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded border border-red-300 flex items-center gap-1"><i class="fa-solid fa-ban text-[9px]"></i> Stock: 0 ' + infoStock.unidade + ' (Esgotado)</span>';
+            } else if (infoStock.qtd <= 10) {
+                badgeStock = '<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded border border-amber-300">Stock: ' + infoStock.qtd + ' ' + infoStock.unidade + '</span>';
+            } else {
+                badgeStock = '<span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200">Stock: ' + infoStock.qtd + ' ' + infoStock.unidade + '</span>';
+            }
+        }
+
+        // Se o stock for 0, bloqueia visualmente e desabilita interação
+        if (semStock) {
+            html += '<div onclick="tentarAdicionarProdutoEsgotadoPDV(\'' + p.id + '\')" class="border border-red-200 bg-red-50/40 rounded-xl p-3 flex flex-col justify-between cursor-not-allowed select-none group h-auto opacity-75 relative overflow-hidden" title="Produto Indisponível: Stock esgotado">';
+            html += '  <div class="absolute inset-0 bg-white/40 pointer-events-none z-10 flex items-center justify-center">';
+            html += '    <span class="px-3 py-1 bg-red-600/90 text-white font-extrabold text-[11px] rounded-lg shadow-lg tracking-wider uppercase flex items-center gap-1.5"><i class="fa-solid fa-lock"></i> Esgotado</span>';
+            html += '  </div>';
+        } else {
+            html += '<div onclick="clicarProdutoPDV(\'' + p.id + '\')" class="border border-gray-200 rounded-xl p-3 flex flex-col justify-between hover:border-red-500 hover:shadow-md cursor-pointer transition bg-white select-none group h-auto">';
+        }
+
+        html += '  <div>';
+        html += '    <div class="relative h-28 sm:h-32 w-full rounded-lg overflow-hidden mb-2.5 bg-gray-100 shadow-inner">';
+        html += '      <img src="' + p.imagem_url + '" class="w-full h-full object-cover ' + (semStock ? 'grayscale' : 'group-hover:scale-105 transition duration-300') + '">';
+        if (p.tem_promocao) {
+            html += '  <span class="absolute top-1.5 right-1.5 bg-red-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow">PROMO</span>';
+        }
+        html += '      <span class="absolute bottom-1.5 left-1.5 bg-black/75 text-white text-[10px] font-medium px-2 py-0.5 rounded backdrop-blur">' + (p.posto_nome || 'Cozinha') + '</span>';
+        html += '    </div>';
+        html += '    <h4 class="font-bold text-xs sm:text-sm ' + (semStock ? 'text-gray-500 line-through' : 'text-gray-800') + ' line-clamp-1 leading-snug mb-0.5">' + p.nome + '</h4>';
+        html += '    <div class="flex items-center justify-between gap-1 mb-2">';
+        html += '      <span class="text-[11px] text-gray-400 font-mono block">' + p.codigo_produto + ' (' + p.tipo + ')</span>';
+        html += '      ' + badgeStock;
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <div class="flex items-center justify-between pt-2 border-t border-gray-100">';
+        html += '    <span class="text-sm font-black ' + (semStock ? 'text-gray-400' : 'text-custom-primary') + '">' + precoExibir + ' ' + moedaAtual + '</span>';
+        if (semStock) {
+            html += '    <span class="w-7 h-7 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-xs">';
+            html += '      <i class="fa-solid fa-ban"></i>';
+            html += '    </span>';
+        } else {
+            html += '    <span class="w-7 h-7 rounded-lg bg-gray-100 text-gray-700 flex items-center justify-center text-xs group-hover:bg-custom-primary group-hover:text-white transition shadow-sm">';
+            html += '      <i class="fa-solid fa-plus"></i>';
+            html += '    </span>';
+        }
+        html += '  </div>';
+        html += '</div>';
+    }
+
+    if (html === '') {
+        html = '<div class="col-span-full py-12 text-center text-gray-400"><i class="fa-solid fa-box-open text-3xl mb-2"></i><p class="text-xs">Nenhum produto encontrado neste filtro.</p></div>';
+    }
+
+    grid.innerHTML = html;
+}
+
+function tentarAdicionarProdutoEsgotadoPDV(id) {
+    var p = window.RestauranteApp.produtos.find(function(item) { return item.id === id; });
+    var nomeProd = p ? p.nome : 'Produto';
+    var info = p ? obterStockDisponivelProduto(p) : { motivo: 'Stock esgotado' };
+    
+    var msg = 'Não é possível adicionar "' + nomeProd + '" ao Ponto de Venda!\n\nMotivo: ' + info.motivo + '.\n\nPor favor, faça uma requisição de compras ou actualize o stock no Armazém para desbloquear este produto.';
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel(msg, 'Produto Esgotado / Sem Stock', 'erro');
+    } else {
+        alert(msg);
+    }
+}
+
+// ACOMPANHAMENTOS: SELECTIVOS (SAEM POR DEFEITO) VS OPCIONAIS (PAGOS)
+function clicarProdutoPDV(id) {
+    var p = window.RestauranteApp.produtos.find(function(item) { return item.id === id; });
+    if (!p) return;
+
+    // Bloqueio rigoroso de stock 0
+    var infoStock = obterStockDisponivelProduto(p);
+    if (!infoStock.disponivel || infoStock.qtd <= 0) {
+        tentarAdicionarProdutoEsgotadoPDV(id);
+        return;
+    }
+
+    // Verificar se a quantidade já presente no carrinho atinge o stock disponível
+    var itemNoCarrinho = carrinhoPDV.filter(function(i) { return i.id === p.id; }).reduce(function(acc, i) { return acc + i.qtd; }, 0);
+    if (infoStock.qtd !== 999 && itemNoCarrinho >= infoStock.qtd) {
+        var msgLimite = '';
+        if (infoStock.isPrato) {
+            msgLimite = 'Limite de preparação atingido para o prato "' + p.nome + '"!\n\nCapacidade máxima com base nos insumos em stock: ' + infoStock.qtd + ' porção(ões).\nQuantidade já no pedido: ' + itemNoCarrinho + ' porção(ões).\n\nNão há ingredientes suficientes no armazém para preparar mais porções.';
+        } else {
+            msgLimite = 'Limite de stock atingido para "' + p.nome + '"!\n\nStock disponível: ' + infoStock.qtd + ' ' + infoStock.unidade + '\nQuantidade já no carrinho: ' + itemNoCarrinho + ' ' + infoStock.unidade + '.\n\nNão é possível adicionar mais unidades deste item.';
+        }
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel(msgLimite, 'Limite de Stock Atingido', 'aviso');
+        } else {
+            alert(msgLimite);
+        }
+        return;
+    }
+
+    if (p.tipo === 'comida' && window.RestauranteApp.acompanhamentos.length > 0) {
+        produtoTempParaAcomp = p;
+        document.getElementById('modalAcompNomeProd').innerText = p.nome;
+
+        var lista = window.RestauranteApp.acompanhamentos;
+        var selectivosHtml = '';
+        var opcionaisHtml = '';
+
+        var primeiroSelectivoMarcado = false;
+        for (var i = 0; i < lista.length; i++) {
+            var ac = lista[i];
+            if (!ac.disponivel) continue;
+
+            if (ac.tipo === 'selectivo') {
+                // Selectivos: saem por defeito no prato — seleção única com radiobutton
+                var isChecked = false;
+                if (!primeiroSelectivoMarcado && ac.padrao) {
+                    isChecked = true;
+                    primeiroSelectivoMarcado = true;
+                }
+
+                selectivosHtml += '<label class="flex items-center justify-between p-2 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-100 cursor-pointer">';
+                selectivosHtml += '  <div class="flex items-center space-x-2">';
+                selectivosHtml += '    <input type="radio" name="acompSelectivo" value="' + ac.nome + '" ' + (isChecked ? 'checked' : '') + ' class="w-4 h-4 text-green-600 focus:ring-green-500">';
+                selectivosHtml += '    <span class="text-xs font-semibold text-gray-800">' + ac.nome + '</span>';
+                selectivosHtml += '  </div>';
+                selectivosHtml += '  <span class="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">Incluso (0.00)</span>';
+                selectivosHtml += '</label>';
+            } else {
+                // Opcionais: pagos à parte
+                opcionaisHtml += '<label class="flex items-center justify-between p-2 rounded-lg border border-gray-200 hover:bg-orange-50/50 cursor-pointer">';
+                opcionaisHtml += '  <div class="flex items-center space-x-2">';
+                opcionaisHtml += '    <input type="checkbox" name="acompOpcional" value="' + ac.nome + '" data-preco="' + ac.preco_adicional + '" onchange="calcularValorModalAcomp()" class="w-4 h-4 text-orange-600 rounded">';
+                opcionaisHtml += '    <span class="text-xs font-semibold text-gray-800">' + ac.nome + '</span>';
+                opcionaisHtml += '  </div>';
+                opcionaisHtml += '  <span class="text-xs font-bold text-orange-600">+' + ac.preco_adicional.toFixed(2) + ' ' + moedaAtual + '</span>';
+                opcionaisHtml += '</label>';
+            }
+        }
+
+        // Se nenhum foi marcado como padrão, marcar o primeiro radio automaticamente
+        document.getElementById('listaAcompSelectivos').innerHTML = selectivosHtml;
+        var radios = document.querySelectorAll('input[name="acompSelectivo"]');
+        if (radios.length > 0) {
+            var temChecked = Array.from(radios).some(function(r) { return r.checked; });
+            if (!temChecked) radios[0].checked = true;
+        }
+
+        document.getElementById('listaAcompOpcionais').innerHTML = opcionaisHtml;
+
+        calcularValorModalAcomp();
+        abrirModal('modalAcompanhamentosPDV');
+    } else {
+        adicionarDiretoAoCarrinho(p, '', (p.tem_promocao ? p.preco_promocional : p.preco));
+    }
+}
+
+function calcularValorModalAcomp() {
+    if (!produtoTempParaAcomp) return;
+    var base = produtoTempParaAcomp.tem_promocao ? produtoTempParaAcomp.preco_promocional : produtoTempParaAcomp.preco;
+    var extras = 0;
+    var checkedOpc = document.querySelectorAll('input[name="acompOpcional"]:checked');
+    for (var i = 0; i < checkedOpc.length; i++) {
+        extras += parseFloat(checkedOpc[i].getAttribute('data-preco') || 0);
+    }
+    var total = base + extras;
+    document.getElementById('modalItemValorFinal').innerText = total.toFixed(2) + ' ' + moedaAtual;
+}
+
+function confirmarItemComAcompanhamentos() {
+    if (!produtoTempParaAcomp) return;
+
+    // Acompanhamento selectivo selecionado (único via radiobutton)
+    var selRadio = document.querySelector('input[name="acompSelectivo"]:checked');
+    var selectivosNomes = [];
+    if (selRadio) {
+        selectivosNomes.push(selRadio.value);
+    }
+
+    // Acompanhamentos opcionais pagos selecionados
+    var opcCheckboxes = document.querySelectorAll('input[name="acompOpcional"]:checked');
+    var opcionaisNomes = [];
+    var valorExtras = 0;
+    for (var j = 0; j < opcCheckboxes.length; j++) {
+        opcionaisNomes.push(opcCheckboxes[j].value);
+        valorExtras += parseFloat(opcCheckboxes[j].getAttribute('data-preco') || 0);
+    }
+
+    var descritivo = [];
+    if (selectivosNomes.length > 0) descritivo.push('Com: ' + selectivosNomes.join(', '));
+    if (opcionaisNomes.length > 0) descritivo.push('Extras: ' + opcionaisNomes.join(', '));
+
+    var precoBase = produtoTempParaAcomp.tem_promocao ? produtoTempParaAcomp.preco_promocional : produtoTempParaAcomp.preco;
+    var precoFinal = precoBase + valorExtras;
+
+    adicionarDiretoAoCarrinho(produtoTempParaAcomp, descritivo.join(' | '), precoFinal);
+    fecharModal('modalAcompanhamentosPDV');
+    produtoTempParaAcomp = null;
+}
+
+function adicionarDiretoAoCarrinho(prod, acompanhamentosTexto, precoFinal) {
+    var infoStock = obterStockDisponivelProduto(prod);
+    if (!infoStock.disponivel || infoStock.qtd <= 0) {
+        tentarAdicionarProdutoEsgotadoPDV(prod.id);
+        return;
+    }
+
+    var itemExistente = carrinhoPDV.find(function(i) {
+        return i.id === prod.id && i.opcoes === acompanhamentosTexto;
+    });
+
+    var qtdAtualNoCarrinho = carrinhoPDV.filter(function(i) { return i.id === prod.id; }).reduce(function(acc, i) { return acc + i.qtd; }, 0);
+    if (infoStock.qtd !== 999 && (qtdAtualNoCarrinho + 1) > infoStock.qtd) {
+        var msg = '';
+        if (infoStock.isPrato) {
+            msg = 'Insumos insuficientes para preparar mais unidades de "' + prod.nome + '"!\n\nCapacidade máxima em stock: ' + infoStock.qtd + ' porção(ões)\nJá no pedido: ' + qtdAtualNoCarrinho + ' porção(ões)';
+        } else {
+            msg = 'Stock insuficiente para adicionar mais unidades de "' + prod.nome + '"!\n\nDisponível: ' + infoStock.qtd + ' ' + infoStock.unidade + '\nJá no pedido: ' + qtdAtualNoCarrinho + ' ' + infoStock.unidade;
+        }
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel(msg, 'Limite de Stock Atingido', 'aviso');
+        } else {
+            alert(msg);
+        }
+        return;
+    }
+
+    if (itemExistente) {
+        itemExistente.qtd++;
+    } else {
+        carrinhoPDV.push({
+            id: prod.id,
+            nome: prod.nome,
+            preco: precoFinal,
+            qtd: 1,
+            opcoes: acompanhamentosTexto,
+            posto: prod.posto_nome || 'Cozinha'
+        });
+    }
+    renderCarrinhoPDV();
+}
+
+function renderCarrinhoPDV() {
+    var container = document.getElementById('itensPedidoVenda');
+    var contador = document.getElementById('contadorItens');
+    if (!container) return;
+
+    if (carrinhoPDV.length === 0) {
+        container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-gray-400 py-10"><i class="fa-solid fa-cart-shopping text-3xl mb-2 text-gray-300"></i><p class="text-xs font-semibold">Nenhum produto selecionado</p><p class="text-[11px] text-gray-400 mt-0.5">Clique em qualquer produto ao lado.</p></div>';
+        contador.innerText = '0 itens';
+        document.getElementById('pdvSubtotal').innerText = '0.00 ' + moedaAtual;
+        document.getElementById('pdvTotal').innerText = '0.00 ' + moedaAtual;
+        return;
+    }
+
+    var totalQtd = 0;
+    var totalValor = 0;
+    var totalCozinha = 0;
+    var totalBar = 0;
+    var totalPastelaria = 0;
+    var totalPiscina = 0;
+    var html = '';
+
+    var selectTipoAtend = document.getElementById('pdvTipoPedido');
+    var isPedidoPiscina = selectTipoAtend && (selectTipoAtend.options[selectTipoAtend.selectedIndex].text.toLowerCase().indexOf('piscina') >= 0);
+
+    for (var idx = 0; idx < carrinhoPDV.length; idx++) {
+        var item = carrinhoPDV[idx];
+        var subtotal = item.preco * item.qtd;
+        totalQtd += item.qtd;
+        totalValor += subtotal;
+
+        var postoNomeLower = (item.posto || '').toLowerCase();
+        var itemNomeLower = (item.nome || '').toLowerCase();
+
+        if (isPedidoPiscina || postoNomeLower.indexOf('piscina') >= 0 || itemNomeLower.indexOf('bilhete') >= 0) {
+            totalPiscina += subtotal;
+        }
+
+        if (postoNomeLower.indexOf('bar') >= 0 || postoNomeLower.indexOf('bebida') >= 0) {
+            totalBar += subtotal;
+        } else if (postoNomeLower.indexOf('past') >= 0 || postoNomeLower.indexOf('sobremesa') >= 0) {
+            totalPastelaria += subtotal;
+        } else {
+            totalCozinha += subtotal;
+        }
+
+        var corPosto = 'bg-orange-100 text-orange-800 border-orange-200';
+        var iconePosto = 'fa-fire-burner';
+        if (item.posto === 'Bar') {
+            corPosto = 'bg-blue-100 text-blue-800 border-blue-200';
+            iconePosto = 'fa-martini-glass';
+        } else if (item.posto === 'Pastelaria') {
+            corPosto = 'bg-purple-100 text-purple-800 border-purple-200';
+            iconePosto = 'fa-cake-candles';
+        } else if (item.posto === 'Piscina') {
+            corPosto = 'bg-sky-100 text-sky-800 border-sky-200';
+            iconePosto = 'fa-person-swimming';
+        }
+
+        html += '<div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">';
+        html += '  <div class="flex-1 mr-2">';
+        html += '    <div class="flex items-center justify-between">';
+        html += '      <span class="font-bold text-xs text-gray-900 truncate">' + item.nome + '</span>';
+        html += '      <span class="text-xs font-bold text-custom-primary">' + subtotal.toFixed(2) + ' ' + moedaAtual + '</span>';
+        html += '    </div>';
+        html += '    <div class="flex items-center gap-1.5 mt-0.5">';
+        html += '      <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded border flex items-center gap-1 ' + corPosto + '"><i class="fa-solid ' + iconePosto + ' text-[8px]"></i> ' + (item.posto || 'Cozinha') + '</span>';
+        if (item.opcoes) {
+            html += '  <span class="text-[10px] text-gray-500 truncate"><i class="fa-solid fa-bowl-food text-gray-400"></i> ' + item.opcoes + '</span>';
+        }
+        html += '    </div>';
+        html += '    <div class="mt-1 flex items-center space-x-2 text-xs">';
+        html += '      <button onclick="alterarQtdPDV(' + idx + ', -1)" class="w-5 h-5 bg-gray-200 rounded text-center font-bold hover:bg-gray-300 cursor-pointer">-</button>';
+        html += '      <span class="font-mono font-bold text-xs">' + item.qtd + '</span>';
+        html += '      <button onclick="alterarQtdPDV(' + idx + ', 1)" class="w-5 h-5 bg-gray-200 rounded text-center font-bold hover:bg-gray-300 cursor-pointer">+</button>';
+        html += '      <span class="text-[10px] text-gray-400">@ ' + item.preco.toFixed(2) + '</span>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <button onclick="removerItemPDV(' + idx + ')" class="text-gray-400 hover:text-red-500 p-1 cursor-pointer"><i class="fa-solid fa-trash-can text-sm"></i></button>';
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+    contador.innerText = totalQtd + ' item(ns)';
+
+    // Obter Taxa de IVA selecionada no PDV ou da tabela de Configurações
+    var selectTaxa = document.getElementById('pdvSelectTaxaIva');
+    var percIva = 16.0;
+    if (selectTaxa && selectTaxa.value !== '') {
+        percIva = parseFloat(selectTaxa.value);
+    } else {
+        var taxaIvaObj = (window.RestauranteApp.taxas_iva || []).find(function(t) { return t.padrao && t.ativo; });
+        if (!taxaIvaObj) {
+            taxaIvaObj = (window.RestauranteApp.taxas_iva || []).find(function(t) { return t.ativo; });
+        }
+        if (taxaIvaObj) percIva = Number(taxaIvaObj.iva);
+    }
+
+    // Cálculo do IVA deduzido sobre o valor do produto (Preço de venda já inclui IVA)
+    // Base de Incidência = Total / (1 + taxa/100)
+    // IVA Deduzido = Total - Base de Incidência
+    var baseTributavel = totalValor / (1 + (percIva / 100));
+    var valorIvaDeduzido = totalValor - baseTributavel;
+
+    document.getElementById('pdvSubtotal').innerText = totalValor.toFixed(2) + ' ' + moedaAtual;
+    if (document.getElementById('pdvBaseIncidencia')) {
+        document.getElementById('pdvBaseIncidencia').innerText = baseTributavel.toFixed(2) + ' ' + moedaAtual;
+    }
+    if (document.getElementById('pdvValorIva')) {
+        document.getElementById('pdvValorIva').innerText = valorIvaDeduzido.toFixed(2) + ' ' + moedaAtual;
+    }
+    document.getElementById('pdvTotal').innerText = totalValor.toFixed(2) + ' ' + moedaAtual;
+
+    // Atualizar totais segregados por posto
+    if (document.getElementById('totalPostoCozinha')) {
+        document.getElementById('totalPostoCozinha').innerText = totalCozinha.toFixed(2);
+    }
+    if (document.getElementById('totalPostoBar')) {
+        document.getElementById('totalPostoBar').innerText = totalBar.toFixed(2);
+    }
+    if (document.getElementById('totalPostoPastelaria')) {
+        document.getElementById('totalPostoPastelaria').innerText = totalPastelaria.toFixed(2);
+    }
+    if (document.getElementById('totalPostoPiscina')) {
+        document.getElementById('totalPostoPiscina').innerText = totalPiscina.toFixed(2);
+    }
+}
+
+function carregarTaxasIvaPDV() {
+    var select = document.getElementById('pdvSelectTaxaIva');
+    if (!select) return;
+    var taxas = (window.RestauranteApp.taxas_iva || []).filter(function(t) { return t.ativo; });
+    var html = '';
+    var valorPredefinido = null;
+
+    for (var i = 0; i < taxas.length; i++) {
+        var t = taxas[i];
+        var isPadrao = t.padrao;
+        if (isPadrao || valorPredefinido === null) {
+            valorPredefinido = t.iva;
+        }
+        html += '<option value="' + t.iva + '" ' + (isPadrao ? 'selected' : '') + '>' + t.codigo + ' (' + Number(t.iva).toFixed(1) + '%)</option>';
+    }
+
+    if (html === '') {
+        html = '<option value="16.0" selected>IVA-16 (16.0%)</option>';
+    }
+    select.innerHTML = html;
+}
+
+function alterarTaxaIvaPDV() {
+    renderCarrinhoPDV();
+}
+
+function alterarQtdPDV(idx, delta) {
+    var item = carrinhoPDV[idx];
+    if (!item) return;
+
+    if (delta > 0) {
+        var prod = (window.RestauranteApp.produtos || []).find(function(p) { return p.id === item.id; });
+        if (prod) {
+            var infoStock = obterStockDisponivelProduto(prod);
+            var totalQtdProdutoNoCarrinho = carrinhoPDV.filter(function(i) { return i.id === item.id; }).reduce(function(acc, i) { return acc + i.qtd; }, 0);
+            if (infoStock.qtd !== 999 && (totalQtdProdutoNoCarrinho + delta) > infoStock.qtd) {
+                var msg = '';
+                if (infoStock.isPrato) {
+                    msg = 'Insumos insuficientes para aumentar o prato "' + item.nome + '"!\n\nCapacidade máxima em stock: ' + infoStock.qtd + ' porção(ões)\nQuantidade já no pedido: ' + totalQtdProdutoNoCarrinho + ' porção(ões)';
+                } else {
+                    msg = 'Stock insuficiente para aumentar "' + item.nome + '"!\n\nDisponível: ' + infoStock.qtd + ' ' + infoStock.unidade + '\nQuantidade já no pedido: ' + totalQtdProdutoNoCarrinho + ' ' + infoStock.unidade;
+                }
+                if (window.mostrarMensagemAmigavel) {
+                    window.mostrarMensagemAmigavel(msg, 'Limite de Stock Atingido', 'aviso');
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+        }
+    }
+
+    item.qtd += delta;
+    if (item.qtd <= 0) {
+        carrinhoPDV.splice(idx, 1);
+    }
+    renderCarrinhoPDV();
+}
+
+function removerItemPDV(idx) {
+    carrinhoPDV.splice(idx, 1);
+    renderCarrinhoPDV();
+}
+
+function limparCarrinhoPDV() {
+    if (carrinhoPDV.length === 0) return;
+    if (confirm('Tem a certeza que deseja limpar todo o pedido atual?')) {
+        carrinhoPDV = [];
+        renderCarrinhoPDV();
+    }
+}
+
+function abrirGaveta() {
+    var alerta = document.getElementById('alertaGaveta');
+    if (alerta) {
+        alerta.classList.remove('hidden');
+        alerta.classList.add('flex');
+        setTimeout(function() {
+            alerta.classList.add('hidden');
+            alerta.classList.remove('flex');
+        }, 1500);
+    }
+}
+
+function fecharCaixa() {
+    alert('Turno de caixa fechado com sucesso!');
+}
+
+function renderMetodosPagamentoPDV() {
+    var container = document.getElementById('containerMetodosPagamentoPDV');
+    if (!container) return;
+    var lista = (window.RestauranteApp.metodos_pagamento || []).filter(function(m) { return m.ativo; });
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+        var m = lista[i];
+        var isPrimeiro = (i === 0);
+        if (isPrimeiro) metodoPagamentoSelecionado = m.nome;
+        var borderClass = isPrimeiro ? 'border-2 border-red-500 text-gray-800' : 'border border-gray-200 text-gray-700';
+        html += '<button type="button" onclick="selecionarMetodo(this, \'' + m.nome + '\')" class="metodo-btn py-1.5 ' + borderClass + ' rounded-lg text-xs font-bold bg-white flex flex-col items-center cursor-pointer hover:bg-gray-50">';
+        html += '  <i class="' + m.icone + ' ' + (m.cor || 'text-gray-600') + ' mb-0.5"></i>';
+        html += '  <span class="truncate max-w-[80px] text-[11px]">' + m.nome + '</span>';
+        html += '</button>';
+    }
+    container.innerHTML = html;
+}
+
+function selecionarMetodo(btn, metodo) {
+    metodoPagamentoSelecionado = metodo;
+    var botoes = document.querySelectorAll('.metodo-btn');
+    for (var i = 0; i < botoes.length; i++) {
+        botoes[i].classList.remove('border-2', 'border-red-500');
+        botoes[i].classList.add('border', 'border-gray-200');
+    }
+    btn.classList.add('border-2', 'border-red-500');
+    btn.classList.remove('border-gray-200');
+}
+
+// GESTÃO DE MESAS E ESPAÇOS DE PISCINA NO PDV
+function alternarCamposMesa() {
+    var selectTipo = document.getElementById('pdvTipoPedido');
+    var blocoMesa = document.getElementById('blocoSelecaoMesa');
+    var blocoPiscina = document.getElementById('blocoSelecaoPiscina');
+    if (!selectTipo) return;
+
+    var tipoTexto = selectTipo.options[selectTipo.selectedIndex].text.toLowerCase();
+    var isMesa = tipoTexto.indexOf('mesa') >= 0 || tipoTexto.indexOf('salão') >= 0;
+    var isPiscina = tipoTexto.indexOf('piscina') >= 0 || tipoTexto.indexOf('resort') >= 0 || tipoTexto.indexOf('espreguiçadeira') >= 0;
+
+    if (blocoMesa) blocoMesa.classList.toggle('hidden', !isMesa);
+    if (blocoPiscina) blocoPiscina.classList.toggle('hidden', !isPiscina);
+
+    if (isPiscina) {
+        carregarEspacosEBilhetesPiscinaPDV();
+    }
+}
+
+function carregarEspacosEBilhetesPiscinaPDV() {
+    var selEspaco = document.getElementById('pdvEspacoPiscinaSelect');
+    var selBilhete = document.getElementById('pdvBilhetePiscinaSelect');
+    if (!selEspaco || !selBilhete) return;
+
+    var espacos = window.RestauranteApp.espacos_piscina || [];
+    var espHtml = '<option value="">Balcão do Bar da Piscina</option>';
+    espacos.forEach(function(e) {
+        espHtml += '<option value="' + e.codigo + '">' + e.codigo + ' - ' + e.tipo + ' (' + (e.ocupante || e.estado) + ')</option>';
+    });
+    selEspaco.innerHTML = espHtml;
+
+    var bilhetes = (window.RestauranteApp.bilhetes_piscina || []).filter(function(b) {
+        return b.estado === 'VALIDADO' || b.estado === 'EMITIDO';
+    });
+    var bilHtml = '<option value="">Sem bilhete associado (Avulso)</option>';
+    bilhetes.forEach(function(b) {
+        bilHtml += '<option value="' + b.codigo_bilhete + '">' + b.codigo_bilhete + ' - ' + b.cliente_nome + ' (' + (b.periodo || 'Activo') + ')</option>';
+    });
+    selBilhete.innerHTML = bilHtml;
+}
+
+function carregarSalasEMesasPDV() {
+    var selSala = document.getElementById('pdvSalaSelect');
+    if (!selSala) return;
+    var salas = window.RestauranteApp.salas;
+    var html = '';
+    for (var i = 0; i < salas.length; i++) {
+        html += '<option value="' + salas[i].id + '">' + salas[i].nome + '</option>';
+    }
+    selSala.innerHTML = html;
+    carregarMesasDaSala();
+}
+
+function carregarMesasDaSala() {
+    var selSala = document.getElementById('pdvSalaSelect');
+    var selMesa = document.getElementById('pdvMesaSelect');
+    if (!selSala || !selMesa) return;
+    var salaId = selSala.value;
+    var mesas = window.RestauranteApp.mesas.filter(function(m) { return m.sala_id === salaId; });
+    var html = '';
+    for (var i = 0; i < mesas.length; i++) {
+        var m = mesas[i];
+        var badge = (m.estado === 'LIVRE') ? ' [Livre]' : ' [' + m.estado + ']';
+        html += '<option value="' + m.id + '">' + m.numero_mesa + badge + '</option>';
+    }
+    if (html === '') {
+        html = '<option value="">Sem mesas nesta sala</option>';
+    }
+    selMesa.innerHTML = html;
+}
+
+function enviarParaCozinhaPDV() {
+    if (carrinhoPDV.length === 0) {
+        alert('Adicione ao menos um produto para enviar à cozinha!');
+        return;
+    }
+    var tipoSelect = document.getElementById('pdvTipoPedido');
+    var tipoNome = tipoSelect ? tipoSelect.options[tipoSelect.selectedIndex].text : 'Mesa';
+    var selMesa = document.getElementById('pdvMesaSelect');
+    var selSala = document.getElementById('pdvSalaSelect');
+    var nomeMesa = selMesa ? selMesa.options[selMesa.selectedIndex].text : 'Balcão';
+    var nomeSala = selSala ? selSala.options[selSala.selectedIndex].text : '';
+
+    var localizacaoFinal = nomeSala ? (nomeSala + ' • ' + nomeMesa) : nomeMesa;
+
+    if (tipoNome.toLowerCase().indexOf('piscina') >= 0 || tipoNome.toLowerCase().indexOf('resort') >= 0) {
+        var selEspaco = document.getElementById('pdvEspacoPiscinaSelect');
+        var selBilhete = document.getElementById('pdvBilhetePiscinaSelect');
+        var codEspaco = selEspaco && selEspaco.value ? selEspaco.value : 'Piscina / Balcão';
+        var codBilhete = selBilhete && selBilhete.value ? ' [' + selBilhete.value + ']' : '';
+        localizacaoFinal = 'Piscina • ' + codEspaco + codBilhete;
+    }
+
+    var promptMsg = 'Para onde deseja despachar os itens da comanda?\n\n' +
+                    '• Digite 1 para: Separar Automaticamente (Cozinha, Bar, Pastelaria)\n' +
+                    '• Digite 2 para: Enviar Tudo para a Cozinha\n' +
+                    '• Digite 3 para: Enviar Tudo para o Bar\n' +
+                    '• Digite 4 para: Enviar Tudo para a Pastelaria';
+    var escolha = prompt(promptMsg, '1');
+    if (!escolha) return; // cancelou o envio
+
+    var filtroDestino = null;
+    if (escolha === '2') filtroDestino = 'Cozinha';
+    else if (escolha === '3') filtroDestino = 'Bar';
+    else if (escolha === '4') filtroDestino = 'Pastelaria';
+
+    var despachados = despacharComandasParaPostos(carrinhoPDV, localizacaoFinal, 'PDV', filtroDestino);
+
+    // Registar movimento de stock para os itens enviados para confecção
+    if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+    carrinhoPDV.forEach(function(item) {
+        window.RestauranteApp.movimentos_stock.unshift({
+            id: String(Date.now() + Math.random()),
+            data_hora: new Date().toLocaleString('pt-PT'),
+            tipo: 'SAIDA_PRODUCAO',
+            item_nome: item.nome,
+            quantidade: item.qtd,
+            motivo: 'Envio para Postos (' + localizacaoFinal + ')',
+            responsavel: 'Operador PDV'
+        });
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    var horaAtual = new Date().toLocaleTimeString('pt-PT');
+    var msgPostos = despachados.length > 0 ? despachados.join(' | ') : 'Nenhum posto aplicável';
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Comandas enviadas com sucesso às ' + horaAtual + '!\n\nDestinos: ' + msgPostos + '\nLocal: ' + localizacaoFinal + '\n\n* Nota: Bebidas foram direcionadas exclusivamente para o Bar e Pastelaria/Cozinha para os respetivos postos.', 'Envio Concluído', 'sucesso');
+    } else {
+        alert('Comandas despachadas às ' + horaAtual + '!\n' + msgPostos);
+    }
+}
+
+function finalizarVendaPDV() {
+    if (carrinhoPDV.length === 0) {
+        alert('Adicione ao menos um produto ao pedido!');
+        return;
+    }
+    var tipoSelect = document.getElementById('pdvTipoPedido');
+    var tipoNome = tipoSelect ? tipoSelect.options[tipoSelect.selectedIndex].text : 'Balcão';
+    var detalheMesa = '';
+
+    var selMesa = document.getElementById('pdvMesaSelect');
+    var selSala = document.getElementById('pdvSalaSelect');
+    var nomeMesa = selMesa ? selMesa.options[selMesa.selectedIndex].text : '';
+    var nomeSala = selSala ? selSala.options[selSala.selectedIndex].text : '';
+
+    var localizacaoVenda = nomeSala ? (nomeSala + ' • ' + nomeMesa) : (nomeMesa || 'Balcão');
+
+    if (tipoNome.toLowerCase().indexOf('mesa') >= 0) {
+        detalheMesa = '\nLocalização: ' + nomeSala + ' • ' + nomeMesa;
+
+        // Atualiza status da mesa para OCUPADA
+        if (selMesa && selMesa.value) {
+            var mesaObj = window.RestauranteApp.mesas.find(function(m) { return m.id === selMesa.value; });
+            if (mesaObj) mesaObj.estado = 'OCUPADA';
+        }
+    } else if (tipoNome.toLowerCase().indexOf('piscina') >= 0 || tipoNome.toLowerCase().indexOf('resort') >= 0) {
+        var selEspacoPisc = document.getElementById('pdvEspacoPiscinaSelect');
+        var selBilhetePisc = document.getElementById('pdvBilhetePiscinaSelect');
+        var codEspacoPisc = selEspacoPisc && selEspacoPisc.value ? selEspacoPisc.value : 'Piscina / Balcão';
+        var codBilhetePisc = selBilhetePisc && selBilhetePisc.value ? ' [' + selBilhetePisc.value + ']' : '';
+        localizacaoVenda = 'Piscina • ' + codEspacoPisc + codBilhetePisc;
+
+        // Se tiver espaço selecionado, marca como ocupado
+        if (selEspacoPisc && selEspacoPisc.value) {
+            var espObj = (window.RestauranteApp.espacos_piscina || []).find(function(e) { return e.codigo === selEspacoPisc.value; });
+            if (espObj && espObj.estado === 'LIVRE') {
+                espObj.estado = 'OCUPADO';
+                espObj.ocupante = selBilhetePisc && selBilhetePisc.value ? 'Cliente Bilhete ' + selBilhetePisc.value : 'Cliente Bar/Restaurante';
+            }
+        }
+    }
+
+    var totalValor = 0;
+    carrinhoPDV.forEach(function(i) { totalValor += (i.preco * i.qtd); });
+
+    var anoAtual = new Date().getFullYear();
+    var seqAleatorio = Math.floor(1000 + Math.random() * 9000);
+    var numVenda = 'VND-' + seqAleatorio;
+    var numRecibo = 'REC-' + anoAtual + '/' + seqAleatorio;
+
+    // Calcular IVA sobre a venda com base na taxa seleccionada da tabela de Configurações
+    var selectTaxa = document.getElementById('pdvSelectTaxaIva');
+    var percIva = 16.0;
+    if (selectTaxa && selectTaxa.value !== '') {
+        percIva = parseFloat(selectTaxa.value);
+    } else {
+        var taxaIvaObj = (window.RestauranteApp.taxas_iva || []).find(function(t) { return t.padrao && t.ativo; });
+        if (!taxaIvaObj) {
+            taxaIvaObj = (window.RestauranteApp.taxas_iva || []).find(function(t) { return t.ativo; });
+        }
+        if (taxaIvaObj) percIva = Number(taxaIvaObj.iva);
+    }
+    var baseTributavel = totalValor / (1 + (percIva / 100));
+    var valorIva = totalValor - baseTributavel;
+
+    // Registar no Histórico de Vendas
+    if (!window.RestauranteApp.vendas) window.RestauranteApp.vendas = [];
+    window.RestauranteApp.vendas.unshift({
+        id: String(Date.now()),
+        numero: numVenda,
+        numero_venda: numVenda,
+        numero_recibo: numRecibo,
+        data_hora: new Date().toLocaleString('pt-PT'),
+        tipo_pedido: tipoNome,
+        mesa_local: localizacaoVenda,
+        metodo_pagamento: metodoPagamentoSelecionado || 'Numerário',
+        total: totalValor,
+        base_tributavel: Math.round(baseTributavel * 100) / 100,
+        taxa_iva: percIva,
+        valor_iva: Math.round(valorIva * 100) / 100,
+        itens: JSON.parse(JSON.stringify(carrinhoPDV)),
+        estado: 'PAGO'
+    });
+
+    // Registar também na Cozinha se ainda não foi enviado
+    if (!window.RestauranteApp.pedidos_cozinha) window.RestauranteApp.pedidos_cozinha = [];
+    window.RestauranteApp.pedidos_cozinha.unshift({
+        id: String(Date.now() + 1),
+        numero: 'CZ-' + Math.floor(100 + Math.random() * 900),
+        origem: 'PDV',
+        tipo: tipoNome,
+        localizacao: (nomeSala ? (nomeSala + ' • ' + nomeMesa) : (nomeMesa || 'Balcão')),
+        hora: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        estado: 'EM_PREPARACAO',
+        itens: JSON.parse(JSON.stringify(carrinhoPDV))
+    });
+
+    // Movimentar e abater stock (abatendo insumos da Ficha Técnica ou o próprio produto direto no stock)
+    if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+    var itensAbatidosStock = [];
+
+    carrinhoPDV.forEach(function(item) {
+        var prodOrig = (window.RestauranteApp.produtos || []).find(function(p) { return String(p.id) === String(item.id); });
+        var abateuFichaTecnica = false;
+
+        // 1. Abate por Ficha Técnica
+        if (prodOrig && prodOrig.ficha_tecnica && prodOrig.ficha_tecnica.length > 0) {
+            prodOrig.ficha_tecnica.forEach(function(insumo) {
+                var stockItem = (window.RestauranteApp.stock || []).find(function(s) {
+                    if (insumo.stock_id && String(s.id) === String(insumo.stock_id)) return true;
+                    var sNome = (s.nome || s.item || '').toLowerCase().trim();
+                    var insNome = (insumo.stock_nome || '').toLowerCase().trim();
+                    return sNome && insNome && (sNome === insNome || sNome.indexOf(insNome) >= 0 || insNome.indexOf(sNome) >= 0);
+                });
+
+                if (stockItem) {
+                    var qtdBaixar = (Number(insumo.quantidade) || 0) * item.qtd;
+                    qtdBaixar = Math.round(qtdBaixar * 1000) / 1000;
+                    stockItem.qtd = Math.max(0, Math.round(((Number(stockItem.qtd) || 0) - qtdBaixar) * 100) / 100);
+                    abateuFichaTecnica = true;
+
+                    var nomeInsumoReal = stockItem.nome || stockItem.item || insumo.stock_nome || 'Insumo';
+                    var unid = stockItem.unidade || insumo.unidade || 'UN';
+                    itensAbatidosStock.push(nomeInsumoReal + ' (-' + qtdBaixar + ' ' + unid + ')');
+
+                    window.RestauranteApp.movimentos_stock.unshift({
+                        id: String(Date.now() + Math.random()),
+                        data_hora: new Date().toLocaleString('pt-PT'),
+                        tipo: 'SAIDA_FICHA_TECNICA',
+                        item_nome: nomeInsumoReal + ' (Insumo de ' + item.nome + ')',
+                        quantidade: qtdBaixar,
+                        motivo: 'Baixa Ficha Técnica - Venda PDV ' + numVenda + ' (' + tipoNome + ')',
+                        responsavel: 'Operador de Caixa (PDV)'
+                    });
+                }
+            });
+        }
+
+        // 2. Se não abateu por ficha técnica, abater diretamente o produto no stock
+        if (!abateuFichaTecnica) {
+            var stDirect = (window.RestauranteApp.stock || []).find(function(s) {
+                var sNome = (s.nome || s.item || '').toLowerCase().trim();
+                var iNome = (item.nome || '').toLowerCase().trim();
+                if (!sNome || !iNome) return false;
+                if (sNome === iNome) return true;
+                // Ex: "Cerveja Especial 330ml" vs "Cerveja Especial"
+                var iLimpo = iNome.split('(')[0].trim();
+                var sLimpo = sNome.split('(')[0].trim();
+                return sLimpo.indexOf(iLimpo) >= 0 || iLimpo.indexOf(sLimpo) >= 0;
+            });
+
+            if (stDirect) {
+                var qtdAbater = Number(item.qtd) || 1;
+                stDirect.qtd = Math.max(0, Math.round(((Number(stDirect.qtd) || 0) - qtdAbater) * 100) / 100);
+                var nomeDirectReal = stDirect.nome || stDirect.item || item.nome;
+                var unidDirect = stDirect.unidade || 'UN';
+                itensAbatidosStock.push(nomeDirectReal + ' (-' + qtdAbater + ' ' + unidDirect + ')');
+
+                window.RestauranteApp.movimentos_stock.unshift({
+                    id: String(Date.now() + Math.random()),
+                    data_hora: new Date().toLocaleString('pt-PT'),
+                    tipo: 'SAIDA_VENDA',
+                    item_nome: nomeDirectReal,
+                    quantidade: qtdAbater,
+                    motivo: 'Venda PDV ' + numVenda + ' (' + tipoNome + ')',
+                    responsavel: 'Operador de Caixa (PDV)'
+                });
+            } else {
+                // Caso não exista ainda no stock, adiciona novo registo com movimento de saída
+                var novoStockItem = {
+                    id: String(Date.now() + Math.floor(Math.random() * 1000)),
+                    nome: item.nome,
+                    tipo: (item.posto && item.posto.toLowerCase().indexOf('bar') >= 0) ? 'bebida' : 'comida',
+                    unidade: 'UN',
+                    qtd: 0,
+                    minimo: 5.0,
+                    custo: Math.round((Number(item.preco) || 0) * 0.5 * 100) / 100,
+                    local: (item.posto && item.posto.toLowerCase().indexOf('bar') >= 0) ? 'bar' : 'armazem_principal',
+                    estante: 'PDV',
+                    prateleira: 'Auto',
+                    refrigeracao: 'Ambiente'
+                };
+                if (!window.RestauranteApp.stock) window.RestauranteApp.stock = [];
+                window.RestauranteApp.stock.push(novoStockItem);
+
+                itensAbatidosStock.push(item.nome + ' (-' + item.qtd + ' UN)');
+                window.RestauranteApp.movimentos_stock.unshift({
+                    id: String(Date.now() + Math.random()),
+                    data_hora: new Date().toLocaleString('pt-PT'),
+                    tipo: 'SAIDA_VENDA',
+                    item_nome: item.nome,
+                    quantidade: item.qtd,
+                    motivo: 'Venda PDV ' + numVenda + ' (' + tipoNome + ')',
+                    responsavel: 'Operador de Caixa (PDV)'
+                });
+            }
+        }
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    abrirGaveta();
+
+    // Guardar referência da venda recém-emitida para visualização e impressão imediata
+    var vendaEmitida = window.RestauranteApp.vendas[0];
+    if (vendaEmitida) {
+        vendaEmitida.itens_stock_abatidos = itensAbatidosStock;
+    }
+    // Limpar pedidos online correspondentes e atualizar central de alertas se a venda veio de pedido online
+    var textoOpcoes = (vendaEmitida && vendaEmitida.itens) ? vendaEmitida.itens.map(function(it){ return it.opcoes || ''; }).join(' ') : '';
+    (window.RestauranteApp.pedidos_online || []).forEach(function(ped) {
+        if (ped.estado === 'PENDENTE_VALIDACAO' || ped.estado === 'RESERVA_PENDENTE') {
+            if (textoOpcoes.indexOf(ped.numero_pedido) >= 0 || (ped.numero_mesa && vendaEmitida && vendaEmitida.mesa_local && vendaEmitida.mesa_local.indexOf(ped.numero_mesa) >= 0)) {
+                ped.estado = 'VALIDADO';
+                ped.stock_deduzido = true;
+            }
+        }
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    if (typeof atualizarContadorAlertasGlobal === 'function') {
+        atualizarContadorAlertasGlobal();
+    }
+    if (typeof renderCentralAlertasGlobal === 'function') {
+        renderCentralAlertasGlobal();
+    }
+    if (typeof renderPedidosOnline === 'function') {
+        renderPedidosOnline();
+    }
+
+    carrinhoPDV = [];
+    renderCarrinhoPDV();
+    carregarMesasDaSala();
+    renderProdutosPDV(); // Atualiza em tempo real as quantidades de stock nos cards
+
+    abrirModalSucessoFacturacao(vendaEmitida);
+}
+
+function abrirModalSucessoFacturacao(venda) {
+    if (!venda) return;
+    var numVnd = venda.numero_venda || venda.numero || 'VND-0000';
+    var numRec = venda.numero_recibo || ('REC-' + numVnd.replace('VND-', ''));
+
+    var sub = document.getElementById('modalSucessoFacturaSubtitulo');
+    if (sub) {
+        sub.innerText = 'Factura/Recibo ' + numRec + ' • ' + venda.tipo_pedido + ' • ' + venda.metodo_pagamento;
+    }
+
+    var reciboDiv = document.getElementById('modalSucessoFacturaRecibo');
+    if (reciboDiv) {
+        var itensLinhas = '';
+        (venda.itens || []).forEach(function(it) {
+            itensLinhas += '<div class="flex justify-between py-0.5 border-b border-gray-100">';
+            itensLinhas += '  <span>' + it.qtd + 'x ' + it.nome + '</span>';
+            itensLinhas += '  <span class="font-bold">' + (it.preco * it.qtd).toFixed(2) + ' ' + moedaAtual + '</span>';
+            itensLinhas += '</div>';
+        });
+
+        var stockFeedbackHtml = '';
+        if (venda.itens_stock_abatidos && venda.itens_stock_abatidos.length > 0) {
+            stockFeedbackHtml = [
+                '<div class="pt-2 border-t border-dashed border-gray-300 text-[10px]">',
+                '  <div class="font-bold text-emerald-700 flex items-center gap-1 mb-1"><i class="fa-solid fa-boxes-stacked"></i> Baixa de Stock Efectuada:</div>',
+                '  <ul class="space-y-0.5 text-gray-600 pl-2">',
+                venda.itens_stock_abatidos.map(function(st) { return '<li>• ' + st + '</li>'; }).join(''),
+                '  </ul>',
+                '</div>'
+            ].join('');
+        }
+
+        reciboDiv.innerHTML = [
+            '<div class="text-center pb-2 border-b border-dashed border-gray-400">',
+            '  <div class="font-black text-sm uppercase text-gray-900">' + DADOS_ESTABELECIMENTO.nome + '</div>',
+            '  <div class="text-[10px] text-gray-600 font-medium">NUIT: ' + DADOS_ESTABELECIMENTO.nif + ' | Tel: ' + DADOS_ESTABELECIMENTO.telefone + '</div>',
+            '  <div class="text-[10px] text-gray-500">' + DADOS_ESTABELECIMENTO.endereco + '</div>',
+            '  <div class="mt-1 font-bold text-xs uppercase text-emerald-800 bg-emerald-50 py-0.5 rounded border border-emerald-200">FACTURA / RECIBO</div>',
+            '</div>',
+            '<div class="text-[11px] py-1.5 border-b border-dashed border-gray-300 space-y-0.5">',
+            '  <div class="flex justify-between font-mono"><span><b>Nº de Venda:</b> ' + numVnd + '</span><span><b>Nº Recibo:</b> ' + numRec + '</span></div>',
+            '  <div class="flex justify-between"><span><b>Data e Hora:</b> ' + venda.data_hora + '</span></div>',
+            '  <div class="flex justify-between"><span><b>Local / Mesa:</b> ' + (venda.mesa_local || 'Balcão') + '</span><span><b>Pagamento:</b> ' + venda.metodo_pagamento + '</span></div>',
+            '</div>',
+            '<div class="py-1">',
+            itensLinhas,
+            '</div>',
+            '<div class="pt-1.5 border-t border-dashed border-gray-400 space-y-1">',
+            '  <div class="flex justify-between"><span>Base de Incidência:</span><span>' + Number(venda.base_tributavel || 0).toFixed(2) + ' ' + moedaAtual + '</span></div>',
+            '  <div class="flex justify-between text-gray-500"><span>IVA (' + (venda.taxa_iva || 16) + '%):</span><span>' + Number(venda.valor_iva || 0).toFixed(2) + ' ' + moedaAtual + '</span></div>',
+            '  <div class="flex justify-between text-sm font-black text-gray-900 pt-1 border-t"><span>TOTAL PAGO:</span><span>' + Number(venda.total || 0).toFixed(2) + ' ' + moedaAtual + '</span></div>',
+            '</div>',
+            stockFeedbackHtml,
+            '<div class="text-center text-[10px] text-gray-500 pt-2 border-t mt-1">Obrigado pela preferência! Volte sempre.<br><span class="text-[9px] text-gray-400">Processado por Sistema Certificado</span></div>'
+        ].join('');
+    }
+
+    var btnPrint = document.getElementById('btnImprimirFaturaImediata');
+    if (btnPrint) {
+        btnPrint.onclick = function() {
+            imprimirReciboFaturaVenda(venda);
+        };
+    }
+
+    var modal = document.getElementById('modalSucessoFacturacao');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    // DISPARAR IMPRESSÃO AUTOMÁTICA DO RECIBO LOGO AO FACTURAR
+    setTimeout(function() {
+        imprimirReciboFaturaVenda(venda);
+    }, 150);
+}
+
+function imprimirReciboFaturaVenda(venda) {
+    if (!venda) return;
+    var iframe = document.getElementById('iframeImpressaoRecibo');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframeImpressaoRecibo';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var itensLinhas = '';
+    (venda.itens || []).forEach(function(it) {
+        itensLinhas += '<tr><td style="padding:4px 0;">' + it.qtd + 'x ' + it.nome + '</td><td style="text-align:right;font-weight:bold;">' + (it.preco * it.qtd).toFixed(2) + ' ' + moedaAtual + '</td></tr>';
+    });
+
+    var numVnd = venda.numero_venda || venda.numero || 'VND-0000';
+    var numRec = venda.numero_recibo || ('REC-' + numVnd.replace('VND-', ''));
+
+    var conteudoHtml = [
+        '<html><head><title>Recibo ' + numRec + '</title>',
+        '<style>',
+        '  @page { size: 80mm auto; margin: 0; }',
+        '  @media print {',
+        '    body { width: 72mm; margin: 0 auto; padding: 4mm 2mm; font-size: 11px; }',
+        '  }',
+        '  body { font-family: "Courier New", Courier, monospace, monospace; font-size: 11px; margin: 0 auto; padding: 6px; width: 74mm; max-width: 280px; color: #000; line-height: 1.3; }',
+        '  .text-center { text-align: center; }',
+        '  hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }',
+        '  table { width: 100%; border-collapse: collapse; font-size: 11px; }',
+        '  .flex { display: flex; justify-content: space-between; }',
+        '  .total { font-size: 13px; font-weight: bold; }',
+        '</style>',
+        '</head><body>',
+        '<div class="text-center">',
+        '  <h3 style="margin:0;font-size:15px;text-transform:uppercase;">' + DADOS_ESTABELECIMENTO.nome + '</h3>',
+        '  <p style="margin:2px 0;font-size:11px;">NUIT: ' + DADOS_ESTABELECIMENTO.nif + ' | Tel: ' + DADOS_ESTABELECIMENTO.telefone + '</p>',
+        '  <p style="margin:2px 0;font-size:10px;">' + DADOS_ESTABELECIMENTO.endereco + '</p>',
+        '  <hr>',
+        '  <p style="margin:2px 0;font-weight:bold;font-size:13px;">FACTURA / RECIBO</p>',
+        '  <p style="margin:2px 0;font-weight:bold;">Nº Recibo: ' + numRec + '</p>',
+        '  <p style="margin:2px 0;font-size:11px;">Nº Venda: ' + numVnd + '</p>',
+        '</div>',
+        '<hr>',
+        '<div style="font-size:11px;line-height:1.4;">',
+        '  <div><b>Data e Hora:</b> ' + venda.data_hora + '</div>',
+        '  <div><b>Atendimento:</b> ' + (venda.tipo_pedido || 'Balcão') + '</div>',
+        '  <div><b>Mesa / Local:</b> ' + (venda.mesa_local || 'Balcão') + '</div>',
+        '  <div><b>Forma Pagamento:</b> ' + (venda.metodo_pagamento || 'Numerário') + '</div>',
+        '</div>',
+        '<hr>',
+        '<table><tbody>' + itensLinhas + '</tbody></table>',
+        '<hr>',
+        '<div class="flex"><span>Base de Incidência:</span><span>' + Number(venda.base_tributavel || 0).toFixed(2) + ' ' + moedaAtual + '</span></div>',
+        '<div class="flex"><span>IVA (' + (venda.taxa_iva || 16) + '%):</span><span>' + Number(venda.valor_iva || 0).toFixed(2) + ' ' + moedaAtual + '</span></div>',
+        '<div class="flex total" style="margin-top:4px;padding-top:4px;border-top:1px solid #000;"><span>TOTAL PAGO:</span><span>' + Number(venda.total || 0).toFixed(2) + ' ' + moedaAtual + '</span></div>',
+        '<hr>',
+        '<div class="text-center" style="font-size:10px;">Obrigado pela preferência!<br>Volte Sempre!<br><span style="font-size:9px;">Software Certificado</span></div>',
+        '</body></html>'
+    ].join('\n');
+
+    try {
+        var doc = iframe.contentWindow || iframe.contentDocument;
+        if (doc.document) doc = doc.document;
+        doc.open();
+        doc.write(conteudoHtml);
+        doc.close();
+
+        setTimeout(function() {
+            try {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                }
+            } catch(e) {
+                console.warn('Impressão direta no iframe bloqueada pelo navegador:', e);
+            }
+        }, 300);
+    } catch(err) {
+        console.error('Erro ao renderizar recibo para impressão:', err);
+    }
+}
+
+function carregarTiposPedidos() {
+    var select = document.getElementById('pdvTipoPedido');
+    if (!select) return;
+    var tipos = window.RestauranteApp.tipos_pedidos || [];
+    var html = '';
+    var temPiscinaEst = {% if estabelecimento.tem_piscina %}true{% else %}false{% endif %};
+
+    for (var i = 0; i < tipos.length; i++) {
+        var t = tipos[i];
+        html += '<option value="' + t.id + '">' + t.descricao + '</option>';
+    }
+
+    if (temPiscinaEst) {
+        html += '<option value="TP-PISCINA">Piscina / Espaço Resort</option>';
+    }
+
+    select.innerHTML = html;
+}
+
+// =========================================================================
+// GESTÃO E VALIDAÇÃO DE PEDIDOS ONLINE COM BAIXA NO STOCK
+// =========================================================================
+var filtroSegmentoPedidos = 'todos';
+
+function segmentarPedidosPDV(segmento) {
+    filtroSegmentoPedidos = segmento;
+    ['btnSegTodos', 'btnSegDelivery', 'btnSegTakeaway', 'btnSegMesa', 'btnSegReserva'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.className = 'px-3 py-1 font-bold rounded-lg whitespace-nowrap transition text-xs ' + 
+                (id.toLowerCase().indexOf(segmento) >= 0 ? 'bg-gray-900 text-white shadow-2xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200');
+        }
+    });
+    renderPedidosOnline();
+}
+
+function atualizarBadgePedidosOnline() {
+    var badge = document.getElementById('badgePedidosOnline');
+    if (!badge) return;
+    var pendentes = (window.RestauranteApp.pedidos_online || []).filter(function(p) {
+        return p.estado === 'PENDENTE_VALIDACAO' || p.estado === 'RESERVA_PENDENTE';
+    });
+    badge.innerText = pendentes.length;
+}
+
+function abrirModalPedidosOnline() {
+    renderPedidosOnline();
+    abrirModal('modalPedidosOnline');
+}
+
+function renderPedidosOnline() {
+    var container = document.getElementById('listaPedidosOnlineCorpo');
+    if (!container) return;
+    var todosPedidos = window.RestauranteApp.pedidos_online || [];
+
+    var pedidos = todosPedidos.filter(function(p) {
+        if (filtroSegmentoPedidos === 'todos') return true;
+        var t = (p.tipo_entrega || '').toLowerCase();
+        if (filtroSegmentoPedidos === 'delivery') return t.indexOf('delivery') >= 0 || t.indexOf('entrega') >= 0;
+        if (filtroSegmentoPedidos === 'takeaway') return t.indexOf('takeaway') >= 0 || t.indexOf('levar') >= 0;
+        if (filtroSegmentoPedidos === 'mesa') return t.indexOf('mesa') >= 0 || t.indexOf('sala') >= 0 || t.indexOf('local') >= 0;
+        if (filtroSegmentoPedidos === 'reserva') return t.indexOf('reserva') >= 0 || p.estado === 'RESERVA_PENDENTE';
+        return true;
+    });
+
+    if (pedidos.length === 0) {
+        container.innerHTML = '<div class="py-8 text-center text-gray-400 text-xs font-semibold">Nenhum pedido encontrado neste segmento (' + filtroSegmentoPedidos.toUpperCase() + ').</div>';
+        atualizarBadgePedidosOnline();
+        return;
+    }
+
+    var html = '';
+    for (var i = 0; i < pedidos.length; i++) {
+        var ped = pedidos[i];
+        var isPendente = ped.estado === 'PENDENTE_VALIDACAO' || ped.estado === 'RESERVA_PENDENTE';
+        var isReserva = ped.tipo_entrega === 'RESERVA' || ped.estado === 'RESERVA_PENDENTE';
+
+        html += '<div class="p-3.5 rounded-xl border ' + (isPendente ? 'border-amber-300 bg-amber-50/40' : 'border-gray-200 bg-white') + ' space-y-2.5">';
+        html += '  <div class="flex items-center justify-between">';
+        html += '    <div class="flex items-center space-x-2">';
+        html += '      <span class="font-bold text-xs text-gray-900 font-mono">' + ped.numero_pedido + '</span>';
+        html += '      <span class="text-[10px] px-2 py-0.5 rounded font-bold ' + (isPendente ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') + '">' + (isPendente ? 'Aguardando Validação' : 'Validado & Baixado') + '</span>';
+        html += '    </div>';
+        html += '    <span class="text-xs font-black text-custom-primary">' + ped.total.toFixed(2) + ' ' + moedaAtual + '</span>';
+        html += '  </div>';
+
+        html += '  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-gray-600">';
+        html += '    <div><b>Cliente:</b> ' + ped.cliente_nome + ' (' + ped.cliente_telefone + ')</div>';
+        html += '    <div><b>Tipo:</b> ' + ped.tipo_entrega + ' (' + (ped.endereco_entrega || ped.numero_mesa || '-') + ')</div>';
+        html += '    <div><b>Canal:</b> ' + ped.operadora_pagamento + ' • Ref: <span class="font-mono text-gray-800">' + (ped.referencia_pagamento || '-') + '</span></div>';
+        html += '    <div><b>Data:</b> ' + ped.data_pedido + '</div>';
+        html += '  </div>';
+
+        // Itens
+        html += '  <div class="p-2 bg-white rounded-lg border border-gray-100 text-xs space-y-1">';
+        for (var j = 0; j < ped.itens.length; j++) {
+            var it = ped.itens[j];
+            html += '    <div class="flex justify-between text-gray-700">';
+            html += '      <span>' + it.qtd + 'x ' + (it.nome || it.produto_nome) + '</span>';
+            html += '      <span class="font-mono font-bold">' + ((it.preco || 0) * it.qtd).toFixed(2) + ' ' + moedaAtual + '</span>';
+            html += '    </div>';
+        }
+        html += '  </div>';
+
+        // Detalhe de Delivery & Motorista Atribuído
+        var isDeliveryTipo = (ped.tipo_entrega || '').toLowerCase().indexOf('delivery') >= 0;
+        if (isDeliveryTipo) {
+            html += '  <div class="p-2 bg-cyan-50 rounded-lg border border-cyan-200 flex items-center justify-between text-xs">';
+            if (ped.motorista_responsavel) {
+                html += '    <span class="text-cyan-900 font-semibold"><i class="fa-solid fa-motorcycle text-cyan-700 mr-1.5"></i> Motorista Atribuído: <b>' + ped.motorista_responsavel + '</b></span>';
+                html += '    <span class="px-2 py-0.5 rounded bg-cyan-100 text-cyan-800 font-bold text-[10px]">Em Entrega</span>';
+            } else {
+                var motLivreSugerido = (window.RestauranteApp.motoristas_delivery || []).find(function(m){ return m.estado === 'DISPONIVEL' || m.estado === 'LIVRE'; });
+                var motNome = motLivreSugerido ? motLivreSugerido.nome : 'Sem motorista livre';
+                html += '    <span class="text-amber-800 font-medium"><i class="fa-solid fa-user-clock text-amber-600 mr-1.5"></i> Motorista Livre Disponível: <b>' + motNome + '</b></span>';
+                html += '    <button type="button" onclick="atribuirMotoristaLivrePedidoOnline(\'' + ped.id + '\')" class="px-2.5 py-1 bg-cyan-700 hover:bg-cyan-800 text-white rounded-md text-[11px] font-bold shadow-2xs flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-user-check"></i> Atribuir Motorista</button>';
+            }
+            html += '  </div>';
+        }
+
+        // Acções
+        html += '  <div class="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-gray-100">';
+        html += '    <button type="button" onclick="carregarPedidoOnlineNoCarrinhoPDV(\'' + ped.id + '\')" class="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer" title="Puxar para o carrinho do PDV para segmentar e cobrar">';
+        html += '      <i class="fa-solid fa-cart-arrow-down"></i> Puxar ao PDV';
+        html += '    </button>';
+
+        if (isPendente) {
+            html += '    <button type="button" onclick="validarPedidoOnlineEBaixarStock(\'' + ped.id + '\')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer">';
+            html += '      <i class="fa-solid fa-check-double"></i> Validar & Despachar Postos';
+            html += '    </button>';
+        } else {
+            html += '    <span class="text-[11px] text-emerald-700 flex items-center gap-1 font-semibold"><i class="fa-solid fa-circle-check"></i> Pedido Validado & Despachado</span>';
+        }
+        html += '  </div>';
+
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+    atualizarBadgePedidosOnline();
+}
+
+function atribuirMotoristaLivrePedidoOnline(pedidoId) {
+    var pedido = (window.RestauranteApp.pedidos_online || []).find(function(p) { return p.id === pedidoId; });
+    if (!pedido) return;
+
+    var motoristas = window.RestauranteApp.motoristas_delivery || [];
+    var livres = motoristas.filter(function(m) { return m.estado === 'DISPONIVEL' || m.estado === 'LIVRE'; });
+
+    if (livres.length === 0) {
+        alert('Não há motoristas livres no momento! Todos os motoristas estão em rota ou indisponíveis.');
+        return;
+    }
+
+    var opcoesStr = livres.map(function(m, idx) {
+        return (idx + 1) + '. ' + m.nome + ' (' + (m.veiculo_matricula || 'Mota') + ')';
+    }).join('\n');
+
+    var escolha = prompt('Selecione o motorista para este pedido de Delivery:\n\n' + opcoesStr + '\n\nDigite o número correspondente (1 a ' + livres.length + '):', '1');
+    if (!escolha) return;
+
+    var numEscolhido = parseInt(escolha) - 1;
+    var motEscolhido = livres[numEscolhido] || livres[0];
+
+    pedido.motorista_responsavel = motEscolhido.nome;
+    pedido.motorista_id = motEscolhido.id;
+    pedido.veiculo_matricula = motEscolhido.veiculo_matricula;
+
+    motEscolhido.estado = 'EM_ROTA';
+    motEscolhido.total_entregas = (motEscolhido.total_entregas || 0) + 1;
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    renderPedidosOnline();
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('O motorista ' + motEscolhido.nome + ' foi atribuído ao pedido ' + pedido.numero_pedido + '!\n\nEstado do estafeta atualizado para "Em Rota".', 'Motorista Atribuído', 'sucesso');
+    } else {
+        alert('Motorista ' + motEscolhido.nome + ' atribuído com sucesso ao pedido ' + pedido.numero_pedido + '!');
+    }
+}
+
+// Carregar itens do pedido online diretamente para o Ponto de Venda
+function carregarPedidoOnlineNoCarrinhoPDV(pedidoId) {
+    var pedido = (window.RestauranteApp.pedidos_online || []).find(function(p) { return p.id === pedidoId; });
+    if (!pedido) return;
+
+    carrinhoPDV = [];
+    (pedido.itens || []).forEach(function(it) {
+        var prodOrig = (window.RestauranteApp.produtos || []).find(function(p) { return String(p.id) === String(it.id || it.produto_id); });
+        carrinhoPDV.push({
+            id: it.id || (prodOrig ? prodOrig.id : String(Date.now())),
+            nome: it.nome || it.produto_nome,
+            preco: Number(it.preco || 0),
+            qtd: Number(it.qtd || 1),
+            opcoes: 'Pedido Portal ' + pedido.numero_pedido + ' (' + (pedido.tipo_entrega || 'Mesa') + ')',
+            posto: (prodOrig && prodOrig.posto_nome) ? prodOrig.posto_nome : (it.posto || 'Cozinha')
+        });
+    });
+
+    // Ajustar Tipo de Atendimento no PDV conforme o pedido do portal
+    var selTipo = document.getElementById('pdvTipoPedido');
+    if (selTipo) {
+        var tEntrega = (pedido.tipo_entrega || '').toUpperCase();
+        for (var i = 0; i < selTipo.options.length; i++) {
+            var txt = selTipo.options[i].text.toUpperCase();
+            if (tEntrega.indexOf('DELIVERY') >= 0 && txt.indexOf('DELIVERY') >= 0) { selTipo.selectedIndex = i; break; }
+            if (tEntrega.indexOf('TAKEAWAY') >= 0 && (txt.indexOf('TAKEAWAY') >= 0 || txt.indexOf('LEVAR') >= 0)) { selTipo.selectedIndex = i; break; }
+            if (tEntrega.indexOf('MESA') >= 0 && txt.indexOf('MESA') >= 0) { selTipo.selectedIndex = i; break; }
+        }
+        alternarCamposMesa();
+    }
+
+    renderCarrinhoPDV();
+    fecharModal('modalPedidosOnline');
+
+    window.mostrarMensagemAmigavel('O Pedido ' + pedido.numero_pedido + ' (' + pedido.cliente_nome + ') foi puxado para o PDV com sucesso!\n\nOs itens já estão no carrinho e agora pode aplicar descontos, segmentar o atendimento ou despachar para a Cozinha, Bar e Pastelaria.', 'Pedido Carregado no PDV', 'sucesso');
+}
+
+// Separar itens e enviar comandas individualizadas para Cozinha, Bar e Pastelaria
+function despacharComandasParaPostos(itens, localizacao, numDocOrigem, filtroDestino) {
+    if (!window.RestauranteApp.pedidos_cozinha) {
+        window.RestauranteApp.pedidos_cozinha = [];
+    }
+
+    var postosSeparados = {
+        'Cozinha': [],
+        'Bar': [],
+        'Pastelaria': []
+    };
+
+    var bebidasKeywords = ['bebida', 'bar', 'cocktail', 'cerveja', 'vodka', 'refrigerante', 'coca-cola', 'água', 'agua', 'sumo', 'suco', 'vinho', 'whisky', 'gin', 'rum', 'licor', 'laurentina', '2m', 'manica', 'txilar', 'sprite', 'fanta', 'tónica', 'red bull'];
+    var pastelariaKeywords = ['pastelaria', 'sobremesa', 'doce', 'cheesecake', 'bolo', 'tarte', 'pudim', 'mousse', 'gelado', 'sorvete', 'croissant'];
+
+    itens.forEach(function(item) {
+        var pNome = (item.posto || '').toLowerCase();
+        var iNome = (item.nome || item.produto_nome || '').toLowerCase();
+        var catNome = (item.categoria || '').toLowerCase();
+
+        var isBebida = (pNome.indexOf('bar') >= 0 || pNome.indexOf('bebida') >= 0 || catNome.indexOf('bebida') >= 0 || bebidasKeywords.some(function(k) { return iNome.indexOf(k) >= 0; }));
+        var isPastelaria = (pNome.indexOf('past') >= 0 || pNome.indexOf('sobremesa') >= 0 || catNome.indexOf('sobremesa') >= 0 || pastelariaKeywords.some(function(k) { return iNome.indexOf(k) >= 0; }));
+
+        if (filtroDestino === 'Cozinha') {
+            postosSeparados['Cozinha'].push(item);
+        } else if (filtroDestino === 'Bar') {
+            postosSeparados['Bar'].push(item);
+        } else if (filtroDestino === 'Pastelaria') {
+            postosSeparados['Pastelaria'].push(item);
+        } else {
+            // Separação automática inteligente
+            if (isBebida) {
+                postosSeparados['Bar'].push(item);
+            } else if (isPastelaria) {
+                postosSeparados['Pastelaria'].push(item);
+            } else {
+                postosSeparados['Cozinha'].push(item);
+            }
+        }
+    });
+
+    var agora = new Date();
+    var horaExata = agora.toLocaleTimeString('pt-PT'); // HH:mm:ss
+    var dataExata = agora.toLocaleDateString('pt-PT');
+
+    var postosDespachados = [];
+    Object.keys(postosSeparados).forEach(function(posto) {
+        var listaPosto = postosSeparados[posto];
+        if (listaPosto.length > 0) {
+            var prefixo = (posto === 'Bar') ? 'BAR-' : ((posto === 'Pastelaria') ? 'PST-' : 'CZ-');
+            var numComanda = prefixo + Math.floor(100 + Math.random() * 900);
+
+            window.RestauranteApp.pedidos_cozinha.unshift({
+                id: String(Date.now() + Math.random()),
+                numero: numComanda,
+                origem: numDocOrigem || 'PDV',
+                tipo: 'Posto: ' + posto,
+                posto_destino: posto,
+                localizacao: localizacao + ' [' + posto.toUpperCase() + ']',
+                hora: horaExata,
+                data_envio: dataExata,
+                hora_envio: horaExata,
+                timestamp: agora.getTime(),
+                estado: 'PENDENTE',
+                itens: JSON.parse(JSON.stringify(listaPosto))
+            });
+            postosDespachados.push(posto + ' (' + listaPosto.length + ' item/itens)');
+        }
+    });
+
+    return postosDespachados;
+}
+
+function validarPedidoOnlineEBaixarStock(pedidoId) {
+    var pedido = (window.RestauranteApp.pedidos_online || []).find(function(p) { return p.id === pedidoId; });
+    if (!pedido) return;
+
+    window.confirmarAcaoAmigavel('Deseja validar o pagamento do pedido ' + pedido.numero_pedido + ' (' + pedido.cliente_nome + '), dar baixa imediata dos itens no stock e separar comandas para Cozinha, Bar e Pastelaria?', 'Validar Pedido Online', function() {
+        // 1. Dar baixa no stock de cada item do pedido (com suporte a Ficha Técnica)
+        for (var i = 0; i < pedido.itens.length; i++) {
+            var it = pedido.itens[i];
+            var prodOrig = (window.RestauranteApp.produtos || []).find(function(p) { return String(p.id) === String(it.id || it.produto_id); });
+            var abateuFicha = false;
+
+            if (prodOrig && prodOrig.ficha_tecnica && prodOrig.ficha_tecnica.length > 0) {
+                prodOrig.ficha_tecnica.forEach(function(insumo) {
+                    var stockItem = (window.RestauranteApp.stock || []).find(function(s) { 
+                        return String(s.id) === String(insumo.stock_id) || (s.nome && insumo.stock_nome && s.nome.toLowerCase() === insumo.stock_nome.toLowerCase()); 
+                    });
+                    if (stockItem) {
+                        var qtdBaixar = (Number(insumo.quantidade) || 0) * it.qtd;
+                        stockItem.qtd = Math.max(0, Math.round(((Number(stockItem.qtd) || 0) - qtdBaixar) * 100) / 100);
+                        abateuFicha = true;
+
+                        if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+                        window.RestauranteApp.movimentos_stock.unshift({
+                            id: String(Date.now() + Math.random()),
+                            data_hora: new Date().toLocaleString('pt-PT'),
+                            tipo: 'SAIDA_FICHA_TECNICA',
+                            item_nome: (stockItem.nome || stockItem.item) + ' (Insumo de ' + (it.nome || it.produto_nome) + ')',
+                            quantidade: qtdBaixar,
+                            motivo: 'Abate Ficha Técnica - Pedido Online ' + pedido.numero_pedido,
+                            responsavel: 'Operador de Caixa (PDV)'
+                        });
+                    }
+                });
+            }
+
+            if (!abateuFicha) {
+                var sId = it.stock_id || "1";
+                var stockItem = (window.RestauranteApp.stock || []).find(function(s) {
+                    var sNome = (s.nome || s.item || '').toLowerCase();
+                    var itNome = (it.nome || it.produto_nome || '').toLowerCase();
+                    return String(s.id) === String(sId) || sNome === itNome || sNome.indexOf(itNome) >= 0;
+                });
+                if (stockItem) {
+                    stockItem.qtd = Math.max(0, Math.round(((Number(stockItem.qtd) || 0) - it.qtd) * 100) / 100);
+                }
+            }
+        }
+
+        // 2. Destino do Despacho: perguntar se vai para Cozinha, Bar ou se separa automaticamente
+        var temBebida = pedido.itens.some(function(it) {
+            var n = (it.nome || it.produto_nome || '').toLowerCase();
+            var p = (it.posto || '').toLowerCase();
+            return p.indexOf('bar') >= 0 || p.indexOf('bebida') >= 0 || n.indexOf('cerveja') >= 0 || n.indexOf('água') >= 0 || n.indexOf('sumo') >= 0 || n.indexOf('refrigerante') >= 0 || n.indexOf('cocktail') >= 0;
+        });
+        var temComida = pedido.itens.some(function(it) {
+            var n = (it.nome || it.produto_nome || '').toLowerCase();
+            var p = (it.posto || '').toLowerCase();
+            return p.indexOf('cozinha') >= 0 || (!temBebida && p.indexOf('past') < 0);
+        });
+
+        var promptMsg = 'Para onde deseja despachar este pedido?\n\n' +
+                        '• Digite 1 para: Separar Automaticamente (Cozinha, Bar, Pastelaria)\n' +
+                        '• Digite 2 para: Enviar Tudo para a Cozinha\n' +
+                        '• Digite 3 para: Enviar Tudo para o Bar\n' +
+                        '• Digite 4 para: Enviar Tudo para a Pastelaria';
+        var escolha = prompt(promptMsg, '1');
+        var filtroDestino = null;
+        if (escolha === '2') filtroDestino = 'Cozinha';
+        else if (escolha === '3') filtroDestino = 'Bar';
+        else if (escolha === '4') filtroDestino = 'Pastelaria';
+
+        var localPedido = (pedido.tipo_entrega === 'DELIVERY') ? ('Delivery: ' + (pedido.endereco_entrega || 'Domicílio')) : (pedido.numero_mesa || 'Balcão');
+        var despachados = despacharComandasParaPostos(pedido.itens, localPedido, pedido.numero_pedido, filtroDestino);
+
+        // Se for Delivery e ainda não tiver motorista atribuído, atribuir o motorista livre automaticamente
+        var msgMotorista = '';
+        if ((pedido.tipo_entrega || '').toLowerCase().indexOf('delivery') >= 0) {
+            var motoristas = window.RestauranteApp.motoristas_delivery || [];
+            var livre = motoristas.find(function(m) { return m.estado === 'DISPONIVEL' || m.estado === 'LIVRE'; }) || motoristas[0];
+            if (livre) {
+                pedido.motorista_responsavel = livre.nome;
+                pedido.motorista_id = livre.id;
+                pedido.veiculo_matricula = livre.veiculo_matricula;
+                livre.estado = 'EM_ROTA';
+                livre.total_entregas = (livre.total_entregas || 0) + 1;
+                msgMotorista = '\n• Motorista Livre Atribuído: ' + livre.nome + ' (' + (livre.veiculo_matricula || 'Mota') + ')';
+            }
+        }
+
+        // 3. Atualizar estado do pedido e limpar da central de alertas
+        pedido.estado = 'VALIDADO';
+        pedido.stock_deduzido = true;
+
+        if (pedido.mesa_id) {
+            var mesa = window.RestauranteApp.mesas.find(function(m) { return m.id === pedido.mesa_id; });
+            if (mesa) mesa.estado = 'OCUPADA';
+        }
+
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+
+        // Limpar e actualizar o centro de alertas global da navbar
+        if (typeof atualizarContadorAlertasGlobal === 'function') {
+            atualizarContadorAlertasGlobal();
+        }
+        if (typeof renderCentralAlertasGlobal === 'function') {
+            renderCentralAlertasGlobal();
+        }
+
+        abrirGaveta();
+        renderPedidosOnline();
+        carregarMesasDaSala();
+
+        window.mostrarMensagemAmigavel('Pedido ' + pedido.numero_pedido + ' validado e despachado!\n\n• Baixa efetuada no stock.\n• Central de Alertas atualizada (alerta removido).' + msgMotorista + '\n• Comandas separadas e despachadas para:\n  ' + despachados.join('\n  '), 'Pedido Validado & Separado', 'sucesso');
+    });
+}
+
+// =============================================================================
+// GESTÃO DE VENDAS & PEDIDOS SUSPENSOS NO PDV
+// =============================================================================
+var pedidoSuspensoSelecionadoId = null;
+
+function suspenderVendaPDV() {
+    if (carrinhoPDV.length === 0) {
+        alert('O carrinho está vazio! Adicione ao menos um produto antes de suspender a venda.');
+        return;
+    }
+
+    var tipoSelect = document.getElementById('pdvTipoPedido');
+    var tipoNome = tipoSelect ? tipoSelect.options[tipoSelect.selectedIndex].text : 'Balcão';
+
+    var selMesa = document.getElementById('pdvMesaSelect');
+    var selSala = document.getElementById('pdvSalaSelect');
+    var nomeMesa = selMesa ? selMesa.options[selMesa.selectedIndex].text : '';
+    var nomeSala = selSala ? selSala.options[selSala.selectedIndex].text : '';
+    var localizacao = nomeSala ? (nomeSala + ' • ' + nomeMesa) : (nomeMesa || 'Balcão');
+
+    var identificador = prompt('Informe um identificador / nome para este pedido suspenso (Ex: Cliente em espera, Mesa 2, etc.):', localizacao);
+    if (identificador === null) return; // cancelou
+    if (!identificador.trim()) identificador = localizacao;
+
+    var totalValor = 0;
+    carrinhoPDV.forEach(function(i) { totalValor += (i.preco * i.qtd); });
+
+    var agora = new Date();
+    var novoSuspenso = {
+        id: String(Date.now()),
+        codigo: 'SUSP-' + Math.floor(100 + Math.random() * 900),
+        data_hora: agora.toLocaleDateString('pt-PT') + ' ' + agora.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        identificador: identificador.trim(),
+        tipo_pedido: tipoNome,
+        localizacao: localizacao,
+        sala_id: selSala ? selSala.value : '',
+        mesa_id: selMesa ? selMesa.value : '',
+        total: totalValor,
+        itens: JSON.parse(JSON.stringify(carrinhoPDV)),
+        estado: 'SUSPENSO'
+    };
+
+    if (!window.RestauranteApp.vendas_suspensas) {
+        window.RestauranteApp.vendas_suspensas = [];
+    }
+    window.RestauranteApp.vendas_suspensas.unshift(novoSuspenso);
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    // Esvazia carrinho e atualiza visual
+    carrinhoPDV = [];
+    renderCarrinhoPDV();
+    atualizarBadgeVendasSuspensas();
+
+    alert('Venda ' + novoSuspenso.codigo + ' suspensa com sucesso!\nFoi guardada na tabela de pedidos suspensos e pode ser puxada de volta a qualquer momento.');
+}
+
+function atualizarBadgeVendasSuspensas() {
+    var badge = document.getElementById('badgeVendasSuspensas');
+    if (!badge) return;
+    var suspensos = window.RestauranteApp.vendas_suspensas || [];
+    badge.innerText = suspensos.length;
+    badge.classList.toggle('hidden', suspensos.length === 0);
+}
+
+function abrirModalVendasSuspensas() {
+    renderTabelaVendasSuspensas();
+    abrirModal('modalVendasSuspensas');
+}
+
+function renderTabelaVendasSuspensas() {
+    var tbody = document.getElementById('tabelaVendasSuspensasCorpo');
+    if (!tbody) return;
+    var suspensos = window.RestauranteApp.vendas_suspensas || [];
+
+    if (suspensos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400 text-xs font-semibold"><i class="fa-solid fa-pause mr-1 text-amber-500"></i> Nenhuma venda suspensa no momento.</td></tr>';
+        atualizarBadgeVendasSuspensas();
+        return;
+    }
+
+    var html = '';
+    for (var i = 0; i < suspensos.length; i++) {
+        var s = suspensos[i];
+        var totalItens = (s.itens || []).reduce(function(acc, x){ return acc + (x.qtd || 1); }, 0);
+        var resumoItens = (s.itens || []).map(function(x){ return x.qtd + 'x ' + x.nome; }).join(', ');
+        if (resumoItens.length > 35) resumoItens = resumoItens.substring(0, 35) + '...';
+
+        html += '<tr class="hover:bg-amber-50/40 transition">';
+        html += '  <td class="p-3 font-mono font-bold text-amber-700 text-xs">' + s.codigo + '</td>';
+        html += '  <td class="p-3 font-mono text-[11px] text-gray-500">' + s.data_hora + '</td>';
+        html += '  <td class="p-3 font-bold text-gray-900">' + s.identificador + '</td>';
+        html += '  <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700">' + s.tipo_pedido + '</span></td>';
+        html += '  <td class="p-3 text-gray-600" title="' + ((s.itens || []).map(function(x){ return x.qtd + 'x ' + x.nome; }).join(', ')) + '">' + totalItens + ' un (' + resumoItens + ')</td>';
+        html += '  <td class="p-3 text-right font-black font-mono text-gray-900">' + Number(s.total).toFixed(2) + ' ' + moedaAtual + '</td>';
+        html += '  <td class="p-3 text-center space-x-1.5 whitespace-nowrap">';
+        html += '    <button onclick="previsualizarPedidoSuspenso(\'' + s.id + '\')" class="px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-xs font-bold cursor-pointer" title="Pré-visualizar"><i class="fa-solid fa-eye"></i></button>';
+        html += '    <button onclick="imprimirPedidoSuspenso(\'' + s.id + '\')" class="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded text-xs font-bold cursor-pointer" title="Imprimir"><i class="fa-solid fa-print"></i></button>';
+        html += '    <button onclick="puxarPedidoSuspenso(\'' + s.id + '\')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow-xs cursor-pointer" title="Puxar para o carrinho"><i class="fa-solid fa-arrow-down mr-1"></i>Puxar</button>';
+        html += '    <button onclick="cancelarPedidoSuspenso(\'' + s.id + '\')" class="px-2 py-1 bg-red-50 text-red-700 hover:bg-red-100 rounded text-xs font-bold cursor-pointer" title="Cancelar"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+    atualizarBadgeVendasSuspensas();
+}
+
+function previsualizarPedidoSuspenso(id) {
+    var s = (window.RestauranteApp.vendas_suspensas || []).find(function(x){ return x.id === id; });
+    if (!s) return;
+    pedidoSuspensoSelecionadoId = id;
+
+    document.getElementById('prevSuspensoTitulo').innerText = 'Pedido Suspenso - ' + s.codigo;
+    var container = document.getElementById('prevSuspensoConteudo');
+    var html = '';
+
+    html += '<div class="p-3.5 bg-gray-50 rounded-xl space-y-2 border border-gray-200">';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Identificador / Mesa:</span><span class="font-bold text-gray-900">' + s.identificador + '</span></div>';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Data & Hora de Suspensão:</span><span class="font-mono font-bold text-gray-800">' + s.data_hora + '</span></div>';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Tipo de Atendimento:</span><span class="font-semibold">' + s.tipo_pedido + '</span></div>';
+    html += '  <div class="flex justify-between"><span class="text-gray-500">Localização Selecionada:</span><span class="font-semibold">' + (s.localizacao || 'Balcão') + '</span></div>';
+    html += '</div>';
+
+    html += '<div class="space-y-1.5 pt-2">';
+    html += '  <span class="font-bold text-gray-700 uppercase text-[10px] tracking-wider block">Itens Suspensos no Pedido:</span>';
+    (s.itens || []).forEach(function(it) {
+        var sub = (Number(it.preco) || 0) * (Number(it.qtd) || 1);
+        html += '<div class="flex justify-between items-center p-2.5 bg-white border border-gray-200 rounded-lg">';
+        html += '  <div>';
+        html += '    <span class="font-bold text-gray-900">' + it.qtd + 'x ' + it.nome + '</span>';
+        if (it.opcoes) {
+            html += '    <div class="text-[10px] text-gray-400 mt-0.5">' + it.opcoes + '</div>';
+        }
+        html += '  </div>';
+        html += '  <span class="font-mono font-black text-gray-900">' + sub.toFixed(2) + ' ' + moedaAtual + '</span>';
+        html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="flex justify-between items-center pt-3 border-t text-sm font-black">';
+    html += '  <span>Valor Total Estimado:</span><span class="text-custom-primary text-base">' + Number(s.total).toFixed(2) + ' ' + moedaAtual + '</span>';
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Conectar botões do modal de visualização
+    document.getElementById('btnCancelarPedidoSuspenso').onclick = function() {
+        cancelarPedidoSuspenso(id);
+        fecharModal('modalPrevisualizarSuspenso');
+    };
+    document.getElementById('btnImprimirPedidoSuspenso').onclick = function() {
+        imprimirPedidoSuspenso(id);
+    };
+    document.getElementById('btnPuxarPedidoSuspenso').onclick = function() {
+        puxarPedidoSuspenso(id);
+        fecharModal('modalPrevisualizarSuspenso');
+    };
+
+    abrirModal('modalPrevisualizarSuspenso');
+}
+
+function puxarPedidoSuspenso(id) {
+    var idx = (window.RestauranteApp.vendas_suspensas || []).findIndex(function(x){ return x.id === id; });
+    if (idx === -1) return;
+
+    if (carrinhoPDV.length > 0) {
+        if (!confirm('Já existem produtos no carrinho actual! Deseja substituir pelo pedido suspenso? (Clique OK para substituir ou Cancelar para manter os actuais)')) {
+            return;
+        }
+    }
+
+    var s = window.RestauranteApp.vendas_suspensas[idx];
+    carrinhoPDV = JSON.parse(JSON.stringify(s.itens || []));
+
+    // Restaurar sala/mesa se houver
+    if (s.sala_id && document.getElementById('pdvSalaSelect')) {
+        document.getElementById('pdvSalaSelect').value = s.sala_id;
+        carregarMesasDaSala();
+        if (s.mesa_id && document.getElementById('pdvMesaSelect')) {
+            document.getElementById('pdvMesaSelect').value = s.mesa_id;
+        }
+    }
+
+    // Remove da tabela de suspensos
+    window.RestauranteApp.vendas_suspensas.splice(idx, 1);
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    renderCarrinhoPDV();
+    renderTabelaVendasSuspensas();
+    atualizarBadgeVendasSuspensas();
+    fecharModal('modalVendasSuspensas');
+
+    alert('Pedido ' + s.codigo + ' (' + s.identificador + ') puxado com sucesso para o carrinho do PDV!');
+}
+
+function cancelarPedidoSuspenso(id) {
+    var idx = (window.RestauranteApp.vendas_suspensas || []).findIndex(function(x){ return x.id === id; });
+    if (idx === -1) return;
+
+    if (!confirm('Tem a certeza que deseja cancelar e eliminar este pedido suspenso?')) return;
+
+    window.RestauranteApp.vendas_suspensas.splice(idx, 1);
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    renderTabelaVendasSuspensas();
+    atualizarBadgeVendasSuspensas();
+    alert('Pedido suspenso cancelado com sucesso.');
+}
+
+function imprimirPedidoSuspenso(id) {
+    var s = (window.RestauranteApp.vendas_suspensas || []).find(function(x){ return x.id === id; });
+    if (!s) return;
+
+    var iframe = document.getElementById('iframeImpressaoRecibo');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframeImpressaoRecibo';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var itensHtml = '';
+    (s.itens || []).forEach(function(it) {
+        itensHtml += '<tr><td style="padding:4px 0;">' + it.qtd + 'x ' + it.nome + '</td><td style="text-align:right;font-weight:bold;">' + (it.preco * it.qtd).toFixed(2) + ' ' + moedaAtual + '</td></tr>';
+    });
+
+    var conteudoHtml = [
+        '<html><head><title>Pedido Suspenso ' + s.codigo + '</title>',
+        '<style>body{font-family:monospace;padding:15px;font-size:12px;margin:0;width:300px;}hr{border:none;border-top:1px dashed #000;margin:8px 0;}</style></head><body>',
+        '<div style="text-align:center;"><h3>PEDIDO EM ESPERA / SUSPENSO</h3><p><b>' + s.codigo + '</b></p></div><hr>',
+        '<p><b>Identificador:</b> ' + s.identificador + '<br><b>Data/Hora:</b> ' + s.data_hora + '<br><b>Tipo:</b> ' + s.tipo_pedido + '<br><b>Local:</b> ' + (s.localizacao || 'Balcão') + '</p><hr>',
+        '<table style="width:100%;font-size:12px;">' + itensHtml + '</table><hr>',
+        '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:bold;"><span>TOTAL:</span><span>' + Number(s.total).toFixed(2) + ' ' + moedaAtual + '</span></div><hr>',
+        '<p style="text-align:center;font-size:10px;">Aguardando finalização no caixa</p></body></html>'
+    ].join('\n');
+
+    try {
+        var doc = iframe.contentWindow || iframe.contentDocument;
+        if (doc.document) doc = doc.document;
+        doc.open();
+        doc.write(conteudoHtml);
+        doc.close();
+
+        setTimeout(function() {
+            try {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                }
+            } catch(e) {
+                console.warn('Impressão direta no iframe bloqueada:', e);
+            }
+        }, 300);
+    } catch(err) {
+        console.error('Erro ao preparar impressão de pedido suspenso:', err);
+    }
+}
+
+// =============================================================================
+// GESTÃO DE RECEÇÃO DE PRATOS PRONTOS DA COZINHA & EXPEDIÇÃO (PDV)
+// =============================================================================
+var filtroPratosProntosAtual = 'todos';
+
+function obterMotoristaLivre() {
+    var motoristas = window.RestauranteApp.motoristas_delivery || [];
+    var livre = motoristas.find(function(m) { return m.estado === 'DISPONIVEL' || m.estado === 'LIVRE'; });
+    if (!livre && motoristas.length > 0) {
+        livre = motoristas[0]; // fallback
+    }
+    return livre;
+}
+
+function atualizarBadgePratosProntosPDV() {
+    var badge = document.getElementById('badgePratosProntosPDV');
+    var btn = document.getElementById('btnPratosProntosPDV');
+    if (!badge) return;
+    var prontos = (window.RestauranteApp.pedidos_cozinha || []).filter(function(p) {
+        return p.estado === 'PRONTO';
+    });
+    badge.innerText = prontos.length;
+    badge.classList.toggle('hidden', prontos.length === 0);
+
+    if (btn) {
+        if (prontos.length > 0) {
+            btn.classList.add('ring-2', 'ring-amber-300', 'animate-pulse');
+            btn.title = prontos.length + ' prato(s) pronto(s) para entrega/expedição!';
+        } else {
+            btn.classList.remove('ring-2', 'ring-amber-300', 'animate-pulse');
+            btn.title = 'Pratos prontos entregues da Cozinha e Bar para expedição';
+        }
+    }
+}
+
+function abrirModalPratosProntosPDV() {
+    renderPratosProntosPDV();
+    abrirModal('modalPratosProntosPDV');
+}
+
+function filtrarPratosProntosPDV(segmento) {
+    filtroPratosProntosAtual = segmento;
+    var botoes = document.querySelectorAll('.filtro-prontos-btn');
+    botoes.forEach(function(b) {
+        b.classList.remove('bg-gray-900', 'text-white', 'shadow-2xs');
+        b.classList.add('bg-gray-100', 'text-gray-700');
+    });
+    var btnAtivo = document.getElementById('btnFiltroProntos-' + segmento);
+    if (btnAtivo) {
+        btnAtivo.classList.add('bg-gray-900', 'text-white', 'shadow-2xs');
+        btnAtivo.classList.remove('bg-gray-100', 'text-gray-700');
+    }
+    renderPratosProntosPDV();
+}
+
+function renderPratosProntosPDV() {
+    var container = document.getElementById('listaPratosProntosCorpo');
+    if (!container) return;
+
+    var todosProntos = (window.RestauranteApp.pedidos_cozinha || []).filter(function(p) {
+        return p.estado === 'PRONTO';
+    });
+
+    var lista = todosProntos.filter(function(p) {
+        if (filtroPratosProntosAtual === 'todos') return true;
+        var t = ((p.tipo || '') + ' ' + (p.localizacao || '')).toLowerCase();
+        if (filtroPratosProntosAtual === 'delivery') return t.indexOf('delivery') >= 0 || t.indexOf('domicílio') >= 0 || t.indexOf('rua') >= 0;
+        if (filtroPratosProntosAtual === 'takeaway') return t.indexOf('takeaway') >= 0 || t.indexOf('levar') >= 0 || t.indexOf('balcão') >= 0;
+        if (filtroPratosProntosAtual === 'mesa') return t.indexOf('mesa') >= 0 || t.indexOf('sala') >= 0 || t.indexOf('salão') >= 0 || t.indexOf('esplanada') >= 0;
+        return true;
+    });
+
+    if (lista.length === 0) {
+        container.innerHTML = '<div class="py-12 text-center text-gray-400 text-xs font-semibold"><i class="fa-solid fa-plate-wheat text-3xl mb-2 text-gray-300 block"></i> Nenhum prato com estado "Pronto" aguardando expedição no momento.</div>';
+        atualizarBadgePratosProntosPDV();
+        return;
+    }
+
+    var motoristaLivre = obterMotoristaLivre();
+
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+        var p = lista[i];
+        var t = ((p.tipo || '') + ' ' + (p.localizacao || '')).toLowerCase();
+        var isDelivery = t.indexOf('delivery') >= 0 || t.indexOf('domicílio') >= 0;
+        var isTakeaway = t.indexOf('takeaway') >= 0 || t.indexOf('levar') >= 0;
+        var isMesa = !isDelivery && !isTakeaway;
+
+        var iconeTipo = isDelivery ? 'fa-motorcycle text-cyan-600' : (isTakeaway ? 'fa-bag-shopping text-purple-600' : 'fa-utensils text-emerald-600');
+        var corBorda = isDelivery ? 'border-cyan-200 bg-cyan-50/30' : (isTakeaway ? 'border-purple-200 bg-purple-50/30' : 'border-emerald-200 bg-emerald-50/30');
+
+        html += '<div class="p-3.5 rounded-2xl border ' + corBorda + ' space-y-2.5 bg-white shadow-2xs">';
+        html += '  <div class="flex items-center justify-between">';
+        html += '    <div class="flex items-center space-x-2">';
+        html += '      <span class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-sm"><i class="fa-solid ' + iconeTipo + '"></i></span>';
+        html += '      <div>';
+        html += '        <span class="font-bold text-xs text-gray-900 font-mono">' + p.numero + '</span>';
+        html += '        <h4 class="font-black text-xs text-gray-800">' + p.localizacao + '</h4>';
+        html += '      </div>';
+        html += '    </div>';
+        html += '    <span class="text-[11px] font-mono font-bold text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-100"><i class="fa-regular fa-clock text-blue-500 mr-1"></i>' + (p.hora_envio || p.hora) + '</span>';
+        html += '  </div>';
+
+        // Itens
+        html += '  <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-xs space-y-1">';
+        (p.itens || []).forEach(function(it) {
+            html += '<div class="flex justify-between text-gray-700">';
+            html += '  <span><b>' + it.qtd + 'x</b> ' + (it.nome || it.produto_nome) + '</span>';
+            if (it.opcoes) {
+                html += '  <span class="text-[11px] text-gray-500 italic">' + it.opcoes + '</span>';
+            }
+            html += '</div>';
+        });
+        html += '  </div>';
+
+        // Linha de Destino e Ações de Despacho & Puxar para o PDV
+        html += '  <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100 text-xs">';
+        html += '    <div class="flex items-center gap-1.5 flex-wrap">';
+        html += '      <span class="text-[11px] font-bold text-gray-500 uppercase">Puxar para PDV:</span>';
+        html += '      <button type="button" onclick="puxarPratoProntoParaPDV(\'' + p.id + '\', \'Mesa\')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold rounded-lg text-[11px] flex items-center gap-1 cursor-pointer" title="Carregar no PDV e segmentar para Mesa">';
+        html += '        <i class="fa-solid fa-utensils text-emerald-600"></i> Mesa';
+        html += '      </button>';
+        html += '      <button type="button" onclick="puxarPratoProntoParaPDV(\'' + p.id + '\', \'Takeaway\')" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 font-bold rounded-lg text-[11px] flex items-center gap-1 cursor-pointer" title="Carregar no PDV e segmentar para Takeaway">';
+        html += '        <i class="fa-solid fa-bag-shopping text-purple-600"></i> Takeaway';
+        html += '      </button>';
+        html += '      <button type="button" onclick="puxarPratoProntoParaPDV(\'' + p.id + '\', \'Delivery\')" class="px-2.5 py-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-300 font-bold rounded-lg text-[11px] flex items-center gap-1 cursor-pointer" title="Carregar no PDV e segmentar para Delivery">';
+        html += '        <i class="fa-solid fa-motorcycle text-cyan-600"></i> Delivery';
+        html += '      </button>';
+        html += '    </div>';
+
+        html += '    <div class="flex items-center gap-1.5">';
+        if (isDelivery) {
+            html += '      <button type="button" onclick="despacharPratoProntoPDV(\'' + p.id + '\', \'delivery\')" class="px-3 py-1.5 bg-cyan-700 hover:bg-cyan-800 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer text-xs">';
+            html += '        <i class="fa-solid fa-paper-plane"></i> Expedir Delivery';
+            html += '      </button>';
+        } else if (isTakeaway) {
+            html += '      <button type="button" onclick="despacharPratoProntoPDV(\'' + p.id + '\', \'takeaway\')" class="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer text-xs">';
+            html += '        <i class="fa-solid fa-box-open"></i> Entregar Takeaway';
+            html += '      </button>';
+        } else {
+            html += '      <button type="button" onclick="despacharPratoProntoPDV(\'' + p.id + '\', \'mesa\')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer text-xs">';
+            html += '        <i class="fa-solid fa-hand-holding-hand"></i> Servir Mesa';
+            html += '      </button>';
+        }
+        html += '    </div>';
+        html += '  </div>';
+
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+    atualizarBadgePratosProntosPDV();
+}
+
+function puxarPratoProntoParaPDV(comandaId, tipoSegmentacao) {
+    var p = (window.RestauranteApp.pedidos_cozinha || []).find(function(x) { return x.id === comandaId; });
+    if (!p) return;
+
+    if (!carrinhoPDV) carrinhoPDV = [];
+
+    // Carregar itens da comanda confeccionada para o carrinho do PDV
+    (p.itens || []).forEach(function(it) {
+        var prodOrig = (window.RestauranteApp.produtos || []).find(function(prod) {
+            return String(prod.id) === String(it.id || it.produto_id) || (prod.nome && (prod.nome.toLowerCase() === (it.nome || it.produto_nome || '').toLowerCase()));
+        });
+
+        carrinhoPDV.push({
+            id: prodOrig ? prodOrig.id : (it.id || it.produto_id || "1"),
+            nome: it.nome || it.produto_nome || (prodOrig ? prodOrig.nome : 'Prato'),
+            preco: Number(it.preco || (prodOrig ? prodOrig.preco : 0)),
+            qtd: Number(it.qtd || 1),
+            opcoes: 'Prato Concluído ' + p.numero + ' (' + (it.opcoes || p.localizacao || '') + ')',
+            posto: (prodOrig && prodOrig.posto_nome) ? prodOrig.posto_nome : (it.posto || 'Cozinha')
+        });
+    });
+
+    // Segmentar o Atendimento no PDV para Mesa, Takeaway ou Delivery
+    var selTipo = document.getElementById('pdvTipoPedido');
+    if (selTipo && tipoSegmentacao) {
+        var segUpper = tipoSegmentacao.toUpperCase();
+        for (var i = 0; i < selTipo.options.length; i++) {
+            var txt = selTipo.options[i].text.toUpperCase();
+            if (segUpper === 'DELIVERY' && txt.indexOf('DELIVERY') >= 0) { selTipo.selectedIndex = i; break; }
+            if (segUpper === 'TAKEAWAY' && (txt.indexOf('TAKEAWAY') >= 0 || txt.indexOf('LEVAR') >= 0)) { selTipo.selectedIndex = i; break; }
+            if (segUpper === 'MESA' && txt.indexOf('MESA') >= 0) { selTipo.selectedIndex = i; break; }
+        }
+        if (typeof alternarCamposMesa === 'function') {
+            alternarCamposMesa();
+        }
+    }
+
+    renderCarrinhoPDV();
+    fecharModal('modalPratosProntosPDV');
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Os itens da comanda ' + p.numero + ' foram puxados para o PDV com sucesso!\n\n• Segmentação aplicada: ' + tipoSegmentacao + '\n• Pode agora ajustar quantidades, aplicar descontos e faturar no balcão.', 'Pratos Puxados para o PDV', 'sucesso');
+    } else {
+        alert('Comanda ' + p.numero + ' carregada no PDV (' + tipoSegmentacao + ')');
+    }
+}
+
+function despacharPratoProntoPDV(comandaId, tipoExpedicao) {
+    var p = (window.RestauranteApp.pedidos_cozinha || []).find(function(x) { return x.id === comandaId; });
+    if (!p) return;
+
+    var motoristaLivre = obterMotoristaLivre();
+    var motoristaNome = 'Sem motorista';
+
+    if (tipoExpedicao === 'delivery') {
+        if (!motoristaLivre) {
+            alert('Não há motoristas livres no momento! Por favor cadastre ou liberte um estafeta na Gestão de Veículos/Delivery.');
+            return;
+        }
+        motoristaNome = motoristaLivre.nome;
+        // Marcar motorista como em rota
+        motoristaLivre.estado = 'EM_ROTA';
+        motoristaLivre.total_entregas = (motoristaLivre.total_entregas || 0) + 1;
+    }
+
+    // 1. Limpar da Cozinha (marcar como ENTREGUE)
+    p.estado = 'ENTREGUE';
+    p.data_hora_entrega = new Date().toLocaleString('pt-PT');
+    p.motorista_responsavel = motoristaNome;
+
+    // 2. Registar no Histórico de Expedição
+    if (!window.RestauranteApp.historico_expedicao) {
+        window.RestauranteApp.historico_expedicao = [];
+    }
+    window.RestauranteApp.historico_expedicao.unshift({
+        id: String(Date.now()),
+        comanda_numero: p.numero,
+        localizacao: p.localizacao,
+        tipo_expedicao: tipoExpedicao.toUpperCase(),
+        data_hora: new Date().toLocaleString('pt-PT'),
+        motorista: motoristaNome,
+        itens: JSON.parse(JSON.stringify(p.itens || []))
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    renderPratosProntosPDV();
+    atualizarBadgePratosProntosPDV();
+
+    var msgSucesso = '';
+    if (tipoExpedicao === 'delivery') {
+        msgSucesso = 'Comanda ' + p.numero + ' despachada para Delivery com sucesso!\n\n• Motorista Livre Atribuído: ' + motoristaNome + ' (' + (motoristaLivre.veiculo_matricula || 'Mota') + ')\n• Comanda arquivada do ecrã activo da Cozinha.\n• Registada no Histórico de Entregas.';
+    } else if (tipoExpedicao === 'takeaway') {
+        msgSucesso = 'Pedido ' + p.numero + ' entregue ao cliente no Balcão Takeaway com sucesso!\n\n• Limpo do ecrã de preparação da Cozinha.\n• Registado no Histórico de Expedição.';
+    } else {
+        msgSucesso = 'Pratos da comanda ' + p.numero + ' despachados para servir na ' + p.localizacao + '!\n\n• Limpo da Cozinha e arquivado no histórico de serviço.';
+    }
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel(msgSucesso, 'Prato Despachado com Sucesso', 'sucesso');
+    } else {
+        alert(msgSucesso);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderFiltroCategorias();
+    carregarTiposPedidos();
+    carregarTaxasIvaPDV();
+    carregarSalasEMesasPDV();
+    renderMetodosPagamentoPDV();
+    renderProdutosPDV();
+    renderCarrinhoPDV();
+    atualizarBadgePedidosOnline();
+    atualizarBadgePratosProntosPDV();
+    atualizarBadgeVendasSuspensas();
+
+    // Auto-carregar pedido vindo da Central de Alertas
+    try {
+        var urlParams = new URLSearchParams(window.location.search);
+        var pedIdParam = urlParams.get('carregar_pedido');
+        if (pedIdParam) {
+            carregarPedidoOnlineNoCarrinhoPDV(pedIdParam);
+        }
+    } catch(e) {}
+
+    // Monitorizar e notificar em tempo real novos pratos prontos confeccionados na Cozinha/Bar
+    setInterval(function() {
+        atualizarBadgePratosProntosPDV();
+        atualizarBadgePedidosOnline();
+    }, 3000);
+});
+</script>
+{% endblock %}

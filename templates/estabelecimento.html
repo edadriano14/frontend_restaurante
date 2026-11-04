@@ -1,0 +1,2537 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- CABECALHO CONFIGURACOES -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl shadow-sm p-6 border-l-4 border-custom-primary">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Configurações do Sistema</h1>
+            <p class="text-gray-500 mt-1">Gerencie filiais, utilizadores vinculados, tipos de pedidos e métodos de pagamento.</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="abrirModal('modalNovoEstabelecimento')" class="px-4 py-2 bg-custom-primary text-white rounded-xl text-xs font-bold shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus-circle"></i> Nova Filial
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS DE CONFIGURAÇÕES -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex flex-wrap gap-2">
+        <button type="button" onclick="trocarTabConfig('estabelecimento')" id="tabBtn-estabelecimento" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-custom-primary text-white cursor-pointer shadow-sm">
+            <i class="fa-solid fa-store"></i> Restaurante & Filiais
+        </button>
+        <button type="button" onclick="trocarTabConfig('postos-preparacao')" id="tabBtn-postos-preparacao" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-fire-burner"></i> Postos de Preparação
+        </button>
+        <button type="button" onclick="trocarTabConfig('utilizadores')" id="tabBtn-utilizadores" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-id-badge"></i> Utilizadores
+        </button>
+        <button type="button" onclick="trocarTabConfig('tipos-pedidos')" id="tabBtn-tipos-pedidos" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-list-check"></i> Tipos de Pedidos
+        </button>
+        <button type="button" onclick="trocarTabConfig('metodos-pagamento')" id="tabBtn-metodos-pagamento" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-credit-card"></i> Métodos de Pagamento
+        </button>
+        <button type="button" onclick="trocarTabConfig('taxas-iva')" id="tabBtn-taxas-iva" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-percent"></i> Taxas de IVA
+        </button>
+        <button type="button" onclick="trocarTabConfig('unidades-medida')" id="tabBtn-unidades-medida" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-scale-balanced"></i> Unidades de Medida
+        </button>
+        <button type="button" onclick="trocarTabConfig('ficha-tecnica')" id="tabBtn-ficha-tecnica" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-clipboard-list text-purple-600"></i> Ficha Técnica
+        </button>
+        <button type="button" onclick="trocarTabConfig('armazens-locais')" id="tabBtn-armazens-locais" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-warehouse"></i> Armazéns & Locais
+        </button>
+        <button type="button" onclick="trocarTabConfig('fornecedores')" id="tabBtn-fornecedores" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-truck text-emerald-600"></i> Fornecedores
+        </button>
+        <button type="button" onclick="trocarTabConfig('tabela-precos')" id="tabBtn-tabela-precos" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-tags text-amber-500"></i> Tabela de Preços Fornecedores
+        </button>
+        {% if estabelecimento.tem_piscina %}
+        <button type="button" onclick="trocarTabConfig('tarifas-piscina')" id="tabBtn-tarifas-piscina" class="tab-config-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-person-swimming text-sky-600"></i> Tarifas de Piscina & Acessos
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- PAINEL 1: ESTABELECIMENTO & FILIAIS -->
+    <div id="painel-estabelecimento" class="space-y-6">
+        <!-- SELETOR RÁPIDO DE ESTABELECIMENTOS DA REDE -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-store text-custom-primary"></i> Estabelecimentos Activos na Rede
+            </h3>
+            <div id="listaEstabelecimentos" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Preenchido via renderEstabelecimentos() -->
+            </div>
+        </div>
+
+        <!-- FORMULÁRIO DE EDIÇÃO DO ESTABELECIMENTO ATUAL -->
+        <form class="bg-white rounded-2xl shadow-sm p-6 space-y-6 border border-gray-100">
+            <div class="border-b pb-4">
+                <h2 class="text-lg font-bold text-gray-900">Configurações da Marca: {{ estabelecimento.nome }}</h2>
+                <p class="text-xs text-gray-500">Defina o nome da filial, endereço, cores e logotipo com galeria.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento</label>
+                    <input type="text" id="editNome" value="{{ estabelecimento.nome }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda Local</label>
+                    <input type="text" id="editMoeda" value="{{ estabelecimento.moeda }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-bold">
+                </div>
+            </div>
+
+            <!-- Cores -->
+            <div class="border-t pt-5">
+                <h4 class="text-sm font-bold text-gray-800 uppercase mb-3">Identidade Visual & Cores do Sistema</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Cor Primária (Header, Destaques, Botões)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" id="editCorPrimariaPicker" value="{{ estabelecimento.cor_primaria }}" onchange="document.getElementById('editCorPrimariaText').value = this.value" class="w-12 h-10 border rounded cursor-pointer">
+                            <input type="text" id="editCorPrimariaText" value="{{ estabelecimento.cor_primaria }}" onchange="document.getElementById('editCorPrimariaPicker').value = this.value" class="w-full px-4 py-2 border rounded-lg outline-none font-mono text-sm bg-white">
+                        </div>
+                    </div>
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Cor Secundária (Menu Hamburger & Sidebar)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" id="editCorSecundariaPicker" value="{{ estabelecimento.cor_secundaria }}" onchange="document.getElementById('editCorSecundariaText').value = this.value" class="w-12 h-10 border rounded cursor-pointer">
+                            <input type="text" id="editCorSecundariaText" value="{{ estabelecimento.cor_secundaria }}" onchange="document.getElementById('editCorSecundariaPicker').value = this.value" class="w-full px-4 py-2 border rounded-lg outline-none font-mono text-sm bg-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logotipo com Botão de Buscar na Galeria -->
+            <div class="border-t pt-5">
+                <h4 class="text-sm font-bold text-gray-800 uppercase mb-3">Logotipo do Estabelecimento</h4>
+                <div class="flex items-center space-x-6">
+                    <div class="w-20 h-20 rounded-2xl border border-gray-200 overflow-hidden flex items-center justify-center bg-gray-50 shadow-inner">
+                        <img id="editLogoPreview" src="{{ estabelecimento.logotipo_url }}" alt="Logo" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">URL do Logotipo</label>
+                        <input type="text" id="editLogoUrl" value="{{ estabelecimento.logotipo_url }}" oninput="document.getElementById('editLogoPreview').src = this.value" class="w-full px-4 py-2 border rounded-lg outline-none text-sm font-mono">
+                        <button type="button" onclick="abrirGaleria('editLogoUrl', 'editLogoPreview')" class="px-3.5 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-bold hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-images text-amber-400"></i> Buscar Logotipo na Galeria de Imagens
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado do Estabelecimento (Ativar / Inativar) -->
+            <div class="border-t pt-5 p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h4 class="text-sm font-bold text-gray-800 uppercase">Estado de Funcionamento do Estabelecimento</h4>
+                    <p class="text-xs text-gray-500">Ative ou inative este restaurante na rede e no portal do cliente.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="editAtivo" {% if estabelecimento.ativo %}checked{% endif %} class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    <span id="labelEstadoAtivo" class="ml-3 text-xs font-bold {% if estabelecimento.ativo %}text-emerald-700{% else %}text-gray-500{% endif %}">
+                        {% if estabelecimento.ativo %}Restaurante Activo{% else %}Restaurante Inactivo{% endif %}
+                    </span>
+                </label>
+            </div>
+
+            <!-- Módulo de Lazer & Piscina (Nem todos os restaurantes dispõem de piscina) -->
+            <div class="p-4 bg-sky-50/60 rounded-xl border border-sky-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-person-swimming"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-sky-950 uppercase">Instalações de Piscina & Resort</h4>
+                        <p class="text-xs text-sky-700">Ative se esta filial dispõe de piscina, espreguiçadeiras, bilheteira e bar de apoio ao lazer.</p>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="editTemPiscina" {% if estabelecimento.tem_piscina %}checked{% endif %} class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    <span id="labelTemPiscina" class="ml-3 text-xs font-bold {% if estabelecimento.tem_piscina %}text-sky-800{% else %}text-gray-500{% endif %}">
+                        {% if estabelecimento.tem_piscina %}Com Piscina{% else %}Sem Piscina{% endif %}
+                    </span>
+                </label>
+            </div>
+
+            <!-- Contactos, Cidade e Endereço -->
+            <div class="border-t pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Telemóvel / Telefone</label>
+                    <input type="text" id="editTelefone" value="{{ estabelecimento.telefone }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">WhatsApp de Pedidos</label>
+                    <input type="text" id="editWhatsapp" value="{{ estabelecimento.whatsapp or '+258840000000' }}" placeholder="+258 84 000 0000" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-semibold text-emerald-700">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email de Contacto</label>
+                    <input type="email" id="editEmail" value="{{ estabelecimento.email }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cidade</label>
+                    <input type="text" id="editCidade" value="{{ estabelecimento.cidade or 'Maputo' }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço Físico</label>
+                    <input type="text" id="editEndereco" value="{{ estabelecimento.endereco }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                </div>
+            </div>
+
+            <!-- Horários de Funcionamento -->
+            <div class="border-t pt-5">
+                <h4 class="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center gap-2">
+                    <i class="fa-regular fa-clock text-custom-primary"></i> Horários de Funcionamento
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Horário Diário de Abertura e Fecho</label>
+                        <input type="text" id="editHorarioAbertura" value="{{ estabelecimento.horario_abertura or '10:00 - 23:00' }}" placeholder="Ex: 10:00 - 23:00" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Dias de Funcionamento</label>
+                        <input type="text" id="editDiasFuncionamento" value="{{ estabelecimento.dias_funcionamento or 'Segunda a Domingo' }}" placeholder="Ex: Terça a Domingo" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Redes Sociais e Website -->
+            <div class="border-t pt-5">
+                <h4 class="text-sm font-bold text-gray-800 uppercase mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-custom-primary"></i> Redes Sociais & Presença Digital
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                            <i class="fa-brands fa-facebook text-blue-600 mr-1"></i> Facebook (URL)
+                        </label>
+                        <input type="text" id="editFacebook" value="{{ estabelecimento.facebook or 'https://facebook.com/saborbrasa' }}" placeholder="https://facebook.com/pagina" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                            <i class="fa-brands fa-instagram text-pink-600 mr-1"></i> Instagram (URL)
+                        </label>
+                        <input type="text" id="editInstagram" value="{{ estabelecimento.instagram or 'https://instagram.com/saborbrasa' }}" placeholder="https://instagram.com/perfil" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                            <i class="fa-solid fa-globe text-teal-600 mr-1"></i> Website Oficial
+                        </label>
+                        <input type="text" id="editWebsite" value="{{ estabelecimento.website or 'https://saborbrasa.co.mz' }}" placeholder="https://www.meurestaurante.co.mz" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição para o Rodapé do Portal do Cliente</label>
+                        <textarea id="editDescricaoRodape" rows="2" placeholder="Breve apresentação exibida no rodapé para os clientes..." class="w-full px-4 py-2 border rounded-lg text-sm outline-none">{{ estabelecimento.descricao_rodape or 'O autêntico sabor das melhores carnes e iguarias moçambicanas no coração de Maputo.' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t pt-5 flex justify-end">
+                <button type="button" onclick="salvarConfiguracoes()" class="px-6 py-2.5 bg-custom-primary text-white font-bold rounded-xl shadow hover:opacity-90 transition cursor-pointer flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Gravar Configurações
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- PAINEL POSTOS DE PREPARAÇÃO -->
+    <div id="painel-postos-preparacao" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Postos de Preparação (Cozinha, Pastelaria, Bar)</h2>
+                <p class="text-xs text-gray-500">Defina os locais de produção para onde as comandas e pedidos são roteados.</p>
+            </div>
+            <button type="button" onclick="abrirModalPosto()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-xs shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Novo Posto de Preparação
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Descrição do Posto</th>
+                        <th class="p-4">Produtos Associados</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaPostos" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 2: UTILIZADORES COM RESTAURANTE PERTENCENTE -->
+    <div id="painel-utilizadores" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Utilizadores do Sistema</h2>
+                <p class="text-xs text-gray-500">Controlo de acessos, perfis e o restaurante pertencente de cada utilizador.</p>
+            </div>
+            <button onclick="abrirModalUtilizador()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-xs shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-user-plus"></i> Novo Utilizador
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Nome</th>
+                        <th class="p-4">Email</th>
+                        <th class="p-4">Restaurante Pertencente</th>
+                        <th class="p-4">Perfil</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaUtilizadores" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 3: TIPOS DE PEDIDOS -->
+    <div id="painel-tipos-pedidos" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Tipos de Pedidos</h2>
+                <p class="text-xs text-gray-500">Modalidades de atendimento no PDV e salas: Mesa, Balcão, Takeaway, Delivery, etc.</p>
+            </div>
+            <button onclick="abrirModalTipoPedido()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-xs shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Novo Tipo de Pedido
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Descrição</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaTiposPedidos" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 4: MÉTODOS DE PAGAMENTO -->
+    <div id="painel-metodos-pagamento" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Métodos de Pagamento</h2>
+                <p class="text-xs text-gray-500">Configuração dos meios aceites no caixa (Dinheiro, POS, M-Pesa, e-Mola, etc.).</p>
+            </div>
+            <button onclick="abrirModalPagamento()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-xs shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Novo Método
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Ícone</th>
+                        <th class="p-4">Nome do Método</th>
+                        <th class="p-4">Permite Troco</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaMetodosPagamento" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 5: TAXAS DE IVA -->
+    <div id="painel-taxas-iva" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Taxas de IVA</h2>
+                <p class="text-xs text-gray-500">Configuração de impostos sobre valor acrescentado aplicados aos produtos e serviços.</p>
+            </div>
+            <button onclick="abrirModalIva()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-xs shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Nova Taxa de IVA
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Taxa IVA (%)</th>
+                        <th class="p-4">Moeda</th>
+                        <th class="p-4">Descrição</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4">Predefinida</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaTaxasIva" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 6: UNIDADES DE MEDIDA -->
+    <div id="painel-unidades-medida" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Unidades de Medida</h2>
+                <p class="text-xs text-gray-500">Padrões de medida para itens de stock, receitas e compras (KG, LT, UN, etc.).</p>
+            </div>
+            <button onclick="abrirModalUnidade()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-xs shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Nova Unidade de Medida
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código / Símbolo</th>
+                        <th class="p-4">Nome por Extenso</th>
+                        <th class="p-4">Aceita Fracionamento (Decimais)</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaUnidadesMedida" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL: FICHA TÉCNICA (INSUMOS DOS PRATOS) -->
+    <div id="painel-ficha-tecnica" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Fichas Técnicas dos Pratos</h2>
+                <p class="text-xs text-gray-500">Consulte e configure os insumos de stock associados a cada prato do cardápio e apure custos de receita.</p>
+            </div>
+            <a href="/produtos" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold text-xs shadow hover:bg-purple-700 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-burger"></i> Gerir Produtos no Cardápio
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Prato / Produto</th>
+                        <th class="p-4">Posto</th>
+                        <th class="p-4">Insumos Associados</th>
+                        <th class="p-4">Custo Total de Insumos</th>
+                        <th class="p-4">Preço de Venda</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaFichasTecnicas" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 7: ARMAZÉNS & LOCAIS -->
+    <div id="painel-armazens-locais" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Armazéns & Locais Físicos</h2>
+                <p class="text-xs text-gray-500">Gestão de armazéns centrais e estruturas físicas (estantes, prateleiras, geleiras e congeladores).</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="abrirModalArmazem()" class="px-3.5 py-2 bg-gray-800 text-white rounded-lg text-xs font-bold shadow hover:bg-gray-700 cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i> Novo Armazém
+                </button>
+                <button onclick="abrirModalLocal()" class="px-3.5 py-2 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i> Novo Local (Geleira/Estante)
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-warehouse text-blue-600"></i> Armazéns Cadastrados
+                </h3>
+                <div id="listaArmazens" class="space-y-2"></div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-snowflake text-cyan-600"></i> Locais & Estruturas Físicas
+                </h3>
+                <div id="listaLocais" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL 8: FORNECEDORES -->
+    <div id="painel-fornecedores" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Fornecedores Cadastrados</h2>
+                <p class="text-xs text-gray-500">Gestão de parceiros comerciais, contactos, NUIT e prazos de entrega para compras.</p>
+            </div>
+            <button onclick="abrirModalFornecedor()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-xs shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Novo Fornecedor
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Nome do Fornecedor</th>
+                        <th class="p-4">Categoria Fornecida</th>
+                        <th class="p-4">Contacto / Telemóvel</th>
+                        <th class="p-4">NUIT</th>
+                        <th class="p-4">Prazo Médio</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaFornecedores" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 9: TABELA DE PREÇOS DE FORNECEDORES (4ª IMAGEM) -->
+    <div id="painel-tabela-precos" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Tabela de Preços de Fornecedores</h2>
+                <p class="text-xs text-gray-500">Configuração de caixas, unidades por caixa e cálculo automático do custo unitário para abastecer as compras.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="abrirModalPrecoFornecedor()" class="px-4 py-2 bg-amber-600 text-white rounded-lg font-semibold text-xs shadow hover:bg-amber-700 flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-plus"></i> Novo Preço de Fornecedor
+                </button>
+            </div>
+        </div>
+
+        <!-- Alerta informativo com cálculo -->
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-amber-600 text-base"></i>
+                <span><b>Fórmula Automática:</b> Custo Unitário Calculado = Preço da Caixa ÷ Unidades por Caixa. Alimenta directamente o ecrã de Compras e Ficha Técnica.</span>
+            </div>
+            <span class="font-bold text-[11px] bg-amber-200 px-2 py-0.5 rounded text-amber-900">Moeda: MZN (MT)</span>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Produto</th>
+                        <th class="p-4">Fornecedor</th>
+                        <th class="p-4 text-right">Custo Actual Stock</th>
+                        <th class="p-4 text-right">Preço da Caixa (MT)</th>
+                        <th class="p-4 text-center">Unidades / Caixa</th>
+                        <th class="p-4 text-right">Custo Unitário Calculado (MT)</th>
+                        <th class="p-4 text-right">P. Venda Sugerido</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaPrecosFornecedores" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+{% if estabelecimento.tem_piscina %}
+    <!-- PAINEL 10: TARIFAS DE PISCINA & ACESSOS -->
+    <div id="painel-tarifas-piscina" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-person-swimming text-sky-600"></i> Tarifas de Piscina & Acessos em Vigor
+                </h2>
+                <p class="text-xs text-gray-500">Defina os valores das entradas, categorias de clientes, períodos e gratuidades para a gestão de piscinas e bilheteira.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="abrirModalTarifaPiscina()" class="px-4 py-2 bg-sky-600 text-white rounded-lg font-semibold text-xs shadow hover:bg-sky-700 flex items-center gap-2 cursor-pointer transition">
+                    <i class="fa-solid fa-plus"></i> Nova Tarifa
+                </button>
+            </div>
+        </div>
+
+        <div class="p-3 bg-sky-50 border border-sky-200 rounded-xl text-sky-900 text-xs flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-sky-600 text-base"></i>
+                <span>Estes valores sincronizam automaticamente com os módulos de <b>Gestão de Piscina</b> e emissão de <b>Bilheteira</b>. Preços apresentados em <b>MZN (MT)</b> com impostos incluídos.</span>
+            </div>
+            <span class="font-bold text-[11px] bg-sky-200 px-2 py-0.5 rounded text-sky-900">Moeda: MZN</span>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Categoria / Público</th>
+                        <th class="p-4">Período de Acesso</th>
+                        <th class="p-4">Descrição / Condições</th>
+                        <th class="p-4 text-right">Preço de Entrada</th>
+                        <th class="p-4 text-center">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaTarifasPiscina" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURAÇÃO DE TARIFA DE PISCINA -->
+    <div id="modalTarifaPiscina" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-person-swimming text-sky-600 text-xl"></i>
+                    <h3 id="tituloModalTarifaPiscina" class="text-lg font-bold text-gray-900">Configurar Tarifa de Piscina</h3>
+                </div>
+                <button type="button" onclick="fecharModalTarifaPiscina()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+
+            <input type="hidden" id="tarifaPiscinaId">
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Categoria / Tipo de Público *</label>
+                    <input type="text" id="tarifaPiscinaCategoria" placeholder="Ex: Adulto, Criança (4-12 anos), Grupo / Família" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-sky-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Período de Acesso *</label>
+                        <select id="tarifaPiscinaPeriodo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
+                            <option value="Dia Inteiro">Dia Inteiro</option>
+                            <option value="Meio Período (Manhã)">Meio Período (Manhã)</option>
+                            <option value="Meio Período (Tarde)">Meio Período (Tarde)</option>
+                            <option value="Livre">Livre / Isento</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço (MZN) *</label>
+                        <div class="relative">
+                            <input type="number" step="0.01" min="0" id="tarifaPiscinaPreco" placeholder="0.00" class="w-full px-3 py-2 border rounded-lg text-sm font-bold text-gray-800 outline-none focus:border-sky-500 pr-12">
+                            <span class="absolute right-3 top-2.5 text-xs font-bold text-gray-400">MT</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição / Observações</label>
+                    <input type="text" id="tarifaPiscinaDescricao" placeholder="Ex: Acesso total à piscina dia completo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-sky-500">
+                </div>
+
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <input type="checkbox" id="tarifaPiscinaAtivo" class="w-4 h-4 text-sky-600 rounded cursor-pointer" checked>
+                    <label for="tarifaPiscinaAtivo" class="text-xs font-bold text-gray-700 cursor-pointer">Tarifa Activa no Sistema</label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-3 border-t">
+                <button type="button" onclick="fecharModalTarifaPiscina()" class="px-4 py-2 border border-gray-300 text-gray-700 font-semibold text-xs rounded-lg hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="salvarTarifaPiscina()" class="px-5 py-2 bg-sky-600 text-white font-bold text-xs rounded-lg hover:bg-sky-700 shadow-md flex items-center gap-2 cursor-pointer transition">
+                    <i class="fa-solid fa-save"></i> Guardar Tarifa
+                </button>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+    <!-- MODAL DE CADASTRO DE NOVO ESTABELECIMENTO -->
+    <div id="modalNovoEstabelecimento" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-utensils text-custom-primary text-xl"></i>
+                    <h3 class="text-xl font-bold text-gray-900">Cadastrar Novo Estabelecimento / Filial</h3>
+                </div>
+                <button type="button" onclick="fecharModal('modalNovoEstabelecimento')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento *</label>
+                        <input type="text" id="novoNome" placeholder="Ex: Pizzaria Forno a Lenha" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda</label>
+                        <input type="text" id="novoMoeda" value="MZN" class="w-full px-3 py-2 border rounded-lg text-sm font-bold outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cor Primária (Tema)</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="novoCorPrimaria" value="#0D9488" class="w-10 h-8 border rounded cursor-pointer">
+                            <input type="text" id="novoCorPrimariaText" value="#0D9488" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cor Secundária (Menu)</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="novoCorSecundaria" value="#0F172A" class="w-10 h-8 border rounded cursor-pointer">
+                            <input type="text" id="novoCorSecundariaText" value="#0F172A" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono bg-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Logotipo</label>
+                    <div class="flex items-center space-x-3">
+                        <img id="novoLogoPreview" src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-xl object-cover border">
+                        <div class="flex-1 space-y-1">
+                            <input type="text" id="novoLogo" value="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=80" oninput="document.getElementById('novoLogoPreview').src = this.value" class="w-full px-3 py-1.5 border rounded-lg text-xs outline-none font-mono">
+                            <button type="button" onclick="abrirGaleria('novoLogo', 'novoLogoPreview')" class="px-2.5 py-1 bg-gray-800 text-white rounded text-[11px] font-bold hover:bg-gray-700 flex items-center gap-1 cursor-pointer">
+                                <i class="fa-solid fa-images text-amber-400"></i> Buscar na Galeria
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Telefone</label>
+                        <input type="text" id="novoTelefone" placeholder="+258 84 123 4567" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email</label>
+                        <input type="email" id="novoEmail" placeholder="contato@pizzaria.com" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço</label>
+                    <input type="text" id="novoEndereco" placeholder="Bairro Central, Maputo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+
+                <div class="p-3 bg-sky-50 rounded-xl border border-sky-200 flex items-center justify-between">
+                    <div>
+                        <span class="block text-xs font-bold text-sky-950 uppercase">Dispõe de Instalações de Piscina?</span>
+                        <span class="text-[11px] text-sky-700">Se selecionado, ativará bilheteira, controle de lotação e bar de piscina.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="novoTemPiscina" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t">
+                    <button type="button" onclick="fecharModal('modalNovoEstabelecimento')" class="px-4 py-2 border rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarNovoEstabelecimento()" class="px-5 py-2 bg-custom-primary text-white rounded-lg text-sm font-bold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-check"></i> Criar Estabelecimento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL UTILIZADOR (COM SELEÇÃO DE RESTAURANTE PERTENCENTE) -->
+    <div id="modalUtilizador" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalUserTitulo" class="font-bold text-lg text-gray-800">Novo Utilizador</h3>
+                <button type="button" onclick="fecharModal('modalUtilizador')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                        <input type="text" id="userCodigo" placeholder="USR-001" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome Completo *</label>
+                        <input type="text" id="userNome" placeholder="Ex: Maria Fernandes" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Utilizador (Login) *</label>
+                        <input type="text" id="userLogin" placeholder="maria.fernandes" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email *</label>
+                        <input type="email" id="userEmail" placeholder="maria@restaurante.com" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+
+                <!-- CAMPO PASSWORD COM OLHO PARA VER E REDEFINIÇÃO -->
+                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-gray-700 uppercase">Password *</label>
+                        <button type="button" onclick="gerarRedefinicaoSenhaEstab()" class="text-[11px] text-custom-primary hover:underline font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-arrows-rotate"></i> Redefinir Senha
+                        </button>
+                    </div>
+                    <div class="relative flex items-center">
+                        <input type="password" id="userPassword" placeholder="Digite a Password" class="w-full px-3 py-2 pr-12 border rounded-lg text-sm outline-none bg-white">
+                        <button type="button" onclick="toggleSenhaVisibilidadeEstab('userPassword', 'iconOlhoPassEstab')" class="absolute right-0 top-0 bottom-0 px-3 flex items-center justify-center text-gray-500 hover:text-gray-800 cursor-pointer z-10" title="Ver / Ocultar Password">
+                            <i id="iconOlhoPassEstab" class="fa-solid fa-eye text-base pointer-events-none"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2 pt-1">
+                        <input type="checkbox" id="userForcarRedefinicao" class="w-4 h-4 text-custom-primary rounded">
+                        <label for="userForcarRedefinicao" class="text-xs text-gray-600">Exigir redefinição de password no primeiro acesso</label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Restaurante Pertencente *</label>
+                    <select id="userEstabelecimento" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-gray-800">
+                        <!-- Preenchido dinamicamente via renderOpcoesEstabelecimentos() -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Perfil de Acesso</label>
+                    <select id="userPerfil" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
+                        <option value="ADMIN_GERAL">ADMIN_GERAL (Acesso Global)</option>
+                        <option value="GESTOR">GESTOR (Gerencia o Restaurante)</option>
+                        <option value="OPERADOR">OPERADOR (PDV / Caixa)</option>
+                        <option value="STOCK">STOCK (Armazém)</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="userAtivo" checked class="w-4 h-4 text-emerald-600 rounded">
+                    <label for="userAtivo" class="text-sm font-semibold text-gray-700">Utilizador Activo</label>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalUtilizador')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarUtilizador()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TIPO DE PEDIDO -->
+    <div id="modalTipoPedido" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalTipoTitulo" class="font-bold text-lg text-gray-800">Novo Tipo de Pedido</h3>
+                <button type="button" onclick="fecharModal('modalTipoPedido')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                    <input type="text" id="tipoCodigo" placeholder="TP-MESA" class="w-full px-3 py-2 border rounded-lg text-sm outline-none uppercase font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição *</label>
+                    <input type="text" id="tipoDescricao" placeholder="Ex: Consumo na Mesa / Esplanada" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalTipoPedido')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarTipoPedido()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POSTO DE PREPARAÇÃO -->
+    <div id="modalPosto" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalPostoTitulo" class="font-bold text-lg text-gray-800">Novo Posto de Preparação</h3>
+                <button type="button" onclick="fecharModal('modalPosto')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                    <input type="text" id="postoCodigo" placeholder="COZ-02" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-mono uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição do Posto *</label>
+                    <input type="text" id="postoDescricao" placeholder="Ex: Grelha & Churrasqueira" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalPosto')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarPosto()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MÉTODO DE PAGAMENTO -->
+    <div id="modalPagamento" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalPagTitulo" class="font-bold text-lg text-gray-800">Novo Método de Pagamento</h3>
+                <button type="button" onclick="fecharModal('modalPagamento')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                    <input type="text" id="pagCodigo" placeholder="Ex: MPESA" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome de Exibição *</label>
+                    <input type="text" id="pagNome" placeholder="Ex: M-Pesa Carteira Móvel" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ícone FontAwesome</label>
+                    <input type="text" id="pagIcone" value="fa-solid fa-credit-card" class="w-full px-3 py-2 border rounded-lg text-xs font-mono">
+                </div>
+                <div class="flex items-center space-x-2 pt-1">
+                    <input type="checkbox" id="pagTroco" checked class="w-4 h-4 text-emerald-600 rounded">
+                    <label for="pagTroco" class="text-xs font-semibold text-gray-700">Permite dar troco em dinheiro</label>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalPagamento')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarMetodoPagamento()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TAXA DE IVA -->
+    <div id="modalIva" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-lg text-gray-800">Taxa de IVA</h3>
+                <button type="button" onclick="fecharModal('modalIva')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                        <input type="text" id="ivaCodigo" placeholder="Ex: IVA-16" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Taxa IVA (%) *</label>
+                        <input type="number" id="ivaPercentagem" placeholder="16" step="0.01" min="0" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda</label>
+                        <input type="text" id="ivaMoeda" value="MZN" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição</label>
+                        <input type="text" id="ivaDescricao" placeholder="Ex: Taxa Normal" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div class="flex items-center gap-6 pt-1">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="ivaAtivo" checked class="w-4 h-4 text-custom-primary rounded">
+                        <span class="text-xs font-semibold text-gray-700">Activa</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="ivaPadrao" class="w-4 h-4 text-custom-primary rounded">
+                        <span class="text-xs font-semibold text-gray-700">Predefinida</span>
+                    </label>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalIva')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarTaxaIva()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL UNIDADE DE MEDIDA -->
+    <div id="modalUnidade" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-lg text-gray-800">Nova Unidade de Medida</h3>
+                <button type="button" onclick="fecharModal('modalUnidade')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código / Símbolo *</label>
+                        <input type="text" id="unidCodigo" placeholder="Ex: KG" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome por Extenso *</label>
+                        <input type="text" id="unidNome" placeholder="Ex: Quilograma" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="unidDecimal" class="w-4 h-4 text-custom-primary rounded">
+                    <label for="unidDecimal" class="text-xs font-semibold text-gray-700">Aceita Fracionamento (Ex: 1.5 KG, 2.75 LT)</label>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalUnidade')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarUnidade()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NOVO ARMAZÉM -->
+    <div id="modalArmazem" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-warehouse text-blue-600"></i>
+                    <h3 class="font-bold text-lg text-gray-800">Novo Armazém</h3>
+                </div>
+                <button type="button" onclick="fecharModal('modalArmazem')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código do Armazém *</label>
+                    <input type="text" id="armCodigo" placeholder="Ex: ARM-04" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Armazém *</label>
+                    <input type="text" id="armNome" placeholder="Ex: Armazém Geral / Bebidas Secundário" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Armazém</label>
+                    <input type="text" id="armTipo" placeholder="Ex: Bebidas e Não Perecíveis" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Localização Física</label>
+                    <input type="text" id="armLocalizacao" placeholder="Ex: Anexo ao Estacionamento" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalArmazem')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarArmazem()" class="px-5 py-2 bg-gray-900 text-white font-bold rounded-lg text-sm shadow hover:bg-gray-800 cursor-pointer">Gravar Armazém</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NOVO LOCAL FÍSICO (GELEIRA / ESTANTE) -->
+    <div id="modalLocal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-snowflake text-cyan-600"></i>
+                    <h3 class="font-bold text-lg text-gray-800">Novo Local (Geleira / Estante)</h3>
+                </div>
+                <button type="button" onclick="fecharModal('modalLocal')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                        <input type="text" id="locCodigo" placeholder="Ex: GEL-02" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Estrutura *</label>
+                        <select id="locTipo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold">
+                            <option value="GELEIRA">Geleira / Frigorífico</option>
+                            <option value="CONGELADOR">Congelador</option>
+                            <option value="CAMARA_FRIA">Câmara Fria</option>
+                            <option value="ESTANTE">Estante / Prateleira</option>
+                            <option value="DESPENSA">Despensa Seca</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição / Identificação *</label>
+                    <input type="text" id="locDescricao" placeholder="Ex: Geleira Bar Superior 02" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Armazém Pertencente</label>
+                    <select id="locArmazemSelect" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-medium">
+                        <!-- Preenchido via abrirModalLocal() -->
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalLocal')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarLocal()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar Local</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORNECEDOR -->
+    <div id="modalFornecedor" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalFornecedorTitulo" class="font-bold text-lg text-gray-800">Novo Fornecedor</h3>
+                <button type="button" onclick="fecharModal('modalFornecedor')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código</label>
+                        <input type="text" id="fornCodigo" value="FORN-01" class="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-gray-50 outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome da Empresa *</label>
+                        <input type="text" id="fornNome" placeholder="Ex: Cervejas de Moçambique (CDM)" class="w-full px-3 py-2 border rounded-lg text-sm font-semibold outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Categoria Principal</label>
+                        <input type="text" id="fornCategoria" placeholder="Ex: Bebidas & Refrigerantes" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">NUIT (10 Dígitos) *</label>
+                        <input type="text" id="fornNuit" maxlength="10" placeholder="4001239999" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Contacto / Telemóvel</label>
+                        <input type="text" id="fornTelefone" placeholder="+258 84 123 4567" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Prazo de Entrega</label>
+                        <input type="text" id="fornPrazo" value="24 a 48 Horas" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email Comercial</label>
+                    <input type="email" id="fornEmail" placeholder="encomendas@cdm.co.mz" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalFornecedor')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarFornecedor()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar Fornecedor</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NOVO PREÇO DE FORNECEDOR (4ª IMAGEM) -->
+    <div id="modalPrecoFornecedor" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalPrecoFornTitulo" class="font-bold text-lg text-gray-800">Preço de Tabela do Fornecedor</h3>
+                <button type="button" onclick="fecharModal('modalPrecoFornecedor')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Produto Associado *</label>
+                    <select id="tabFornProdSelect" onchange="aoMudarProdTabPreco()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
+                        <!-- Preenchido dinamicamente -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor *</label>
+                    <select id="tabFornFornecedorSelect" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
+                        <!-- Preenchido dinamicamente -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço da Caixa (MT) *</label>
+                        <input type="number" step="0.01" id="tabFornPrecoCaixa" oninput="calcularCustoUnitarioModal()" placeholder="1250.00" class="w-full px-3 py-2 border rounded-lg text-sm font-bold text-emerald-700 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidades por Caixa *</label>
+                        <input type="number" id="tabFornUnidadesCaixa" oninput="calcularCustoUnitarioModal()" value="24" class="w-full px-3 py-2 border rounded-lg text-sm font-bold outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-0.5">Custo Unitário Calculado</label>
+                        <span id="tabFornCustoUnitarioCalc" class="text-base font-black text-amber-600">0.00 MT</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço Venda Sugerido (MT)</label>
+                        <input type="number" step="0.01" id="tabFornPrecoVenda" placeholder="100.00" class="w-full px-2 py-1 border rounded text-xs font-bold">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalPrecoFornecedor')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarPrecoFornecedor()" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-sm shadow cursor-pointer">Gravar Preço</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+var estabAtualId = "{{ estabelecimento.id }}";
+var editandoUserId = null;
+var editandoTipoId = null;
+
+// GESTÃO DE TABS DE CONFIGURAÇÕES
+function trocarTabConfig(tab) {
+    var abas = ['estabelecimento', 'postos-preparacao', 'utilizadores', 'tipos-pedidos', 'metodos-pagamento', 'taxas-iva', 'unidades-medida', 'ficha-tecnica', 'armazens-locais', 'fornecedores', 'tabela-precos', 'tarifas-piscina'];
+    abas.forEach(function(t) {
+        var painel = document.getElementById('painel-' + t);
+        var btn = document.getElementById('tabBtn-' + t);
+        if (painel) painel.classList.add('hidden');
+        if (btn) {
+            btn.classList.remove('bg-custom-primary', 'text-white', 'shadow-sm');
+            btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+        }
+    });
+
+    var painelAtivo = document.getElementById('painel-' + tab);
+    var btnAtivo = document.getElementById('tabBtn-' + tab);
+    if (painelAtivo) painelAtivo.classList.remove('hidden');
+    if (btnAtivo) {
+        btnAtivo.classList.add('bg-custom-primary', 'text-white', 'shadow-sm');
+        btnAtivo.classList.remove('text-gray-600', 'hover:bg-gray-100');
+    }
+
+    if (tab === 'postos-preparacao') renderPostos();
+    if (tab === 'utilizadores') renderUtilizadores();
+    if (tab === 'tipos-pedidos') renderTiposPedidos();
+    if (tab === 'metodos-pagamento') renderMetodosPagamento();
+    if (tab === 'taxas-iva') renderTaxasIva();
+    if (tab === 'unidades-medida') renderUnidades();
+    if (tab === 'ficha-tecnica') renderFichasTecnicas();
+    if (tab === 'armazens-locais') renderArmazensELocais();
+    if (tab === 'fornecedores') renderFornecedores();
+    if (tab === 'tabela-precos') renderPrecosFornecedores();
+    if (tab === 'tarifas-piscina') renderTabelaTarifasPiscinaConfig();
+
+    try { history.replaceState(null, null, '#' + tab); } catch(e){}
+}
+
+// 1. ESTABELECIMENTO
+function renderEstabelecimentos() {
+    var container = document.getElementById('listaEstabelecimentos');
+    if (!container) return;
+    
+    var lista = window.RestauranteApp.estabelecimentos;
+    var html = '';
+    
+    for (var i = 0; i < lista.length; i++) {
+        var est = lista[i];
+        var isAtivo = (est.id === estabAtualId);
+        
+        html += '<div class="p-4 rounded-xl flex items-center justify-between transition ' + (isAtivo ? 'border-2 border-red-500 bg-red-50/20 shadow-sm' : 'border border-gray-200 bg-white') + '">';
+        html += '  <div class="flex items-center space-x-3">';
+        html += '    <img src="' + est.logotipo_url + '" class="w-12 h-12 rounded-full object-cover border shadow-sm">';
+        html += '    <div>';
+        html += '      <h4 class="font-bold text-sm text-gray-900">' + est.nome + '</h4>';
+        html += '      <div class="flex items-center space-x-2 mt-0.5">';
+        html += '        <span class="w-3 h-3 rounded-full border" style="background-color: ' + est.cor_primaria + '"></span>';
+        html += '        <span class="text-xs text-gray-500 font-mono">' + est.moeda + '</span>';
+        html += '        <span class="text-xs text-gray-400">' + (est.telefone || 'Sem telefone') + '</span>';
+        if (est.tem_piscina) {
+            html += '        <span class="text-[10px] bg-sky-100 text-sky-800 font-bold px-1.5 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-person-swimming text-[9px]"></i> Piscina</span>';
+        } else {
+            html += '        <span class="text-[10px] bg-gray-100 text-gray-500 font-bold px-1.5 py-0.5 rounded">Sem Piscina</span>';
+        }
+        html += '      </div>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <div>';
+        if (isAtivo) {
+            html += '    <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full">Activo Agora</span>';
+        } else {
+            html += '    <button type="button" onclick="trocarEstabelecimento(\'' + est.id + '\')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow transition cursor-pointer">Acessar Filial</button>';
+        }
+        html += '  </div>';
+        html += '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function trocarEstabelecimento(id) {
+    fetch('/estabelecimento/selecionar/' + id, { method: 'POST' })
+        .then(function() { window.location.reload(); })
+        .catch(function(err) { console.error(err); window.location.reload(); });
+}
+
+function salvarConfiguracoes() {
+    var corP = document.getElementById('editCorPrimariaText').value;
+    var corS = document.getElementById('editCorSecundariaText').value;
+    var isAtivo = document.getElementById('editAtivo').checked;
+
+    document.documentElement.style.setProperty('--cor-primaria', corP);
+    document.documentElement.style.setProperty('--cor-secundaria', corS);
+
+    var dadosAtualizados = {
+        id: estabAtualId,
+        nome: document.getElementById('editNome').value,
+        moeda: document.getElementById('editMoeda').value,
+        cor_primaria: corP,
+        cor_secundaria: corS,
+        logotipo_url: document.getElementById('editLogoUrl').value,
+        telefone: document.getElementById('editTelefone').value,
+        whatsapp: document.getElementById('editWhatsapp').value,
+        email: document.getElementById('editEmail').value,
+        cidade: document.getElementById('editCidade').value,
+        endereco: document.getElementById('editEndereco').value,
+        horario_abertura: document.getElementById('editHorarioAbertura').value,
+        dias_funcionamento: document.getElementById('editDiasFuncionamento').value,
+        facebook: document.getElementById('editFacebook').value,
+        instagram: document.getElementById('editInstagram').value,
+        website: document.getElementById('editWebsite').value,
+        descricao_rodape: document.getElementById('editDescricaoRodape').value,
+        tem_piscina: document.getElementById('editTemPiscina') ? document.getElementById('editTemPiscina').checked : true,
+        ativo: isAtivo
+    };
+
+    for (var i = 0; i < window.RestauranteApp.estabelecimentos.length; i++) {
+        if (window.RestauranteApp.estabelecimentos[i].id === estabAtualId) {
+            Object.assign(window.RestauranteApp.estabelecimentos[i], dadosAtualizados);
+            break;
+        }
+    }
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fetch('/estabelecimento/atualizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosAtualizados)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        var lbl = document.getElementById('labelEstadoAtivo');
+        if (lbl) {
+            lbl.textContent = isAtivo ? 'Restaurante Activo' : 'Restaurante Inactivo';
+            lbl.className = 'ml-3 text-xs font-bold ' + (isAtivo ? 'text-emerald-700' : 'text-gray-500');
+        }
+        var lblPiscina = document.getElementById('labelTemPiscina');
+        if (lblPiscina) {
+            var temP = dadosAtualizados.tem_piscina;
+            lblPiscina.textContent = temP ? 'Com Piscina' : 'Sem Piscina';
+            lblPiscina.className = 'ml-3 text-xs font-bold ' + (temP ? 'text-sky-800' : 'text-gray-500');
+        }
+        renderEstabelecimentos();
+        alert('Configurações gravadas com sucesso!');
+    })
+    .catch(function(err) {
+        console.error(err);
+        alert('Configurações salvas.');
+    });
+}
+
+function salvarNovoEstabelecimento() {
+    var nome = document.getElementById('novoNome').value;
+    if (!nome) { alert('Informe o nome do novo restaurante.'); return; }
+    var novo = {
+        id: String(Date.now()),
+        nome: nome,
+        moeda: document.getElementById('novoMoeda').value || 'MZN',
+        cor_primaria: document.getElementById('novoCorPrimaria').value || '#0D9488',
+        cor_secundaria: document.getElementById('novoCorSecundaria').value || '#0F172A',
+        logotipo_url: document.getElementById('novoLogo').value || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=80',
+        telefone: document.getElementById('novoTelefone').value || '',
+        email: document.getElementById('novoEmail').value || '',
+        endereco: document.getElementById('novoEndereco').value || '',
+        cidade: 'Maputo',
+        horario_abertura: '10:00 - 23:00',
+        dias_funcionamento: 'Segunda a Domingo',
+        whatsapp: '+258840000000',
+        facebook: 'https://facebook.com',
+        instagram: 'https://instagram.com',
+        website: 'https://meurestaurante.co.mz',
+        descricao_rodape: 'Restaurante de excelência.',
+        tem_piscina: document.getElementById('novoTemPiscina') ? document.getElementById('novoTemPiscina').checked : true,
+        ativo: true
+    };
+
+    if (!window.RestauranteApp.estabelecimentos) window.RestauranteApp.estabelecimentos = [];
+    window.RestauranteApp.estabelecimentos.push(novo);
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalNovoEstabelecimento');
+    renderEstabelecimentos();
+
+    // Enviar para o backend em segundo plano e selecionar
+    fetch('/estabelecimento/novo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novo)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data && data.estabelecimento && data.estabelecimento.id) {
+            novo.id = data.estabelecimento.id;
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            trocarEstabelecimento(novo.id);
+        } else {
+            alert('Filial gravada com sucesso!');
+        }
+    })
+    .catch(function(err) {
+        console.warn('Backend offline ou erro ao sincronizar, filial salva localmente:', err);
+        alert('Nova Filial ' + novo.nome + ' gravada com sucesso!');
+        renderEstabelecimentos();
+    });
+}
+
+// POSTOS DE PREPARAÇÃO
+var editandoPostoId = null;
+
+function renderPostos() {
+    var tbody = document.getElementById('tabelaPostos');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.postos_preparacao || [];
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+        var p = lista[i];
+        var produtos = (window.RestauranteApp.produtos || []).filter(function(x) { return x.posto_id === p.id; });
+        var prodsBadge = produtos.length > 0
+            ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">' + produtos.length + ' produtos vinculados</span>'
+            : '<span class="text-xs text-gray-400">Nenhum produto</span>';
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (p.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 font-mono font-bold text-gray-700">' + p.codigo + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + p.descricao + '</td>';
+        html += '  <td class="p-4">' + prodsBadge + '</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button type="button" onclick="editarPosto(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button type="button" onclick="removerPosto(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="5" class="p-6 text-center text-gray-400 text-xs">Nenhum posto de preparação registado.</td></tr>';
+}
+
+function abrirModalPosto() {
+    editandoPostoId = null;
+    document.getElementById('modalPostoTitulo').innerText = 'Novo Posto de Preparação';
+    document.getElementById('postoCodigo').value = 'PST-0' + ((window.RestauranteApp.postos_preparacao || []).length + 1);
+    document.getElementById('postoDescricao').value = '';
+    abrirModal('modalPosto');
+}
+
+function editarPosto(id) {
+    var p = (window.RestauranteApp.postos_preparacao || []).find(function(item) { return item.id === id; });
+    if (!p) return;
+    editandoPostoId = id;
+    document.getElementById('modalPostoTitulo').innerText = 'Editar Posto de Preparação';
+    document.getElementById('postoCodigo').value = p.codigo;
+    document.getElementById('postoDescricao').value = p.descricao;
+    abrirModal('modalPosto');
+}
+
+function salvarPosto() {
+    var cod = document.getElementById('postoCodigo').value.trim();
+    var desc = document.getElementById('postoDescricao').value.trim();
+    if (!cod || !desc) { alert('Código e Descrição são obrigatórios.'); return; }
+    if (!window.RestauranteApp.postos_preparacao) window.RestauranteApp.postos_preparacao = [];
+
+    var item = { codigo: cod, descricao: desc };
+    if (editandoPostoId) {
+        var idx = window.RestauranteApp.postos_preparacao.findIndex(function(x) { return x.id === editandoPostoId; });
+        if (idx !== -1) {
+            item.id = editandoPostoId;
+            window.RestauranteApp.postos_preparacao[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.postos_preparacao.push(item);
+    }
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    fecharModal('modalPosto');
+    renderPostos();
+    alert('Posto de preparação gravado com sucesso!');
+}
+
+function removerPosto(idx) {
+    if (confirm('Deseja remover este posto de preparação?')) {
+        window.RestauranteApp.postos_preparacao.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderPostos();
+    }
+}
+
+// 2. UTILIZADORES COM RESTAURANTE PERTENCENTE
+function renderOpcoesEstabelecimentos(selecionadoId) {
+    var select = document.getElementById('userEstabelecimento');
+    if (!select) return;
+    var lista = window.RestauranteApp.estabelecimentos || [];
+    var html = '<option value="GLOBAL">[Todos / Administração Central]</option>';
+    lista.forEach(function(e) {
+        var isSel = (String(e.id) === String(selecionadoId));
+        html += '<option value="' + e.id + '" ' + (isSel ? 'selected' : '') + '>' + e.nome + '</option>';
+    });
+    select.innerHTML = html;
+}
+
+function getNomeEstabelecimento(id) {
+    if (!id || id === 'GLOBAL') return 'Todas as Filiais';
+    var e = (window.RestauranteApp.estabelecimentos || []).find(function(item) { return String(item.id) === String(id); });
+    return e ? e.nome : 'Todas as Filiais';
+}
+
+function renderUtilizadores() {
+    var tbody = document.getElementById('tabelaUtilizadores');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.utilizadores || [];
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var u = lista[i];
+        var restNome = getNomeEstabelecimento(u.restaurante_id || u.estabelecimento_id);
+        var uCod = u.codigo || ('USR-00' + (i + 1));
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (u.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + uCod + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + u.nome + '</td>';
+        html += '  <td class="p-4 font-mono text-xs">' + u.email + '</td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"><i class="fa-solid fa-store mr-1"></i>' + restNome + '</span></td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">' + u.perfil + '</span></td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ' + (u.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800') + '">' + (u.ativo ? 'Activo' : 'Inactivo') + '</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button type="button" onclick="editarUtilizador(\'' + u.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button type="button" onclick="removerUtilizador(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhum utilizador registado.</td></tr>';
+}
+
+function toggleSenhaVisibilidadeEstab(inputId, iconId) {
+    var input = document.getElementById(inputId);
+    var icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+function gerarRedefinicaoSenhaEstab() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    var nova = '';
+    for (var i = 0; i < 10; i++) {
+        nova += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    var input = document.getElementById('userPassword');
+    if (input) {
+        input.type = 'text';
+        input.value = nova;
+        var icon = document.getElementById('iconOlhoPassEstab');
+        if (icon) {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+        alert('Nova palavra-passe gerada para redefinição:\n' + nova + '\n\nO utilizador poderá alterá-la no próximo acesso.');
+    }
+}
+
+function abrirModalUtilizador() {
+    editandoUserId = null;
+    document.getElementById('modalUserTitulo').innerText = 'Novo Utilizador';
+    var nextNum = (window.RestauranteApp.utilizadores || []).length + 1;
+    document.getElementById('userCodigo').value = 'USR-00' + nextNum;
+    document.getElementById('userNome').value = '';
+    document.getElementById('userLogin').value = '';
+    document.getElementById('userEmail').value = '';
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').type = 'password';
+    var icon = document.getElementById('iconOlhoPassEstab');
+    if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+    document.getElementById('userForcarRedefinicao').checked = true;
+    renderOpcoesEstabelecimentos(estabAtualId);
+    document.getElementById('userPerfil').value = 'OPERADOR';
+    document.getElementById('userAtivo').checked = true;
+    abrirModal('modalUtilizador');
+}
+
+function editarUtilizador(id) {
+    var u = (window.RestauranteApp.utilizadores || []).find(function(item) { return String(item.id) === String(id); });
+    if (!u) return;
+    editandoUserId = id;
+    document.getElementById('modalUserTitulo').innerText = 'Editar Utilizador';
+    document.getElementById('userCodigo').value = u.codigo || ('USR-00' + id);
+    document.getElementById('userNome').value = u.nome;
+    document.getElementById('userLogin').value = u.username || u.login || u.nome.toLowerCase().replace(/\s+/g, '.');
+    document.getElementById('userEmail').value = u.email;
+    document.getElementById('userPassword').value = u.password || '••••••••';
+    document.getElementById('userPassword').type = 'password';
+    var icon = document.getElementById('iconOlhoPassEstab');
+    if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+    document.getElementById('userForcarRedefinicao').checked = false;
+    renderOpcoesEstabelecimentos(u.restaurante_id || u.estabelecimento_id || estabAtualId);
+    document.getElementById('userPerfil').value = u.perfil;
+    document.getElementById('userAtivo').checked = u.ativo;
+    abrirModal('modalUtilizador');
+}
+
+function salvarUtilizador() {
+    var cod = document.getElementById('userCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('userNome').value.trim();
+    var login = document.getElementById('userLogin').value.trim();
+    var email = document.getElementById('userEmail').value.trim();
+    var pass = document.getElementById('userPassword').value.trim();
+    var estId = document.getElementById('userEstabelecimento').value;
+    if (!cod || !nome || !email) { alert('Código, nome completo e email são obrigatórios.'); return; }
+    if (!editandoUserId && !pass) { alert('Defina a palavra-passe do utilizador.'); return; }
+
+    var item = {
+        codigo: cod,
+        nome: nome,
+        username: login || nome.toLowerCase().replace(/\s+/g, '.'),
+        email: email,
+        password: pass,
+        forcar_redefinicao: document.getElementById('userForcarRedefinicao').checked,
+        restaurante_id: estId,
+        estabelecimento_id: estId,
+        perfil: document.getElementById('userPerfil').value,
+        ativo: document.getElementById('userAtivo').checked
+    };
+
+    if (editandoUserId) {
+        var idx = window.RestauranteApp.utilizadores.findIndex(function(x) { return x.id === editandoUserId; });
+        if (idx !== -1) {
+            item.id = editandoUserId;
+            window.RestauranteApp.utilizadores[idx] = Object.assign({}, window.RestauranteApp.utilizadores[idx], item);
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.utilizadores.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalUtilizador');
+    renderUtilizadores();
+    alert('Utilizador gravado com sucesso!');
+}
+
+function removerUtilizador(idx) {
+    if (confirm('Deseja remover este utilizador?')) {
+        window.RestauranteApp.utilizadores.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderUtilizadores();
+    }
+}
+
+// 3. TIPOS DE PEDIDOS
+function renderTiposPedidos() {
+    var tbody = document.getElementById('tabelaTiposPedidos');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.tipos_pedidos || [];
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var t = lista[i];
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (t.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 font-mono font-bold text-gray-700">' + t.codigo + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + t.descricao + '</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button type="button" onclick="editarTipoPedido(\'' + t.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button type="button" onclick="removerTipoPedido(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="4" class="p-6 text-center text-gray-400 text-xs">Nenhum tipo de pedido registado.</td></tr>';
+}
+
+function abrirModalTipoPedido() {
+    editandoTipoId = null;
+    document.getElementById('modalTipoTitulo').innerText = 'Novo Tipo de Pedido';
+    document.getElementById('tipoCodigo').value = 'TP-0' + ((window.RestauranteApp.tipos_pedidos || []).length + 1);
+    document.getElementById('tipoDescricao').value = '';
+    abrirModal('modalTipoPedido');
+}
+
+function editarTipoPedido(id) {
+    var t = (window.RestauranteApp.tipos_pedidos || []).find(function(item) { return item.id === id; });
+    if (!t) return;
+    editandoTipoId = id;
+    document.getElementById('modalTipoTitulo').innerText = 'Editar Tipo de Pedido';
+    document.getElementById('tipoCodigo').value = t.codigo;
+    document.getElementById('tipoDescricao').value = t.descricao;
+    abrirModal('modalTipoPedido');
+}
+
+function salvarTipoPedido() {
+    var codigo = document.getElementById('tipoCodigo').value.trim();
+    var desc = document.getElementById('tipoDescricao').value.trim();
+    if (!codigo || !desc) { alert('Código e Descrição são obrigatórios.'); return; }
+
+    var item = { codigo: codigo, descricao: desc };
+
+    if (editandoTipoId) {
+        var idx = window.RestauranteApp.tipos_pedidos.findIndex(function(x) { return x.id === editandoTipoId; });
+        if (idx !== -1) {
+            item.id = editandoTipoId;
+            window.RestauranteApp.tipos_pedidos[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.tipos_pedidos.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalTipoPedido');
+    renderTiposPedidos();
+    alert('Tipo de pedido gravado com sucesso!');
+}
+
+function removerTipoPedido(idx) {
+    if (confirm('Deseja remover este tipo de pedido?')) {
+        window.RestauranteApp.tipos_pedidos.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderTiposPedidos();
+    }
+}
+
+// 4. MÉTODOS DE PAGAMENTO
+function renderMetodosPagamento() {
+    var tbody = document.getElementById('tabelaMetodosPagamento');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.metodos_pagamento || [];
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+        var m = lista[i];
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (m.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + m.codigo + '</td>';
+        html += '  <td class="p-4 text-center"><i class="' + (m.icone || 'fa-solid fa-credit-card') + ' text-lg ' + (m.cor || 'text-gray-600') + '"></i></td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + m.nome + '</td>';
+        html += '  <td class="p-4 text-xs">' + (m.permite_troco ? '<span class="text-green-600 font-bold"><i class="fa-solid fa-check mr-1"></i>Sim</span>' : '<span class="text-gray-400">Não</span>') + '</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-bold rounded-full ' + (m.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700') + '">' + (m.ativo ? 'Activo' : 'Inactivo') + '</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="removerMetodoPag(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-6 text-center text-gray-400 text-xs">Nenhum método registado.</td></tr>';
+}
+
+function abrirModalPagamento() {
+    document.getElementById('pagCodigo').value = '';
+    document.getElementById('pagNome').value = '';
+    abrirModal('modalPagamento');
+}
+
+function salvarMetodoPagamento() {
+    var cod = document.getElementById('pagCodigo').value.trim();
+    var nome = document.getElementById('pagNome').value.trim();
+    var icone = document.getElementById('pagIcone').value.trim() || 'fa-solid fa-credit-card';
+    var troco = document.getElementById('pagTroco').checked;
+    if (!cod || !nome) { alert('Preencha o código e o nome!'); return; }
+
+    window.RestauranteApp.metodos_pagamento.push({
+        id: String(Date.now()),
+        codigo: cod,
+        nome: nome,
+        icone: icone,
+        cor: "text-blue-500",
+        permite_troco: troco,
+        ativo: true
+    });
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+    fecharModal('modalPagamento');
+    renderMetodosPagamento();
+    alert('Método de pagamento gravado com sucesso!');
+}
+
+function removerMetodoPag(idx) {
+    if (confirm('Remover este método de pagamento?')) {
+        window.RestauranteApp.metodos_pagamento.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderMetodosPagamento();
+    }
+}
+
+var editandoIvaId = null;
+
+function renderTaxasIva() {
+    var tbody = document.getElementById('tabelaTaxasIva');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.taxas_iva || [];
+    var html = '';
+    lista.forEach(function(t, i) {
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (t.id || (i+1)) + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + t.codigo + '</td>';
+        html += '  <td class="p-4 font-black text-lg text-custom-primary">' + Number(t.iva).toFixed(1) + '%</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-600">' + (t.moeda || 'MZN') + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-500">' + (t.descricao || '—') + '</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-bold rounded-full ' + (t.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600') + '">' + (t.ativo ? 'Activa' : 'Inactiva') + '</span></td>';
+        html += '  <td class="p-4 text-center">' + (t.padrao ? '<i class="fa-solid fa-star text-amber-500 text-base" title="Predefinida"></i>' : '<span class="text-gray-300">—</span>') + '</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarTaxaIva(\'' + t.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer text-xs font-bold" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerIva(' + i + ')" class="text-red-500 hover:text-red-700 cursor-pointer text-xs" title="Remover"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhuma taxa registada.</td></tr>';
+}
+
+function abrirModalIva() {
+    editandoIvaId = null;
+    document.getElementById('ivaCodigo').value = '';
+    document.getElementById('ivaPercentagem').value = '';
+    document.getElementById('ivaMoeda').value = 'MZN';
+    document.getElementById('ivaDescricao').value = '';
+    document.getElementById('ivaAtivo').checked = true;
+    document.getElementById('ivaPadrao').checked = false;
+    abrirModal('modalIva');
+}
+
+function editarTaxaIva(id) {
+    var t = (window.RestauranteApp.taxas_iva || []).find(function(x) { return String(x.id) === String(id); });
+    if (!t) return;
+    editandoIvaId = id;
+    document.getElementById('ivaCodigo').value = t.codigo;
+    document.getElementById('ivaPercentagem').value = t.iva;
+    document.getElementById('ivaMoeda').value = t.moeda || 'MZN';
+    document.getElementById('ivaDescricao').value = t.descricao || '';
+    document.getElementById('ivaAtivo').checked = t.ativo !== false;
+    document.getElementById('ivaPadrao').checked = !!t.padrao;
+    abrirModal('modalIva');
+}
+
+function salvarTaxaIva() {
+    var cod = document.getElementById('ivaCodigo').value.trim().toUpperCase();
+    var perc = parseFloat(document.getElementById('ivaPercentagem').value);
+    if (!cod || isNaN(perc)) { alert('Preencha o código e a taxa (%)!'); return; }
+    if (!window.RestauranteApp.taxas_iva) window.RestauranteApp.taxas_iva = [];
+    var lista = window.RestauranteApp.taxas_iva;
+    var isPad = document.getElementById('ivaPadrao').checked;
+    if (isPad) lista.forEach(function(t) { t.padrao = false; });
+
+    var item = {
+        codigo: cod,
+        iva: perc,
+        moeda: document.getElementById('ivaMoeda').value.trim() || 'MZN',
+        descricao: document.getElementById('ivaDescricao').value.trim(),
+        ativo: document.getElementById('ivaAtivo').checked,
+        padrao: isPad
+    };
+
+    if (editandoIvaId) {
+        var idx = lista.findIndex(function(x) { return String(x.id) === String(editandoIvaId); });
+        if (idx !== -1) {
+            item.id = editandoIvaId;
+            lista[idx] = Object.assign({}, lista[idx], item);
+        }
+    } else {
+        item.id = String(Date.now());
+        lista.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalIva');
+    renderTaxasIva();
+    alert('Taxa de IVA gravada com sucesso!');
+}
+
+function removerIva(idx) {
+    if (confirm('Remover esta taxa de IVA?')) {
+        window.RestauranteApp.taxas_iva.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderTaxasIva();
+    }
+}
+
+// ── UNIDADES DE MEDIDA ───────────────────────────────────────────────────────
+function renderUnidades() {
+    var tbody = document.getElementById('tabelaUnidadesMedida');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.unidades_medida || [];
+    var html = '';
+    lista.forEach(function(u, i) {
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400">' + (i + 1) + '</td>';
+        html += '  <td class="p-4 font-black font-mono text-custom-primary text-sm">' + u.codigo + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + u.nome + '</td>';
+        html += '  <td class="p-4 text-xs font-medium">' + (u.permite_decimal ? 'Sim (Ex: 1.5 KG, 2.75 LT)' : 'Não (Números inteiros)') + '</td>';
+        html += '  <td class="p-4 text-right"><button onclick="removerUnidade(' + i + ')" class="text-red-500 hover:text-red-700 cursor-pointer text-xs"><i class="fa-solid fa-trash"></i></button></td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="5" class="p-6 text-center text-gray-400 text-xs">Nenhuma unidade registada.</td></tr>';
+}
+
+function abrirModalUnidade() {
+    document.getElementById('unidCodigo').value = '';
+    document.getElementById('unidNome').value = '';
+    document.getElementById('unidDecimal').checked = false;
+    abrirModal('modalUnidade');
+}
+
+function salvarUnidade() {
+    var cod = document.getElementById('unidCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('unidNome').value.trim();
+    if (!cod || !nome) { alert('Preencha o código e o nome da unidade!'); return; }
+    if (!window.RestauranteApp.unidades_medida) window.RestauranteApp.unidades_medida = [];
+    window.RestauranteApp.unidades_medida.push({
+        codigo: cod,
+        nome: nome,
+        permite_decimal: document.getElementById('unidDecimal').checked
+    });
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    fecharModal('modalUnidade');
+    renderUnidades();
+    alert('Unidade de medida gravada com sucesso!');
+}
+
+function removerUnidade(idx) {
+    if (confirm('Remover esta unidade de medida?')) {
+        window.RestauranteApp.unidades_medida.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderUnidades();
+    }
+}
+
+// ── FICHA TÉCNICA ────────────────────────────────────────────────────────────
+function renderFichasTecnicas() {
+    var tbody = document.getElementById('tabelaFichasTecnicas');
+    if (!tbody) return;
+    var produtos = window.RestauranteApp.produtos || [];
+    var html = '';
+
+    for (var i = 0; i < produtos.length; i++) {
+        var p = produtos[i];
+        var insumos = p.ficha_tecnica || [];
+        var custoTotal = 0;
+
+        var insumosHtml = '';
+        if (insumos.length > 0) {
+            for (var k = 0; k < insumos.length; k++) {
+                var item = insumos[k];
+                var sub = (Number(item.quantidade) || 0) * (Number(item.custo_unitario) || 0);
+                custoTotal += sub;
+                insumosHtml += '<div class="text-xs text-gray-700 font-medium">• ' + item.stock_nome + ': <span class="font-bold">' + item.quantidade + ' ' + item.unidade + '</span> (' + sub.toFixed(2) + ' MZN)</div>';
+            }
+        } else {
+            insumosHtml = '<span class="text-xs text-gray-400 italic">Sem insumos vinculados</span>';
+        }
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-500">' + p.codigo_produto + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + p.categoria_emoji + ' ' + p.nome + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-orange-700">' + (p.posto_nome || 'Cozinha') + '</td>';
+        html += '  <td class="p-4 space-y-1">' + insumosHtml + '</td>';
+        html += '  <td class="p-4 font-black text-purple-700 font-mono text-sm">' + custoTotal.toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4 font-bold text-gray-900 font-mono">' + Number(p.preco).toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4 text-right">';
+        html += '    <a href="/produtos" class="px-3 py-1.5 bg-purple-100 text-purple-800 hover:bg-purple-200 rounded-lg text-xs font-bold inline-flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i> Editar Ficha</a>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-6 text-center text-gray-400 text-xs">Nenhum produto cadastrado.</td></tr>';
+}
+
+// ── ARMAZÉNS & LOCAIS ────────────────────────────────────────────────────────
+function renderArmazensELocais() {
+    var divArm = document.getElementById('listaArmazens');
+    var divLoc = document.getElementById('listaLocais');
+    if (!divArm || !divLoc) return;
+
+    var arm = window.RestauranteApp.armazens || [];
+    divArm.innerHTML = arm.map(function(a) {
+        return '<div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">'
+            + '<div><h4 class="font-bold text-xs text-gray-900">' + a.nome + '</h4>'
+            + '<span class="text-[10px] text-gray-500 font-mono">' + a.codigo + ' • ' + a.tipo + (a.localizacao ? ' (' + a.localizacao + ')' : '') + '</span></div>'
+            + '<span class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Activo</span></div>';
+    }).join('') || '<p class="text-xs text-gray-400">Nenhum armazém registado.</p>';
+
+    var loc = window.RestauranteApp.locais_armazenamento || [];
+    divLoc.innerHTML = loc.map(function(l) {
+        var ic = (['GELEIRA', 'CONGELADOR', 'CAMARA_FRIA'].indexOf(l.tipo) >= 0) ? 'fa-snowflake text-cyan-600' : 'fa-layer-group text-amber-600';
+        return '<div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">'
+            + '<div class="flex items-center space-x-3"><div class="w-8 h-8 rounded-lg bg-white border flex items-center justify-center"><i class="fa-solid ' + ic + '"></i></div>'
+            + '<div><h4 class="font-bold text-xs text-gray-900">' + l.descricao + '</h4>'
+            + '<span class="text-[10px] text-gray-500 font-mono">' + l.codigo + ' • ' + (l.armazem_nome || '') + '</span></div></div>'
+            + '<span class="text-[10px] uppercase font-bold text-gray-600 bg-gray-200 px-2 py-0.5 rounded">' + l.tipo + '</span></div>';
+    }).join('') || '<p class="text-xs text-gray-400">Nenhum local registado.</p>';
+}
+
+function abrirModalArmazem() {
+    var nextId = ((window.RestauranteApp.armazens || []).length + 1);
+    document.getElementById('armCodigo').value = 'ARM-0' + nextId;
+    document.getElementById('armNome').value = '';
+    document.getElementById('armTipo').value = 'Logística & Armazenamento';
+    document.getElementById('armLocalizacao').value = '';
+    abrirModal('modalArmazem');
+}
+
+function salvarArmazem() {
+    var cod = document.getElementById('armCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('armNome').value.trim();
+    var tipo = document.getElementById('armTipo').value.trim();
+    var loc = document.getElementById('armLocalizacao').value.trim();
+    if (!cod || !nome) { alert('Código e Nome do armazém são obrigatórios.'); return; }
+
+    if (!window.RestauranteApp.armazens) window.RestauranteApp.armazens = [];
+    window.RestauranteApp.armazens.push({
+        id: String(Date.now()),
+        codigo: cod,
+        nome: nome,
+        tipo: tipo || 'Geral',
+        localizacao: loc || 'Piso Principal'
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalArmazem');
+    renderArmazensELocais();
+    alert('Novo Armazém gravado com sucesso!');
+}
+
+function abrirModalLocal() {
+    var nextId = ((window.RestauranteApp.locais_armazenamento || []).length + 1);
+    document.getElementById('locCodigo').value = 'LOC-0' + nextId;
+    document.getElementById('locDescricao').value = '';
+    
+    var selArm = document.getElementById('locArmazemSelect');
+    if (selArm) {
+        var arms = window.RestauranteApp.armazens || [];
+        var html = '';
+        for (var i = 0; i < arms.length; i++) {
+            html += '<option value="' + arms[i].nome + '">' + arms[i].nome + ' (' + arms[i].codigo + ')</option>';
+        }
+        selArm.innerHTML = html || '<option value="Armazém Principal Central">Armazém Principal Central</option>';
+    }
+
+    abrirModal('modalLocal');
+}
+
+function salvarLocal() {
+    var cod = document.getElementById('locCodigo').value.trim().toUpperCase();
+    var tipo = document.getElementById('locTipo').value;
+    var desc = document.getElementById('locDescricao').value.trim();
+    var selArm = document.getElementById('locArmazemSelect');
+    var armNome = selArm ? selArm.value : 'Armazém Principal';
+    if (!cod || !desc) { alert('Código e Descrição do local são obrigatórios.'); return; }
+
+    if (!window.RestauranteApp.locais_armazenamento) window.RestauranteApp.locais_armazenamento = [];
+    window.RestauranteApp.locais_armazenamento.push({
+        id: String(Date.now()),
+        codigo: cod,
+        armazem_nome: armNome,
+        descricao: desc,
+        tipo: tipo
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalLocal');
+    renderArmazensELocais();
+    alert('Novo Local Físico gravado com sucesso!');
+}
+
+// ── FORNECEDORES ────────────────────────────────────────────────────────────
+var editandoFornId = null;
+
+function renderFornecedores() {
+    var tbody = document.getElementById('tabelaFornecedores');
+    if (!tbody) return;
+    var forns = window.RestauranteApp.fornecedores || [];
+    var html = '';
+
+    for (var i = 0; i < forns.length; i++) {
+        var f = forns[i];
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-xs text-gray-500">' + (f.codigo || ('FORN-0' + (i + 1))) + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + f.nome + '</td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs rounded-full bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200">' + (f.categoria || 'Geral') + '</span></td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-700">' + (f.telefone || '-') + '<br><span class="text-gray-400 font-mono text-[11px]">' + (f.email || '') + '</span></td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-600">' + (f.nuit || '-') + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-700">' + (f.prazo_entrega || '24h') + '</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarFornecedor(\'' + f.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerFornecedor(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-6 text-center text-gray-400 text-xs">Nenhum fornecedor registado.</td></tr>';
+}
+
+function abrirModalFornecedor() {
+    editandoFornId = null;
+    document.getElementById('modalFornecedorTitulo').innerText = 'Novo Fornecedor';
+    var nextNum = (window.RestauranteApp.fornecedores || []).length + 1;
+    document.getElementById('fornCodigo').value = 'FORN-0' + nextNum;
+    document.getElementById('fornNome').value = '';
+    document.getElementById('fornCategoria').value = '';
+    document.getElementById('fornNuit').value = '';
+    document.getElementById('fornTelefone').value = '';
+    document.getElementById('fornPrazo').value = '24 a 48 Horas';
+    document.getElementById('fornEmail').value = '';
+    abrirModal('modalFornecedor');
+}
+
+function editarFornecedor(id) {
+    var f = (window.RestauranteApp.fornecedores || []).find(function(item) { return item.id === id; });
+    if (!f) return;
+    editandoFornId = id;
+    document.getElementById('modalFornecedorTitulo').innerText = 'Editar Fornecedor';
+    document.getElementById('fornCodigo').value = f.codigo;
+    document.getElementById('fornNome').value = f.nome;
+    document.getElementById('fornCategoria').value = f.categoria || '';
+    document.getElementById('fornNuit').value = f.nuit || '';
+    document.getElementById('fornTelefone').value = f.telefone || '';
+    document.getElementById('fornPrazo').value = f.prazo_entrega || '';
+    document.getElementById('fornEmail').value = f.email || '';
+    abrirModal('modalFornecedor');
+}
+
+function salvarFornecedor() {
+    var nome = document.getElementById('fornNome').value.trim();
+    if (!nome) { alert('Informe o nome da empresa fornecedora.'); return; }
+    var cod = document.getElementById('fornCodigo').value.trim();
+    var nuit = document.getElementById('fornNuit').value.trim();
+    var nuitNumerico = nuit.replace(/[^0-9]/g, '');
+
+    if (!nuitNumerico || nuitNumerico.length !== 10) {
+        alert('O NUIT da empresa fornecedora deve conter exactamente 10 dígitos numéricos (Moçambique). Exemplo: 4001239999');
+        return;
+    }
+
+    var item = {
+        codigo: cod,
+        nome: nome,
+        categoria: document.getElementById('fornCategoria').value.trim(),
+        nuit: nuitNumerico,
+        nif: nuitNumerico,
+        telefone: document.getElementById('fornTelefone').value.trim(),
+        prazo_entrega: document.getElementById('fornPrazo').value.trim(),
+        email: document.getElementById('fornEmail').value.trim()
+    };
+
+    if (!window.RestauranteApp.fornecedores) window.RestauranteApp.fornecedores = [];
+
+    if (editandoFornId) {
+        var idx = window.RestauranteApp.fornecedores.findIndex(function(x) { return x.id === editandoFornId; });
+        if (idx !== -1) {
+            item.id = editandoFornId;
+            window.RestauranteApp.fornecedores[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.fornecedores.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalFornecedor');
+    renderFornecedores();
+    alert('Fornecedor gravado com sucesso!');
+}
+
+function removerFornecedor(idx) {
+    if (confirm('Deseja remover este fornecedor?')) {
+        window.RestauranteApp.fornecedores.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderFornecedores();
+    }
+}
+
+// ── TABELA DE PREÇOS DE FORNECEDORES (4ª IMAGEM) ──────────────────────────
+var editandoPrecoFornId = null;
+
+function renderPrecosFornecedores() {
+    var tbody = document.getElementById('tabelaPrecosFornecedores');
+    if (!tbody) return;
+    var precos = window.RestauranteApp.tabela_precos_fornecedores || [];
+    var html = '';
+
+    for (var i = 0; i < precos.length; i++) {
+        var p = precos[i];
+        var unCaixa = Number(p.unidades_caixa || p.unidades_por_caixa || 1);
+        if (unCaixa <= 0) unCaixa = 1;
+        var prCaixa = Number(p.preco_caixa || 0);
+        var custoUnit = unCaixa > 0 ? (prCaixa / unCaixa) : Number(p.custo_unitario || p.custo_unitario_calculado || 0);
+        if (isNaN(custoUnit)) custoUnit = 0;
+        var custoAtual = Number(p.custo_atual || p.custo_atual_stock || 0);
+        var pVenda = Number(p.preco_venda_sugerido || 0);
+        var fornNome = p.fornecedor_nome;
+        if (!fornNome && p.fornecedor_id) {
+            var fMatch = (window.RestauranteApp.fornecedores || []).find(function(f) { return String(f.id) === String(p.fornecedor_id); });
+            fornNome = fMatch ? fMatch.nome : 'CDM';
+        }
+
+        html += '<tr class="hover:bg-amber-50/30 transition">';
+        html += '  <td class="p-4 font-bold text-gray-900">' + (p.produto_nome || 'Produto') + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-600"><span class="px-2 py-0.5 rounded bg-gray-100">' + (fornNome || 'CDM') + '</span></td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-gray-500">' + custoAtual.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-emerald-700 bg-emerald-50/40">' + prCaixa.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-center font-bold text-gray-800">' + unCaixa + ' un</td>';
+        html += '  <td class="p-4 text-right font-mono font-black text-amber-600 bg-amber-50/60">' + custoUnit.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-gray-900">' + pVenda.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarPrecoFornecedor(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerPrecoFornecedor(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer" title="Remover"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhum preço de fornecedor registado.</td></tr>';
+}
+
+function abrirModalPrecoFornecedor() {
+    editandoPrecoFornId = null;
+    document.getElementById('modalPrecoFornTitulo').innerText = 'Novo Preço de Fornecedor';
+
+    // Preencher select de produtos
+    var selProd = document.getElementById('tabFornProdSelect');
+    var prods = window.RestauranteApp.produtos || [];
+    var htmlP = '';
+    for (var i = 0; i < prods.length; i++) {
+        var custo = prods[i].preco_custo || (prods[i].preco ? (prods[i].preco * 0.6) : 0);
+        htmlP += '<option value="' + prods[i].id + '">' + prods[i].nome + ' (Custo: ' + Number(custo).toFixed(2) + ' MT)</option>';
+    }
+    selProd.innerHTML = htmlP;
+
+    // Preencher select de fornecedores
+    var selForn = document.getElementById('tabFornFornecedorSelect');
+    var forns = window.RestauranteApp.fornecedores || [];
+    var htmlF = '';
+    for (var j = 0; j < forns.length; j++) {
+        htmlF += '<option value="' + forns[j].nome + '">' + forns[j].nome + '</option>';
+    }
+    selForn.innerHTML = htmlF || '<option value="CDM">Cervejas de Moçambique (CDM)</option>';
+
+    document.getElementById('tabFornPrecoCaixa').value = '1200.00';
+    document.getElementById('tabFornUnidadesCaixa').value = '24';
+    document.getElementById('tabFornPrecoVenda').value = '80.00';
+    calcularCustoUnitarioModal();
+
+    abrirModal('modalPrecoFornecedor');
+}
+
+function aoMudarProdTabPreco() {
+    var sel = document.getElementById('tabFornProdSelect');
+    var prod = (window.RestauranteApp.produtos || []).find(function(p) { return String(p.id) === String(sel.value); });
+    if (prod) {
+        document.getElementById('tabFornPrecoVenda').value = prod.preco || prod.preco_venda || '';
+    }
+    calcularCustoUnitarioModal();
+}
+
+function calcularCustoUnitarioModal() {
+    var cx = parseFloat(document.getElementById('tabFornPrecoCaixa').value) || 0;
+    var un = parseInt(document.getElementById('tabFornUnidadesCaixa').value) || 1;
+    var unit = un > 0 ? (cx / un) : 0;
+    var el = document.getElementById('tabFornCustoUnitarioCalc');
+    if (el) el.innerText = unit.toFixed(2) + ' MT';
+}
+
+function editarPrecoFornecedor(id) {
+    var p = (window.RestauranteApp.tabela_precos_fornecedores || []).find(function(item) { return String(item.id) === String(id); });
+    if (!p) return;
+    abrirModalPrecoFornecedor();
+    editandoPrecoFornId = id;
+    document.getElementById('modalPrecoFornTitulo').innerText = 'Editar Preço de Fornecedor';
+
+    var selProd = document.getElementById('tabFornProdSelect');
+    // Verificar se o produto já está no select por id ou nome
+    var optEncontrada = null;
+    for (var i = 0; i < selProd.options.length; i++) {
+        if ((p.produto_id && selProd.options[i].value === String(p.produto_id)) ||
+            (p.produto_nome && selProd.options[i].text.toLowerCase().indexOf(p.produto_nome.toLowerCase().trim()) >= 0)) {
+            optEncontrada = selProd.options[i];
+            break;
+        }
+    }
+    if (optEncontrada) {
+        selProd.value = optEncontrada.value;
+    } else {
+        // Injetar option para o produto da tabela de preços para nunca ficar em branco
+        var opt = document.createElement('option');
+        opt.value = p.produto_id || ('prod_' + p.id);
+        opt.textContent = p.produto_nome + ' (Custo: ' + Number(p.custo_atual || p.custo_atual_stock || 0).toFixed(2) + ' MT)';
+        selProd.appendChild(opt);
+        selProd.value = opt.value;
+    }
+
+    // Selecionar Fornecedor
+    var selForn = document.getElementById('tabFornFornecedorSelect');
+    var fornNomeAlvo = p.fornecedor_nome;
+    if (!fornNomeAlvo && p.fornecedor_id) {
+        var fMatch = (window.RestauranteApp.fornecedores || []).find(function(f) { return String(f.id) === String(p.fornecedor_id); });
+        if (fMatch) fornNomeAlvo = fMatch.nome;
+    }
+    if (fornNomeAlvo) {
+        var achouForn = false;
+        for (var j = 0; j < selForn.options.length; j++) {
+            if (selForn.options[j].value.toLowerCase().trim() === fornNomeAlvo.toLowerCase().trim() ||
+                selForn.options[j].text.toLowerCase().trim() === fornNomeAlvo.toLowerCase().trim()) {
+                selForn.selectedIndex = j;
+                achouForn = true;
+                break;
+            }
+        }
+        if (!achouForn) {
+            var optF = document.createElement('option');
+            optF.value = fornNomeAlvo;
+            optF.textContent = fornNomeAlvo;
+            selForn.appendChild(optF);
+            selForn.value = fornNomeAlvo;
+        }
+    }
+
+    var cxVal = (p.preco_caixa !== undefined && p.preco_caixa !== null) ? p.preco_caixa : 0;
+    var unVal = p.unidades_caixa || p.unidades_por_caixa || 1;
+    var pvVal = (p.preco_venda_sugerido !== undefined && p.preco_venda_sugerido !== null) ? p.preco_venda_sugerido : '';
+
+    document.getElementById('tabFornPrecoCaixa').value = cxVal;
+    document.getElementById('tabFornUnidadesCaixa').value = unVal;
+    document.getElementById('tabFornPrecoVenda').value = pvVal;
+    calcularCustoUnitarioModal();
+}
+
+function salvarPrecoFornecedor() {
+    var selProd = document.getElementById('tabFornProdSelect');
+    var selForn = document.getElementById('tabFornFornecedorSelect');
+    var prodId = selProd.value;
+    var prodNome = selProd.options[selProd.selectedIndex].text.split(' (')[0];
+    var fornNome = selForn.value;
+    var cx = parseFloat(document.getElementById('tabFornPrecoCaixa').value) || 0;
+    var un = parseInt(document.getElementById('tabFornUnidadesCaixa').value) || 1;
+    var pv = parseFloat(document.getElementById('tabFornPrecoVenda').value) || 0;
+    var unit = un > 0 ? (cx / un) : 0;
+
+    var prod = (window.RestauranteApp.produtos || []).find(function(x) { return String(x.id) === String(prodId) || (x.nome && x.nome.toLowerCase() === prodNome.toLowerCase()); });
+    var custoAtual = prod ? (prod.preco_custo || prod.preco * 0.6) : unit;
+
+    var item = {
+        produto_id: prodId,
+        produto_nome: prodNome,
+        fornecedor_nome: fornNome,
+        custo_atual: custoAtual,
+        custo_atual_stock: custoAtual,
+        preco_caixa: cx,
+        unidades_caixa: un,
+        unidades_por_caixa: un,
+        custo_unitario: unit,
+        custo_unitario_calculado: unit,
+        preco_venda_sugerido: pv
+    };
+
+    if (!window.RestauranteApp.tabela_precos_fornecedores) window.RestauranteApp.tabela_precos_fornecedores = [];
+
+    if (editandoPrecoFornId) {
+        var idx = window.RestauranteApp.tabela_precos_fornecedores.findIndex(function(x) { return String(x.id) === String(editandoPrecoFornId); });
+        if (idx !== -1) {
+            item.id = editandoPrecoFornId;
+            window.RestauranteApp.tabela_precos_fornecedores[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.tabela_precos_fornecedores.push(item);
+    }
+
+    if (prod) {
+        prod.preco_custo = unit;
+        if (pv > 0) prod.preco = pv;
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalPrecoFornecedor');
+    renderPrecosFornecedores();
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Preço de fornecedor gravado com sucesso!\n\n• Produto: ' + prodNome + '\n• Fornecedor: ' + fornNome + '\n• Preço Caixa: ' + cx.toFixed(2) + ' MT\n• Unidades: ' + un + '\n• Custo Unitário: ' + unit.toFixed(2) + ' MT', 'Preço Gravado', 'sucesso');
+    } else {
+        alert('Preço de fornecedor gravado com sucesso! Custo Unitário: ' + unit.toFixed(2) + ' MT');
+    }
+}
+
+function removerPrecoFornecedor(idx) {
+    var msg = 'Deseja remover este item da tabela de preços?';
+    if (window.confirmarAcaoAmigavel) {
+        window.confirmarAcaoAmigavel(msg, 'Remover Preço', function() {
+            window.RestauranteApp.tabela_precos_fornecedores.splice(idx, 1);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            renderPrecosFornecedores();
+        });
+    } else if (confirm(msg)) {
+        window.RestauranteApp.tabela_precos_fornecedores.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderPrecosFornecedores();
+    }
+}
+
+// 11. TARIFAS DE PISCINA & ACESSOS
+function renderTabelaTarifasPiscinaConfig() {
+    var corpo = document.getElementById('tabelaTarifasPiscina');
+    if (!corpo) return;
+
+    if (!window.RestauranteApp.tarifas_piscina) window.RestauranteApp.tarifas_piscina = [];
+    var lista = window.RestauranteApp.tarifas_piscina;
+    var html = '';
+
+    if (lista.length === 0) {
+        corpo.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">Nenhuma tarifa de piscina configurada. Clique em "Nova Tarifa" para adicionar.</td></tr>';
+        return;
+    }
+
+    lista.forEach(function(t, idx) {
+        var statusBadge = t.ativo !== false
+            ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check-circle mr-1 text-[9px]"></i> Activa</span>'
+            : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600"><i class="fa-solid fa-ban mr-1 text-[9px]"></i> Inactiva</span>';
+
+        html += '<tr class="hover:bg-gray-50/80 transition">';
+        html += '  <td class="p-4 font-bold text-gray-800 text-xs flex items-center gap-2">';
+        html += '    <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs"><i class="fa-solid fa-person-swimming"></i></div>';
+        html += '    <span>' + (t.categoria || 'Geral') + '</span>';
+        html += '  </td>';
+        html += '  <td class="p-4 text-xs text-gray-600"><span class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 font-semibold text-[11px]">' + (t.periodo || 'Dia Inteiro') + '</span></td>';
+        html += '  <td class="p-4 text-xs text-gray-500 max-w-xs truncate">' + (t.descricao || '—') + '</td>';
+        html += '  <td class="p-4 text-right font-black text-xs ' + (Number(t.preco) === 0 ? 'text-emerald-600' : 'text-sky-900') + '">' + (Number(t.preco) === 0 ? 'Gratuito / Isento' : Number(t.preco).toFixed(2) + ' MT') + '</td>';
+        html += '  <td class="p-4 text-center">' + statusBadge + '</td>';
+        html += '  <td class="p-4 text-right space-x-1">';
+        html += '    <button type="button" onclick="editarTarifaPiscina(' + idx + ')" class="px-2.5 py-1 text-sky-600 hover:bg-sky-50 rounded-lg text-xs font-semibold cursor-pointer"><i class="fa-solid fa-pen-to-square"></i> Editar</button>';
+        html += '    <button type="button" onclick="removerTarifaPiscina(' + idx + ')" class="px-2.5 py-1 text-red-600 hover:bg-red-50 rounded-lg text-xs font-semibold cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    });
+
+    corpo.innerHTML = html;
+}
+
+function abrirModalTarifaPiscina() {
+    document.getElementById('tituloModalTarifaPiscina').textContent = 'Nova Tarifa de Piscina';
+    document.getElementById('tarifaPiscinaId').value = '';
+    document.getElementById('tarifaPiscinaCategoria').value = '';
+    document.getElementById('tarifaPiscinaPeriodo').value = 'Dia Inteiro';
+    document.getElementById('tarifaPiscinaPreco').value = '';
+    document.getElementById('tarifaPiscinaDescricao').value = '';
+    document.getElementById('tarifaPiscinaAtivo').checked = true;
+
+    var modal = document.getElementById('modalTarifaPiscina');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function fecharModalTarifaPiscina() {
+    var modal = document.getElementById('modalTarifaPiscina');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function editarTarifaPiscina(idx) {
+    var item = (window.RestauranteApp.tarifas_piscina || [])[idx];
+    if (!item) return;
+
+    document.getElementById('tituloModalTarifaPiscina').textContent = 'Editar Tarifa: ' + item.categoria;
+    document.getElementById('tarifaPiscinaId').value = idx;
+    document.getElementById('tarifaPiscinaCategoria').value = item.categoria || '';
+    document.getElementById('tarifaPiscinaPeriodo').value = item.periodo || 'Dia Inteiro';
+    document.getElementById('tarifaPiscinaPreco').value = item.preco !== undefined ? item.preco : '';
+    document.getElementById('tarifaPiscinaDescricao').value = item.descricao || '';
+    document.getElementById('tarifaPiscinaAtivo').checked = item.ativo !== false;
+
+    var modal = document.getElementById('modalTarifaPiscina');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function salvarTarifaPiscina() {
+    var cat = (document.getElementById('tarifaPiscinaCategoria').value || '').trim();
+    var per = document.getElementById('tarifaPiscinaPeriodo').value;
+    var precoRaw = document.getElementById('tarifaPiscinaPreco').value;
+    var desc = (document.getElementById('tarifaPiscinaDescricao').value || '').trim();
+    var ativo = document.getElementById('tarifaPiscinaAtivo').checked;
+    var idxStr = document.getElementById('tarifaPiscinaId').value;
+
+    if (!cat) {
+        alert('Por favor, informe a categoria ou público da tarifa.');
+        return;
+    }
+    if (precoRaw === '' || isNaN(Number(precoRaw)) || Number(precoRaw) < 0) {
+        alert('Por favor, informe um preço válido (0 ou superior).');
+        return;
+    }
+
+    if (!window.RestauranteApp.tarifas_piscina) window.RestauranteApp.tarifas_piscina = [];
+
+    var preco = Number(precoRaw);
+
+    if (idxStr !== '') {
+        var idx = parseInt(idxStr, 10);
+        if (window.RestauranteApp.tarifas_piscina[idx]) {
+            window.RestauranteApp.tarifas_piscina[idx].categoria = cat;
+            window.RestauranteApp.tarifas_piscina[idx].periodo = per;
+            window.RestauranteApp.tarifas_piscina[idx].preco = preco;
+            window.RestauranteApp.tarifas_piscina[idx].descricao = desc;
+            window.RestauranteApp.tarifas_piscina[idx].ativo = ativo;
+        }
+    } else {
+        var novoId = String(window.RestauranteApp.tarifas_piscina.length + 1);
+        window.RestauranteApp.tarifas_piscina.push({
+            id: novoId,
+            categoria: cat,
+            periodo: per,
+            preco: preco,
+            descricao: desc,
+            ativo: ativo
+        });
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    fecharModalTarifaPiscina();
+    renderTabelaTarifasPiscinaConfig();
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Tarifa de piscina gravada com sucesso!\n• Categoria: ' + cat + '\n• Valor: ' + preco.toFixed(2) + ' MT', 'Tarifa Gravada', 'sucesso');
+    }
+}
+
+function removerTarifaPiscina(idx) {
+    var item = (window.RestauranteApp.tarifas_piscina || [])[idx];
+    var nome = item ? item.categoria : 'esta tarifa';
+    var msg = 'Deseja realmente remover a tarifa "' + nome + '"?';
+
+    var executar = function() {
+        window.RestauranteApp.tarifas_piscina.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderTabelaTarifasPiscinaConfig();
+    };
+
+    if (window.confirmarAcaoAmigavel) {
+        window.confirmarAcaoAmigavel(msg, 'Remover Tarifa', executar);
+    } else if (confirm(msg)) {
+        executar();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderEstabelecimentos();
+    
+    // Suporte a hash na URL para qualquer aba
+    var hash = window.location.hash.replace('#', '');
+    var abasValidas = ['postos-preparacao', 'utilizadores', 'tipos-pedidos', 'metodos-pagamento', 'taxas-iva', 'unidades-medida', 'ficha-tecnica', 'armazens-locais', 'fornecedores', 'tabela-precos', 'tarifas-piscina'];
+    if (hash && abasValidas.indexOf(hash) !== -1) {
+        trocarTabConfig(hash);
+    }
+
+    var toggleAtivo = document.getElementById('editAtivo');
+    if (toggleAtivo) {
+        toggleAtivo.addEventListener('change', function() {
+            var lbl = document.getElementById('labelEstadoAtivo');
+            if (lbl) {
+                lbl.textContent = this.checked ? 'Restaurante Activo' : 'Restaurante Inactivo';
+                lbl.className = 'ml-3 text-xs font-bold ' + (this.checked ? 'text-emerald-700' : 'text-gray-500');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,641 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Cabeçalho Principal -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl shadow-sm p-6 border-l-4 border-cyan-500">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-motorcycle text-cyan-600"></i> Gestão de Delivery, Veículos & Frotas
+            </h1>
+            <p class="text-gray-500 mt-1">Registo e controlo em tabelas interactivas de veículos, motociclos, frotas, motoristas e tipos de transporte com gestão de fotos.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="abrirModalVeiculo()" class="px-4 py-2.5 bg-custom-primary hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer transition">
+                <i class="fa-solid fa-plus"></i> Novo Veículo
+            </button>
+            <button type="button" onclick="abrirModalMotorista()" class="px-4 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition">
+                <i class="fa-solid fa-user-plus"></i> Novo Motorista
+            </button>
+            <button type="button" onclick="abrirModalTipoVeiculo()" class="px-4 py-2.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition">
+                <i class="fa-solid fa-tags"></i> Tipos de Veículos
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS DE FROTAS (Tabelas) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex flex-wrap gap-2">
+        <button type="button" onclick="trocarTabFrota('veiculos')" id="tabBtnFrota-veiculos" class="tab-frota-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-cyan-600 text-white cursor-pointer shadow-sm">
+            <i class="fa-solid fa-motorcycle"></i> Tabela de Veículos & Motociclos (<span id="countVeiculosBadge">0</span>)
+        </button>
+        <button type="button" onclick="trocarTabFrota('motoristas')" id="tabBtnFrota-motoristas" class="tab-frota-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-id-card"></i> Tabela de Motoristas & Estafetas (<span id="countMotoristasBadge">0</span>)
+        </button>
+        <button type="button" onclick="trocarTabFrota('tipos')" id="tabBtnFrota-tipos" class="tab-frota-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-layer-group"></i> Tipos de Veículo & Características (<span id="countTiposBadge">0</span>)
+        </button>
+    </div>
+
+    <!-- PAINEL 1: TABELA DE VEÍCULOS & MOTOCICLOS -->
+    <div id="painelFrota-veiculos" class="space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
+                <h4 class="font-bold text-xs uppercase text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-car-side text-cyan-600"></i> Frota Activa de Entrega
+                </h4>
+                <span class="text-xs text-gray-400">Veículos prontos e em serviço</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b">
+                        <tr>
+                            <th class="p-3">Foto</th>
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Modelo / Marca</th>
+                            <th class="p-3">Tipo</th>
+                            <th class="p-3">Matrícula</th>
+                            <th class="p-3">Ano / Cor</th>
+                            <th class="p-3">Motorista Vinculado</th>
+                            <th class="p-3 text-center">Estado</th>
+                            <th class="p-3 text-right">Acções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaVeiculosCorpo" class="divide-y divide-gray-100">
+                        <!-- Preenchido via renderVeiculos() -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL 2: TABELA DE MOTORISTAS & ESTAFETAS -->
+    <div id="painelFrota-motoristas" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
+                <h4 class="font-bold text-xs uppercase text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-users text-cyan-600"></i> Cadastro de Motoristas e Estafetas
+                </h4>
+                <span class="text-xs text-gray-400">Equipa de Logística</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b">
+                        <tr>
+                            <th class="p-3">Foto</th>
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Nome Completo</th>
+                            <th class="p-3">Telemóvel</th>
+                            <th class="p-3">Carta Condução</th>
+                            <th class="p-3">Veículo Associado</th>
+                            <th class="p-3 text-center">Entregas</th>
+                            <th class="p-3 text-center">Estado</th>
+                            <th class="p-3 text-right">Acções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaMotoristasCorpo" class="divide-y divide-gray-100">
+                        <!-- Preenchido via renderMotoristas() -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL 3: TABELA DE TIPOS DE VEÍCULO -->
+    <div id="painelFrota-tipos" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
+                <h4 class="font-bold text-xs uppercase text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-cyan-600"></i> Tipos de Veículos e Características Técnicas
+                </h4>
+                <span class="text-xs text-gray-400">Classificação da Frota</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b">
+                        <tr>
+                            <th class="p-3 text-center">Ícone</th>
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Tipo de Veículo</th>
+                            <th class="p-3 text-center">Capacidade Carga</th>
+                            <th class="p-3 text-center">Autonomia</th>
+                            <th class="p-3">Características & Finalidade</th>
+                            <th class="p-3 text-right">Acções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaTiposVeiculoCorpo" class="divide-y divide-gray-100">
+                        <!-- Preenchido via renderTiposVeiculo() -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: NOVO / EDITAR VEÍCULO                                              -->
+<!-- ========================================================================= -->
+<div id="modalVeiculo" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 id="modalVeiculoTitulo" class="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-motorcycle text-cyan-600"></i> Novo Veículo de Delivery
+            </h3>
+            <button type="button" onclick="fecharModal('modalVeiculo')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formVeiculo" onsubmit="salvarVeiculo(event)" class="space-y-3.5 text-xs overflow-y-auto pr-1">
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Código *</label>
+                    <input type="text" id="veicCodigo" value="VEI-04" class="w-full px-3 py-2 border rounded-xl font-mono font-bold bg-gray-50 outline-none" required>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Modelo / Marca *</label>
+                    <input type="text" id="veicModelo" placeholder="Ex: Honda Ace 125 CC" class="w-full px-3 py-2 border rounded-xl font-semibold outline-none focus:border-cyan-500" required>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Veículo *</label>
+                    <select id="veicTipoSelect" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none focus:bg-white" required>
+                        <!-- Preenchido dinamicamente -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Matrícula *</label>
+                    <input type="text" id="veicMatricula" placeholder="Ex: AFM-492-MC" class="w-full px-3 py-2 border rounded-xl font-mono font-bold uppercase outline-none focus:border-cyan-500" required>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Ano de Fabrico</label>
+                    <input type="number" id="veicAno" value="2024" min="2000" max="2030" class="w-full px-3 py-2 border rounded-xl outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Cor do Veículo</label>
+                    <input type="text" id="veicCor" placeholder="Ex: Vermelho & Branco" class="w-full px-3 py-2 border rounded-xl outline-none">
+                </div>
+            </div>
+
+            <!-- Imagem do Veículo com Preview -->
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">URL da Imagem / Foto do Veículo</label>
+                <div class="flex items-center space-x-3">
+                    <img id="veicImgPreview" src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=150&auto=format&fit=crop&q=80" class="w-14 h-14 rounded-xl object-cover border border-gray-200 shadow-sm">
+                    <div class="flex-1 space-y-1">
+                        <input type="text" id="veicImgUrl" value="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=300&auto=format&fit=crop&q=80" oninput="document.getElementById('veicImgPreview').src = this.value" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono outline-none">
+                        <p class="text-[10px] text-gray-400">Insira um link direto de imagem para visualização na frota.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Motorista / Estafeta Vinculado</label>
+                    <select id="veicMotoristaSelect" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                        <!-- Preenchido dinamicamente -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Estado Operacional</label>
+                    <select id="veicEstado" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-bold outline-none">
+                        <option value="DISPONIVEL">Disponível para Entregas</option>
+                        <option value="EM_ENTREGA">Em Rota de Entrega</option>
+                        <option value="MANUTENCAO">Em Manutenção Mecânica</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalVeiculo')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-custom-primary hover:opacity-90 text-white font-bold rounded-xl text-xs shadow transition">Gravar Veículo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: NOVO / EDITAR MOTORISTA                                            -->
+<!-- ========================================================================= -->
+<div id="modalMotorista" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 id="modalMotoristaTitulo" class="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-user-plus text-gray-800"></i> Novo Motorista / Estafeta
+            </h3>
+            <button type="button" onclick="fecharModal('modalMotorista')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formMotorista" onsubmit="salvarMotorista(event)" class="space-y-3.5 text-xs">
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Código *</label>
+                    <input type="text" id="motCodigo" value="MOT-03" class="w-full px-3 py-2 border rounded-xl font-mono font-bold bg-gray-50 outline-none" required>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nome Completo *</label>
+                    <input type="text" id="motNome" placeholder="Ex: António Macuácua" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Telemóvel *</label>
+                    <input type="text" id="motTelefone" placeholder="+258 84 000 0000" class="w-full px-3 py-2 border rounded-xl outline-none font-bold" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Carta de Condução *</label>
+                    <input type="text" id="motCarta" placeholder="Ex: MC-994821-A" class="w-full px-3 py-2 border rounded-xl font-mono outline-none" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Foto do Motorista (URL)</label>
+                <div class="flex items-center space-x-3">
+                    <img id="motFotoPreview" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-full object-cover border border-gray-200">
+                    <input type="text" id="motFoto" value="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" oninput="document.getElementById('motFotoPreview').src = this.value" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Estado</label>
+                <select id="motEstado" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-bold outline-none">
+                    <option value="DISPONIVEL">Disponível para Trabalho</option>
+                    <option value="EM_ROTA">Em Rota de Entrega</option>
+                    <option value="FOLGA">De Folga / Indisponível</option>
+                </select>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalMotorista')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl text-xs shadow transition">Gravar Motorista</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: NOVO / EDITAR TIPO DE VEÍCULO                                      -->
+<!-- ========================================================================= -->
+<div id="modalTipoVeiculo" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-tags text-cyan-600"></i> Registar Tipo de Veículo
+            </h3>
+            <button type="button" onclick="fecharModal('modalTipoVeiculo')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formTipoVeiculo" onsubmit="salvarTipoVeiculo(event)" class="space-y-3.5 text-xs">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Código do Tipo *</label>
+                <input type="text" id="tipoCodigo" placeholder="Ex: TP-FURGAO" class="w-full px-3 py-2 border rounded-xl font-mono uppercase outline-none" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nome / Descrição do Tipo *</label>
+                <input type="text" id="tipoNome" placeholder="Ex: Furgão Refrigerado" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Capacidade Carga (kg)</label>
+                    <input type="number" id="tipoCapacidade" value="50" min="1" class="w-full px-3 py-2 border rounded-xl outline-none font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Autonomia Típica (km)</label>
+                    <input type="number" id="tipoAutonomia" value="200" min="1" class="w-full px-3 py-2 border rounded-xl outline-none font-bold">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Características & Finalidade</label>
+                <textarea id="tipoDescricao" rows="2" placeholder="Ex: Ideal para entrega de grandes encomendas e bebidas..." class="w-full px-3 py-2 border rounded-xl outline-none"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalTipoVeiculo')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-cyan-700 hover:bg-cyan-800 text-white font-bold rounded-xl text-xs shadow transition">Gravar Tipo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var editandoVeiculoId = null;
+
+function trocarTabFrota(tab) {
+    var tabs = ['veiculos', 'motoristas', 'tipos'];
+    tabs.forEach(function(t) {
+        var painel = document.getElementById('painelFrota-' + t);
+        var btn = document.getElementById('tabBtnFrota-' + t);
+        if (painel) painel.classList.toggle('hidden', t !== tab);
+        if (btn) {
+            if (t === tab) {
+                btn.className = 'tab-frota-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-cyan-600 text-white cursor-pointer shadow-sm';
+            } else {
+                btn.className = 'tab-frota-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer';
+            }
+        }
+    });
+
+    if (tab === 'veiculos') renderVeiculos();
+    if (tab === 'motoristas') renderMotoristas();
+    if (tab === 'tipos') renderTiposVeiculo();
+}
+
+function renderVeiculos() {
+    var tbody = document.getElementById('tabelaVeiculosCorpo');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.veiculos_delivery || [];
+    var badgeC = document.getElementById('countVeiculosBadge');
+    if (badgeC) badgeC.innerText = lista.length;
+
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+        var v = lista[i];
+        var isDisp = (v.estado === 'DISPONIVEL');
+        var badgeCor = isDisp ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+        var imgUrl = v.imagem_url || v.foto_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=150&auto=format&fit=crop&q=80';
+        var modeloNome = v.marca_modelo || v.modelo || 'Veículo ' + v.codigo;
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-3"><img src="' + imgUrl + '" class="w-12 h-12 rounded-xl object-cover border border-gray-200 shadow-sm"></td>';
+        html += '  <td class="p-3 font-mono font-bold text-sky-900">' + v.codigo + '</td>';
+        html += '  <td class="p-3 font-bold text-gray-900">' + modeloNome + '</td>';
+        html += '  <td class="p-3 font-semibold text-gray-600">' + (v.tipo_nome || 'Motociclo') + '</td>';
+        html += '  <td class="p-3 font-mono font-bold text-xs bg-gray-50 px-2 py-1 rounded border inline-block my-2">' + v.matricula + '</td>';
+        html += '  <td class="p-3 text-gray-500">' + (v.ano || 2024) + ' • ' + (v.cor || 'Branco') + '</td>';
+        html += '  <td class="p-3 font-semibold text-gray-800"><i class="fa-solid fa-user text-cyan-600 mr-1.5"></i>' + (v.motorista_nome || 'Nenhum') + '</td>';
+        html += '  <td class="p-3 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ' + badgeCor + '">' + v.estado + '</span></td>';
+        html += '  <td class="p-3 text-right space-x-2">';
+        html += '    <button type="button" onclick="editarVeiculo(\'' + v.id + '\')" class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button type="button" onclick="removerVeiculo(' + i + ')" class="text-red-600 hover:text-red-800 font-bold cursor-pointer" title="Remover"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+
+    tbody.innerHTML = html || '<tr><td colspan="9" class="p-8 text-center text-gray-400">Nenhum veículo registado na frota.</td></tr>';
+}
+
+function renderMotoristas() {
+    var tbody = document.getElementById('tabelaMotoristasCorpo');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.motoristas_delivery || [];
+    var badgeC = document.getElementById('countMotoristasBadge');
+    if (badgeC) badgeC.innerText = lista.length;
+
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+        var m = lista[i];
+        var fotoUrl = m.foto_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
+        var tel = m.telefone || m.telemovel || 'Sem contacto';
+        var veic = m.veiculo_matricula || m.veiculo_vinculado || 'Livre';
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-3"><img src="' + fotoUrl + '" class="w-10 h-10 rounded-full object-cover border border-gray-200"></td>';
+        html += '  <td class="p-3 font-mono font-bold text-xs text-gray-500">' + m.codigo + '</td>';
+        html += '  <td class="p-3 font-bold text-gray-900">' + m.nome + '</td>';
+        html += '  <td class="p-3 font-mono text-xs font-semibold text-emerald-700">' + tel + '</td>';
+        html += '  <td class="p-3 font-mono text-xs text-gray-600">' + m.carta_conducao + '</td>';
+        html += '  <td class="p-3"><span class="px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 text-xs font-bold border border-cyan-200">' + veic + '</span></td>';
+        html += '  <td class="p-3 text-center font-bold text-gray-800">' + (m.total_entregas || 0) + '</td>';
+        html += '  <td class="p-3 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">' + m.estado + '</span></td>';
+        html += '  <td class="p-3 text-right">';
+        html += '    <button type="button" onclick="removerMotorista(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer" title="Remover"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="9" class="p-8 text-center text-gray-400">Nenhum motorista registado.</td></tr>';
+}
+
+function renderTiposVeiculo() {
+    var tbody = document.getElementById('tabelaTiposVeiculoCorpo');
+    if (!tbody) return;
+    var tipos = window.RestauranteApp.tipos_veiculos || [];
+    var badgeT = document.getElementById('countTiposBadge');
+    if (badgeT) badgeT.innerText = tipos.length;
+
+    var html = '';
+    for (var i = 0; i < tipos.length; i++) {
+        var t = tipos[i];
+        var icone = (t.codigo && t.codigo.indexOf('MOTO') >= 0) ? '🏍️' : ((t.codigo && t.codigo.indexOf('SCOOTER') >= 0) ? '🛵' : '🚗');
+        var tipoNome = t.tipo || t.nome || t.codigo;
+        var cap = (t.capacidade_carga_kg ? t.capacidade_carga_kg + ' kg' : (t.capacidade_carga || '50 kg'));
+        var aut = (t.autonomia_km ? t.autonomia_km + ' km' : (t.autonomia || '200 km'));
+        var desc = t.caracteristicas || t.descricao || 'Transporte operacional';
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-3 text-center text-xl">' + icone + '</td>';
+        html += '  <td class="p-3 font-mono font-bold text-xs text-gray-500">' + t.codigo + '</td>';
+        html += '  <td class="p-3 font-bold text-gray-900">' + tipoNome + '</td>';
+        html += '  <td class="p-3 text-center font-mono text-xs font-semibold text-gray-700">' + cap + '</td>';
+        html += '  <td class="p-3 text-center text-xs text-gray-600">' + aut + '</td>';
+        html += '  <td class="p-3 text-xs text-gray-600">' + desc + '</td>';
+        html += '  <td class="p-3 text-right"><span class="text-xs text-emerald-600 font-bold">Activo</span></td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-8 text-center text-gray-400">Nenhum tipo de veículo configurado.</td></tr>';
+}
+
+function abrirModalVeiculo() {
+    editandoVeiculoId = null;
+    document.getElementById('modalVeiculoTitulo').innerHTML = '<i class="fa-solid fa-motorcycle text-cyan-600"></i> Novo Veículo de Delivery';
+
+    // Tipos de veículo
+    var selTipo = document.getElementById('veicTipoSelect');
+    var tipos = window.RestauranteApp.tipos_veiculos || [];
+    var htmlT = '';
+    for (var i = 0; i < tipos.length; i++) {
+        var nomeT = tipos[i].tipo || tipos[i].nome || tipos[i].codigo;
+        htmlT += '<option value="' + nomeT + '">' + nomeT + '</option>';
+    }
+    selTipo.innerHTML = htmlT;
+
+    // Motoristas
+    var selMot = document.getElementById('veicMotoristaSelect');
+    var mots = window.RestauranteApp.motoristas_delivery || [];
+    var htmlM = '<option value="">[Nenhum Motorista Vinculado]</option>';
+    for (var j = 0; j < mots.length; j++) {
+        htmlM += '<option value="' + mots[j].nome + '">' + mots[j].nome + ' (' + mots[j].codigo + ')</option>';
+    }
+    selMot.innerHTML = htmlM;
+
+    var next = (window.RestauranteApp.veiculos_delivery || []).length + 1;
+    document.getElementById('veicCodigo').value = 'VEI-0' + next;
+    document.getElementById('veicModelo').value = '';
+    document.getElementById('veicMatricula').value = '';
+    document.getElementById('veicAno').value = 2024;
+    document.getElementById('veicCor').value = 'Branco';
+    document.getElementById('veicImgUrl').value = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=300&auto=format&fit=crop&q=80';
+    document.getElementById('veicImgPreview').src = document.getElementById('veicImgUrl').value;
+    abrirModal('modalVeiculo');
+}
+
+function editarVeiculo(id) {
+    var v = (window.RestauranteApp.veiculos_delivery || []).find(function(x) { return x.id === id; });
+    if (!v) return;
+    editandoVeiculoId = id;
+    abrirModalVeiculo();
+    document.getElementById('modalVeiculoTitulo').innerHTML = '<i class="fa-solid fa-pen-to-square text-cyan-600"></i> Editar Veículo ' + v.codigo;
+    document.getElementById('veicCodigo').value = v.codigo;
+    document.getElementById('veicModelo').value = v.marca_modelo || v.modelo || '';
+    document.getElementById('veicMatricula').value = v.matricula || '';
+    document.getElementById('veicAno').value = v.ano || 2024;
+    document.getElementById('veicCor').value = v.cor || '';
+    document.getElementById('veicTipoSelect').value = v.tipo_nome || '';
+    document.getElementById('veicMotoristaSelect').value = v.motorista_nome || '';
+    document.getElementById('veicImgUrl').value = v.imagem_url || v.foto_url || '';
+    document.getElementById('veicImgPreview').src = document.getElementById('veicImgUrl').value;
+    document.getElementById('veicEstado').value = v.estado || 'DISPONIVEL';
+}
+
+function salvarVeiculo(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var cod = document.getElementById('veicCodigo').value.trim();
+    var mod = document.getElementById('veicModelo').value.trim();
+    var mat = document.getElementById('veicMatricula').value.trim().toUpperCase();
+    var tipo = document.getElementById('veicTipoSelect').value;
+    var mot = document.getElementById('veicMotoristaSelect').value;
+    var img = document.getElementById('veicImgUrl').value.trim();
+    var est = document.getElementById('veicEstado').value;
+    var ano = parseInt(document.getElementById('veicAno').value || 2024);
+    var cor = document.getElementById('veicCor').value.trim() || 'Branco';
+
+    if (!mod || !mat) { alert('Informe o Modelo e a Matrícula do veículo!'); return; }
+
+    var item = {
+        id: editandoVeiculoId || String(Date.now()),
+        codigo: cod,
+        tipo_nome: tipo,
+        marca_modelo: mod,
+        modelo: mod,
+        matricula: mat,
+        motorista_nome: mot || 'Livre',
+        imagem_url: img || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=300&auto=format&fit=crop&q=80',
+        foto_url: img || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=300&auto=format&fit=crop&q=80',
+        estado: est,
+        ano: ano,
+        cor: cor
+    };
+
+    if (!window.RestauranteApp.veiculos_delivery) window.RestauranteApp.veiculos_delivery = [];
+
+    if (editandoVeiculoId) {
+        var idx = window.RestauranteApp.veiculos_delivery.findIndex(function(x) { return x.id === editandoVeiculoId; });
+        if (idx !== -1) window.RestauranteApp.veiculos_delivery[idx] = item;
+    } else {
+        window.RestauranteApp.veiculos_delivery.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalVeiculo');
+    renderVeiculos();
+    alert('Veículo guardado com sucesso na frota!');
+}
+
+function removerVeiculo(idx) {
+    if (confirm('Deseja remover este veículo da frota?')) {
+        window.RestauranteApp.veiculos_delivery.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderVeiculos();
+    }
+}
+
+function abrirModalMotorista() {
+    var next = (window.RestauranteApp.motoristas_delivery || []).length + 1;
+    document.getElementById('motCodigo').value = 'MOT-0' + next;
+    document.getElementById('motNome').value = '';
+    document.getElementById('motTelefone').value = '';
+    document.getElementById('motCarta').value = '';
+    abrirModal('modalMotorista');
+}
+
+function salvarMotorista(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var cod = document.getElementById('motCodigo').value.trim();
+    var nome = document.getElementById('motNome').value.trim();
+    var tel = document.getElementById('motTelefone').value.trim();
+    var carta = document.getElementById('motCarta').value.trim();
+    var foto = document.getElementById('motFoto').value.trim();
+    var est = document.getElementById('motEstado').value;
+
+    if (!nome || !tel) { alert('Informe o Nome e Telemóvel do motorista!'); return; }
+
+    if (!window.RestauranteApp.motoristas_delivery) window.RestauranteApp.motoristas_delivery = [];
+    window.RestauranteApp.motoristas_delivery.push({
+        id: String(Date.now()),
+        codigo: cod,
+        nome: nome,
+        telefone: tel,
+        telemovel: tel,
+        carta_conducao: carta || 'MZ-000000',
+        foto_url: foto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        veiculo_vinculado: 'Livre',
+        veiculo_matricula: 'Livre',
+        total_entregas: 0,
+        estado: est
+    });
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalMotorista');
+    renderMotoristas();
+    alert('Motorista registado com sucesso!');
+}
+
+function removerMotorista(idx) {
+    if (confirm('Deseja remover este motorista?')) {
+        window.RestauranteApp.motoristas_delivery.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderMotoristas();
+    }
+}
+
+function abrirModalTipoVeiculo() {
+    var next = (window.RestauranteApp.tipos_veiculos || []).length + 1;
+    document.getElementById('tipoCodigo').value = 'TP-0' + next;
+    document.getElementById('tipoNome').value = '';
+    document.getElementById('tipoCapacidade').value = 50;
+    document.getElementById('tipoAutonomia').value = 200;
+    document.getElementById('tipoDescricao').value = '';
+    abrirModal('modalTipoVeiculo');
+}
+
+function salvarTipoVeiculo(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var cod = document.getElementById('tipoCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('tipoNome').value.trim();
+    var cap = parseInt(document.getElementById('tipoCapacidade').value || 50);
+    var aut = parseInt(document.getElementById('tipoAutonomia').value || 200);
+    var desc = document.getElementById('tipoDescricao').value.trim();
+
+    if (!cod || !nome) { alert('Preencha o código e o nome do tipo!'); return; }
+
+    if (!window.RestauranteApp.tipos_veiculos) window.RestauranteApp.tipos_veiculos = [];
+    window.RestauranteApp.tipos_veiculos.push({
+        id: String(Date.now()),
+        codigo: cod,
+        tipo: nome,
+        nome: nome,
+        capacidade_carga_kg: cap,
+        capacidade_carga: cap + ' kg',
+        autonomia_km: aut,
+        autonomia: aut + ' km',
+        caracteristicas: desc || 'Padrão'
+    });
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalTipoVeiculo');
+    renderTiposVeiculo();
+    alert('Tipo de veículo adicionado com sucesso!');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderVeiculos();
+    renderMotoristas();
+    renderTiposVeiculo();
+});
+</script>
+{% endblock %}

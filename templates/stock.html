@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Gestão de Stock & Armazenamento</h1>
+            <p class="text-gray-500">Separado por Tipo (Tabs) com controle físico de Estantes, Prateleiras, Geleiras e Congeladores.</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="abrirModalAjuste()" class="px-4 py-2 bg-amber-600 text-white rounded-lg font-semibold shadow hover:bg-amber-700 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-scale-balanced"></i> Ajuste de Stock
+            </button>
+            <button onclick="abrirModalStock()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Novo Item de Stock
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS DE SEPARAÇÃO POR TIPO DE PRODUTO -->
+    <div class="flex border-b border-gray-200 space-x-2">
+        <button onclick="trocarTabStock('todos')" id="tabStock-todos" class="tab-btn px-4 py-2.5 font-bold text-sm border-b-2 border-red-600 text-red-600 cursor-pointer">
+            Todos os Itens
+        </button>
+        <button onclick="trocarTabStock('comida')" id="tabStock-comida" class="tab-btn px-4 py-2.5 font-bold text-sm text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5">
+            🍲 Comida & Ingredientes
+        </button>
+        <button onclick="trocarTabStock('bebida')" id="tabStock-bebida" class="tab-btn px-4 py-2.5 font-bold text-sm text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5">
+            🍹 Bar & Bebidas (Geleiras)
+        </button>
+        <button onclick="trocarTabStock('sobremesa')" id="tabStock-sobremesa" class="tab-btn px-4 py-2.5 font-bold text-sm text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5">
+            🍰 Pastelaria (Congeladores)
+        </button>
+    </div>
+
+    <!-- Tabela Stock -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Item de Stock</th>
+                        <th class="p-4">Tipo</th>
+                        <th class="p-4">Localização / Frio</th>
+                        <th class="p-4">Qtd Actual</th>
+                        <th class="p-4">Custo Stock (Actual)</th>
+                        <th class="p-4">Custo Compra (Fornecedor)</th>
+                        <th class="p-4">Preço Venda Ref.</th>
+                        <th class="p-4">Lucro Líquido Unit.</th>
+                        <th class="p-4">Margem (%)</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaStock" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal CRUD Stock -->
+    <div id="modalStock" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalStockTitulo" class="font-bold text-lg text-gray-800">Novo Item de Stock</h3>
+                <button type="button" onclick="fecharModal('modalStock')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Item *</label>
+                    <input type="text" id="stockNome" placeholder="Ex: Queijo Mozzarella (kg)" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-medium">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Produto (Tab) *</label>
+                        <select id="stockTipo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold">
+                            <option value="comida">Comida & Ingredientes</option>
+                            <option value="bebida">Bar & Bebidas</option>
+                            <option value="sobremesa">Pastelaria & Sobremesas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Setor / Local</label>
+                        <select id="stockLocal" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold">
+                            <option value="armazem_principal">Armazém Principal</option>
+                            <option value="bar">Bar</option>
+                            <option value="cozinha">Cozinha</option>
+                            <option value="pastelaria">Pastelaria</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- LOCALIZAÇÃO: ESTANTES, PRATELEIRAS, GELEIRAS/CONGELADORES -->
+                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
+                    <span class="text-xs font-bold text-gray-700 uppercase">Organização Física no Estabelecimento</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-0.5">Estante</label>
+                            <input type="text" id="stockEstante" placeholder="Estante B" class="w-full px-2 py-1.5 border rounded text-xs bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-0.5">Prateleira</label>
+                            <input type="text" id="stockPrateleira" placeholder="Prateleira 03" class="w-full px-2 py-1.5 border rounded text-xs bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-0.5">Geleira / Congelador</label>
+                            <input type="text" id="stockRefrigeracao" placeholder="Geleira Bar 01" class="w-full px-2 py-1.5 border rounded text-xs bg-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidade</label>
+                        <select id="stockUnidade" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
+                            <option value="KG">KG</option>
+                            <option value="UN">UN</option>
+                            <option value="LT">LT</option>
+                            <option value="CX">CX</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Qtd Actual</label>
+                        <input type="number" step="0.1" id="stockQtd" value="10" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Qtd Mínima</label>
+                        <input type="number" step="0.1" id="stockMinimo" value="5" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Custo Actual Stock *</label>
+                        <input type="number" step="0.01" id="stockCusto" value="250.00" oninput="calcularLucroModalStock()" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold text-gray-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-700 uppercase mb-1">Custo Compra (Fornecedor)</label>
+                        <input type="number" step="0.01" id="stockCustoCompra" value="220.00" oninput="calcularLucroModalStock()" class="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm outline-none font-bold text-blue-900 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Preço Venda Ref. ({{ estabelecimento.moeda }})</label>
+                        <input type="number" step="0.01" id="stockPrecoVenda" value="450.00" oninput="calcularLucroModalStock()" class="w-full px-3 py-2 border border-emerald-300 rounded-lg text-sm outline-none font-bold text-emerald-900 bg-white">
+                    </div>
+                </div>
+
+                <!-- Indicador de Lucro Líquido e Margem no Modal -->
+                <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
+                    <div>
+                        <span class="text-gray-500 font-semibold">Lucro Líquido Unitário:</span>
+                        <b class="text-emerald-800 ml-1" id="stockModalLucroLiquido">0.00 {{ estabelecimento.moeda }}</b>
+                    </div>
+                    <div>
+                        <span class="text-gray-500 font-semibold">Margem Bruta:</span>
+                        <b class="text-teal-800 ml-1" id="stockModalMargemPerc">0.0%</b>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalStock')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarStock()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Ajuste de Stock -->
+    <div id="modalAjuste" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-scale-balanced text-amber-600 text-lg"></i>
+                    <h3 class="font-bold text-lg text-gray-800">Ajuste / Inventário de Stock</h3>
+                </div>
+                <button type="button" onclick="fecharModal('modalAjuste')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Item a Ajustar *</label>
+                    <select id="ajusteItemSelect" onchange="preencherQtdAtualAjuste()" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-medium">
+                        <!-- Preenchido via abrirModalAjuste() -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Qtd Actual no Sistema</label>
+                        <input type="text" id="ajusteQtdAtual" readonly class="w-full px-3 py-2 border rounded-lg text-sm bg-gray-100 font-bold text-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nova Qtd Real (Física) *</label>
+                        <input type="number" step="0.01" id="ajusteQtdNova" placeholder="Ex: 12.5" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold text-amber-700">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Motivo do Ajuste *</label>
+                    <select id="ajusteMotivo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
+                        <option value="Inventário Periódico / Contagem">Inventário Periódico / Contagem Física</option>
+                        <option value="Perda / Danificado / Validade">Perda / Danificado / Validade</option>
+                        <option value="Acerto de Balanço / Desvio">Acerto de Balanço / Desvio</option>
+                        <option value="Outro Motivo">Outro Motivo</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observações</label>
+                    <input type="text" id="ajusteObs" placeholder="Ex: Conferido pelo encarregado de stock" class="w-full px-3 py-2 border rounded-lg text-xs outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalAjuste')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarAjusteStock()" class="px-5 py-2 bg-amber-600 text-white font-bold rounded-lg text-sm shadow hover:bg-amber-700 cursor-pointer">
+                        Confirmar Ajuste
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var editandoStockId = null;
+var tabStockAtiva = 'todos';
+
+function trocarTabStock(tab) {
+    tabStockAtiva = tab;
+    var botoes = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < botoes.length; i++) {
+        botoes[i].classList.remove('border-b-2', 'border-red-600', 'text-red-600');
+        botoes[i].classList.add('text-gray-500');
+    }
+    var activeBtn = document.getElementById('tabStock-' + tab);
+    if (activeBtn) {
+        activeBtn.classList.add('border-b-2', 'border-red-600', 'text-red-600');
+        activeBtn.classList.remove('text-gray-500');
+    }
+    renderStock();
+}
+
+function calcularLucroModalStock() {
+    var custo = parseFloat(document.getElementById('stockCusto').value) || 0;
+    var precoVenda = parseFloat(document.getElementById('stockPrecoVenda').value) || 0;
+    var lucro = precoVenda - custo;
+    var margem = precoVenda > 0 ? ((lucro / precoVenda) * 100) : 0;
+
+    var elLucro = document.getElementById('stockModalLucroLiquido');
+    var elMargem = document.getElementById('stockModalMargemPerc');
+    if (elLucro) elLucro.innerText = lucro.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    if (elMargem) {
+        elMargem.innerText = margem.toFixed(1) + '%';
+        elMargem.className = (margem >= 0 ? 'text-emerald-800' : 'text-red-600') + ' ml-1';
+    }
+}
+
+function renderStock() {
+    var tbody = document.getElementById('tabelaStock');
+    if (!tbody) return;
+    var itens = window.RestauranteApp.stock || [];
+    var precosFornec = window.RestauranteApp.tabela_precos_fornecedores || [];
+    var produtos = window.RestauranteApp.produtos || [];
+    var html = '';
+
+    for (var i = 0; i < itens.length; i++) {
+        var s = itens[i];
+        if (tabStockAtiva !== 'todos' && s.tipo !== tabStockAtiva) continue;
+
+        var critico = (Number(s.qtd) <= Number(s.minimo));
+        var nomeItemLower = (s.nome || '').toLowerCase();
+
+        // Custo actual no stock
+        var custoActual = Number(s.custo || 0);
+
+        // Custo de compra registrado ou na tabela de fornecedores
+        var custoCompra = Number(s.custo_compra != null ? s.custo_compra : 0);
+        if (!custoCompra) {
+            var matchFornec = precosFornec.find(function(pf) {
+                var pfNome = (pf.produto_nome || '').toLowerCase();
+                return pfNome === nomeItemLower || nomeItemLower.indexOf(pfNome) >= 0 || pfNome.indexOf(nomeItemLower) >= 0;
+            });
+            if (matchFornec) {
+                custoCompra = Number(matchFornec.custo_unitario_calculado || matchFornec.custo_unitario || matchFornec.custo_atual || 0);
+            } else {
+                custoCompra = custoActual;
+            }
+        }
+
+        // Preço de venda de referência
+        var precoVenda = Number(s.preco_venda != null ? s.preco_venda : 0);
+        if (!precoVenda) {
+            var matchProd = produtos.find(function(p) {
+                var pNome = (p.nome || '').toLowerCase();
+                return pNome === nomeItemLower || nomeItemLower.indexOf(pNome) >= 0 || pNome.indexOf(nomeItemLower) >= 0;
+            });
+            if (matchProd) {
+                precoVenda = Number(matchProd.preco || 0);
+            } else {
+                precoVenda = custoActual > 0 ? (custoActual * 1.8) : 0;
+            }
+        }
+
+        var lucroLiquido = precoVenda - custoActual;
+        var margemPerc = precoVenda > 0 ? ((lucroLiquido / precoVenda) * 100) : 0;
+
+        // Comparação de custos: Custo Stock vs Custo Compra
+        var diffCusto = custoActual - custoCompra;
+        var badgeComparacao = '';
+        if (diffCusto > 0.05) {
+            badgeComparacao = '<span class="text-[10px] text-red-600 block font-semibold"><i class="fa-solid fa-arrow-trend-up"></i> +' + diffCusto.toFixed(2) + ' vs Fornecedor</span>';
+        } else if (diffCusto < -0.05) {
+            badgeComparacao = '<span class="text-[10px] text-emerald-600 block font-semibold"><i class="fa-solid fa-arrow-trend-down"></i> ' + diffCusto.toFixed(2) + ' vs Fornecedor</span>';
+        } else {
+            badgeComparacao = '<span class="text-[10px] text-gray-400 block font-normal">Igual à tabela</span>';
+        }
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-bold text-gray-900">' + s.nome + '</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-semibold rounded bg-gray-100 text-gray-700 capitalize">' + s.tipo + '</span></td>';
+        html += '  <td class="p-4 text-xs font-mono text-gray-600"><span class="font-bold">' + (s.estante || '-') + '</span> / ' + (s.prateleira || '-') + '<br><span class="text-blue-700 font-semibold">' + (s.refrigeracao || 'Ambiente') + '</span></td>';
+        html += '  <td class="p-4 font-bold ' + (critico ? 'text-red-600' : 'text-gray-800') + '">' + s.qtd + ' ' + s.unidade + '<br><span class="text-[10px] text-gray-400 font-normal">Mín: ' + s.minimo + ' ' + s.unidade + '</span></td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + custoActual.toFixed(2) + ' {{ estabelecimento.moeda }}' + badgeComparacao + '</td>';
+        html += '  <td class="p-4 font-semibold text-blue-800">' + custoCompra.toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + precoVenda.toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4 font-black ' + (lucroLiquido >= 0 ? 'text-emerald-700' : 'text-red-600') + '">' + lucroLiquido.toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4"><span class="px-2 py-1 rounded-lg text-xs font-black ' + (margemPerc >= 30 ? 'bg-emerald-100 text-emerald-800' : (margemPerc > 0 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800')) + '">' + margemPerc.toFixed(1) + '%</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarStock(\'' + s.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerStock(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer" title="Remover"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+
+    if (html === '') {
+        html = '<tr><td colspan="10" class="p-8 text-center text-gray-400">Nenhum item encontrado nesta categoria de stock.</td></tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+function abrirModalStock() {
+    editandoStockId = null;
+    document.getElementById('modalStockTitulo').innerText = 'Novo Item de Stock';
+    document.getElementById('stockNome').value = '';
+    document.getElementById('stockTipo').value = 'comida';
+    document.getElementById('stockLocal').value = 'armazem_principal';
+    document.getElementById('stockEstante').value = '';
+    document.getElementById('stockPrateleira').value = '';
+    document.getElementById('stockRefrigeracao').value = '';
+    document.getElementById('stockUnidade').value = 'KG';
+    document.getElementById('stockQtd').value = '10';
+    document.getElementById('stockMinimo').value = '5';
+    document.getElementById('stockCusto').value = '250.00';
+    document.getElementById('stockCustoCompra').value = '220.00';
+    document.getElementById('stockPrecoVenda').value = '450.00';
+    calcularLucroModalStock();
+    abrirModal('modalStock');
+}
+
+function editarStock(id) {
+    var s = (window.RestauranteApp.stock || []).find(function(item) { return item.id === id; });
+    if (!s) return;
+    editandoStockId = id;
+    document.getElementById('modalStockTitulo').innerText = 'Editar Item de Stock';
+    document.getElementById('stockNome').value = s.nome;
+    document.getElementById('stockTipo').value = s.tipo;
+    document.getElementById('stockLocal').value = s.local;
+    document.getElementById('stockEstante').value = s.estante || '';
+    document.getElementById('stockPrateleira').value = s.prateleira || '';
+    document.getElementById('stockRefrigeracao').value = s.refrigeracao || '';
+    document.getElementById('stockUnidade').value = s.unidade;
+    document.getElementById('stockQtd').value = s.qtd;
+    document.getElementById('stockMinimo').value = s.minimo;
+    document.getElementById('stockCusto').value = s.custo;
+    document.getElementById('stockCustoCompra').value = s.custo_compra != null ? s.custo_compra : s.custo;
+    document.getElementById('stockPrecoVenda').value = s.preco_venda != null ? s.preco_venda : (Number(s.custo) * 1.8).toFixed(2);
+    calcularLucroModalStock();
+    abrirModal('modalStock');
+}
+
+function salvarStock() {
+    var nome = document.getElementById('stockNome').value.trim();
+    if (!nome) { alert('Informe o nome do item!'); return; }
+    var tipo = document.getElementById('stockTipo').value;
+    var local = document.getElementById('stockLocal').value;
+    var estante = document.getElementById('stockEstante').value;
+    var prateleira = document.getElementById('stockPrateleira').value;
+    var refrigeracao = document.getElementById('stockRefrigeracao').value;
+    var unidade = document.getElementById('stockUnidade').value;
+    var qtd = parseFloat(document.getElementById('stockQtd').value) || 0;
+    var minimo = parseFloat(document.getElementById('stockMinimo').value) || 0;
+    var custo = parseFloat(document.getElementById('stockCusto').value) || 0;
+    var custoCompra = parseFloat(document.getElementById('stockCustoCompra').value) || custo;
+    var precoVenda = parseFloat(document.getElementById('stockPrecoVenda').value) || 0;
+
+    if (!window.RestauranteApp.stock) window.RestauranteApp.stock = [];
+
+    if (editandoStockId) {
+        var s = window.RestauranteApp.stock.find(function(item) { return item.id === editandoStockId; });
+        if (s) {
+            s.nome = nome;
+            s.tipo = tipo;
+            s.local = local;
+            s.estante = estante;
+            s.prateleira = prateleira;
+            s.refrigeracao = refrigeracao;
+            s.unidade = unidade;
+            s.qtd = qtd;
+            s.minimo = minimo;
+            s.custo = custo;
+            s.custo_compra = custoCompra;
+            s.preco_venda = precoVenda;
+        }
+    } else {
+        window.RestauranteApp.stock.push({
+            id: String(Date.now()),
+            nome: nome,
+            tipo: tipo,
+            local: local,
+            estante: estante,
+            prateleira: prateleira,
+            refrigeracao: refrigeracao,
+            unidade: unidade,
+            qtd: qtd,
+            minimo: minimo,
+            custo: custo,
+            custo_compra: custoCompra,
+            preco_venda: precoVenda
+        });
+    }
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalStock');
+    renderStock();
+    alert('Item de stock gravado com sucesso!');
+}
+
+function removerStock(idx) {
+    if (confirm('Deseja remover este item de stock?')) {
+        window.RestauranteApp.stock.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+        renderStock();
+    }
+}
+
+// ── AJUSTE DE STOCK ──────────────────────────────────────────────────────────
+function abrirModalAjuste() {
+    var select = document.getElementById('ajusteItemSelect');
+    if (!select) return;
+    var stock = window.RestauranteApp.stock || [];
+    var html = '';
+    for (var i = 0; i < stock.length; i++) {
+        html += '<option value="' + stock[i].id + '">' + stock[i].nome + ' (' + stock[i].qtd + ' ' + stock[i].unidade + ')</option>';
+    }
+    select.innerHTML = html;
+    preencherQtdAtualAjuste();
+    document.getElementById('ajusteQtdNova').value = '';
+    document.getElementById('ajusteObs').value = '';
+    abrirModal('modalAjuste');
+}
+
+function preencherQtdAtualAjuste() {
+    var select = document.getElementById('ajusteItemSelect');
+    var inputAtual = document.getElementById('ajusteQtdAtual');
+    if (!select || !inputAtual) return;
+    var itemId = select.value;
+    var item = (window.RestauranteApp.stock || []).find(function(s) { return s.id === itemId; });
+    if (item) {
+        inputAtual.value = item.qtd + ' ' + item.unidade;
+    }
+}
+
+function salvarAjusteStock() {
+    var select = document.getElementById('ajusteItemSelect');
+    var itemId = select.value;
+    var novaQtdVal = document.getElementById('ajusteQtdNova').value;
+    if (novaQtdVal === '' || isNaN(parseFloat(novaQtdVal))) {
+        alert('Por favor, informe a nova quantidade física real.');
+        return;
+    }
+    var novaQtd = parseFloat(novaQtdVal);
+    if (novaQtd < 0) {
+        alert('A quantidade física não pode ser negativa.');
+        return;
+    }
+
+    var item = (window.RestauranteApp.stock || []).find(function(s) { return s.id === itemId; });
+    if (!item) return;
+
+    var diferenca = novaQtd - item.qtd;
+    var qtdAnterior = item.qtd;
+    item.qtd = Math.round(novaQtd * 100) / 100;
+
+    var motivo = document.getElementById('ajusteMotivo').value;
+    var obs = document.getElementById('ajusteObs').value.trim();
+    var agora = new Date().toLocaleString('pt-PT');
+
+    if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+    window.RestauranteApp.movimentos_stock.unshift({
+        id: String(Date.now()),
+        data_hora: agora,
+        tipo: 'AJUSTE',
+        item_nome: item.nome,
+        quantidade: Math.abs(diferenca),
+        motivo: motivo + (obs ? ' (' + obs + ')' : '') + ' [Anterior: ' + qtdAnterior + ' -> Novo: ' + item.qtd + ' ' + item.unidade + ']',
+        responsavel: 'Operador de Stock'
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalAjuste');
+    renderStock();
+    alert('Ajuste de stock registado com sucesso!\nO saldo do item ' + item.nome + ' foi atualizado para ' + item.qtd + ' ' + item.unidade + '.');
+}
+
+document.addEventListener('DOMContentLoaded', renderStock);
+</script>
+{% endblock %}

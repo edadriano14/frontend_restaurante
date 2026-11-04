@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ estabelecimento.nome }} - Sistema de Gestão</title>
+    
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="theme-color" content="{{ estabelecimento.cor_primaria }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SCRIPTS GLOBAIS DE DADOS E MODAIS -->
+    <script src="/static/js/app-data.js"></script>
+    <script src="/static/js/modals.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --cor-primaria: {{ estabelecimento.cor_primaria }};
+            --cor-secundaria: {{ estabelecimento.cor_secundaria }};
+        }
+        .bg-custom-primary { background-color: var(--cor-primaria); }
+        .text-custom-primary { color: var(--cor-primaria); }
+        .border-custom-primary { border-color: var(--cor-primaria); }
+        
+        .bg-custom-secondary { background-color: var(--cor-secundaria); }
+        .text-custom-secondary { color: var(--cor-secundaria); }
+
+        /* Estilo para Sidebar Recolhida (Modo Compacto / Ícones) */
+        #mainSidebar.sidebar-collapsed {
+            width: 4.5rem !important; /* ~72px */
+        }
+        #mainSidebar.sidebar-collapsed .sidebar-text,
+        #mainSidebar.sidebar-collapsed .sidebar-section-title {
+            display: none !important;
+        }
+        #mainSidebar.sidebar-collapsed .sidebar-logo-text {
+            display: none !important;
+        }
+        #mainSidebar.sidebar-collapsed .sidebar-header-box {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            align-items: center;
+            justify-content: center;
+        }
+        #mainSidebar.sidebar-collapsed nav a {
+            justify-content: center;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        #mainSidebar.sidebar-collapsed nav a i {
+            margin-right: 0 !important;
+        }
+        #mainSidebar.sidebar-collapsed .sidebar-footer {
+            justify-content: center;
+            padding: 0.75rem 0.25rem;
+        }
+        #mainSidebar.sidebar-collapsed .sidebar-footer-text {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
+
+    <div class="min-h-screen flex flex-col md:flex-row">
+
+        <!-- HAMBURGER OVERLAY -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="toggleSidebar()"></div>
+
+        <!-- HAMBURGER DRAWER -->
+        <aside id="mainSidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-custom-secondary text-white transition-all duration-300 ease-in-out md:static md:inset-auto flex flex-col shadow-2xl shrink-0">
+            
+            <div class="sidebar-header-box p-4 border-b border-gray-700 bg-gray-900/40 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        {% if estabelecimento.logotipo_url %}
+                        <img src="{{ estabelecimento.logotipo_url }}" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-white/50 shrink-0">
+                        {% endif %}
+                        <span class="sidebar-logo-text font-bold text-sm leading-tight truncate text-white">{{ estabelecimento.nome }}</span>
+                    </div>
+                    <!-- Botão para fechar no mobile -->
+                    <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition cursor-pointer" title="Fechar Menu">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                <!-- Botão de alternar menu posicionado abaixo do logotipo à esquerda -->
+                <div class="pt-1 flex items-center justify-start">
+                    <button type="button" id="btnToggleMenuNav" onclick="toggleSidebar()" class="p-2 text-gray-300 hover:text-white hover:bg-gray-800/80 rounded-lg transition flex items-center gap-2 text-xs font-semibold cursor-pointer w-full" title="Fechar / Recolher Menu de Navegação">
+                        <i class="fa-solid fa-bars text-base shrink-0"></i>
+                        <span class="sidebar-text truncate">Menu de Navegação</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ITENS DE MENU HAMBURGER -->
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-sm">
+                <a href="/" title="Dashboard" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'dashboard' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-chart-line w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Dashboard</span>
+                </a>
+
+                <div class="sidebar-section-title pt-2 text-xs font-bold text-gray-400 uppercase px-3">Vendas & Atendimento</div>
+
+                <a href="/pdv" title="Ponto de Venda (PDV)" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'pdv' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-cash-register w-5 text-center text-emerald-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Ponto de Venda (PDV)</span>
+                </a>
+
+                <a href="/mesas" title="Salas & Mesas" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'mesas' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-chair w-5 text-center text-blue-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Salas & Mesas</span>
+                </a>
+
+                <a href="/historico-vendas" title="Histórico de Vendas" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'historico-vendas' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left w-5 text-center text-purple-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Histórico de Vendas</span>
+                </a>
+
+                <!-- DELIVERY & FROTAS -->
+                <a href="/veiculos-delivery" title="Delivery & Frotas" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'veiculos-delivery' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-motorcycle w-5 text-center text-cyan-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Delivery & Frotas</span>
+                </a>
+
+                <!-- GESTÃO DE PISCINA & RESORT (Apenas para estabelecimentos com piscina) -->
+                {% if estabelecimento.tem_piscina %}
+                <a href="/piscina" title="Gestão de Piscina" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'piscina' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-person-swimming w-5 text-center text-sky-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Gestão de Piscina</span>
+                </a>
+                {% endif %}
+
+                <div class="sidebar-section-title pt-2 text-xs font-bold text-gray-400 uppercase px-3">Cardápio & Produção</div>
+
+                <a href="/cozinha" title="Cozinha (KDS)" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'cozinha' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-kitchen-set w-5 text-center text-orange-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Cozinha (KDS)</span>
+                </a>
+
+                <a href="/acompanhamentos" title="Acompanhamentos" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'acompanhamentos' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-bowl-food w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Acompanhamentos</span>
+                </a>
+
+                <a href="/produtos" title="Produtos do Cardápio" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'produtos' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-burger w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Produtos do Cardápio</span>
+                </a>
+
+                <a href="/categorias" title="Categorias" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'categorias' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-layer-group w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Categorias</span>
+                </a>
+
+                <div class="sidebar-section-title pt-3 text-xs font-bold text-gray-400 uppercase px-3">Stock & Armazém</div>
+
+                <a href="/stock" title="Stock" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'stock' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-boxes-stacked w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Stock</span>
+                </a>
+
+                <a href="/movimentos-stock" title="Movimentos de Stock" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'movimentos-stock' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-arrow-right-arrow-left w-5 text-center text-teal-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Movimentos de Stock</span>
+                </a>
+
+                <a href="/guias-entrada" title="Guias de Entrada" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'guias-entrada' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Guias de Entrada</span>
+                </a>
+
+                <a href="/compras" title="Compras & Requisições" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'compras' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-cart-shopping w-5 text-center text-emerald-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Compras &amp; Requisições</span>
+                </a>
+
+                <a href="/fornecedores" title="Fornecedores" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'fornecedores' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-truck-moving w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Fornecedores</span>
+                </a>
+
+                <div class="sidebar-section-title pt-3 text-xs font-bold text-gray-400 uppercase px-3">Administração</div>
+
+                <a href="/clientes" title="Dados de Clientes" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'clientes' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-users w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Dados de Clientes</span>
+                </a>
+
+                <a href="/utilizadores" title="Utilizadores" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'utilizadores' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-id-badge w-5 text-center text-amber-300 shrink-0"></i>
+                    <span class="sidebar-text truncate">Utilizadores</span>
+                </a>
+
+                <a href="/utilizadores?tab=perfis" title="Perfis de Acesso" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'perfis' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-shield-halved w-5 text-center text-indigo-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Perfis de Acesso</span>
+                </a>
+
+                <!-- MÓDULO FINANCEIRO (ANTERIOR GESTÃO DE CAIXA) -->
+                <a href="/financeiro" title="Financeiro" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'financeiro' or active_page == 'gestao-caixa' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-coins w-5 text-center text-amber-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Financeiro</span>
+                </a>
+
+                <div class="sidebar-section-title pt-2 text-xs font-bold text-gray-400 uppercase px-3">Configurações</div>
+
+                <a href="/estabelecimento" title="Configurações" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'estabelecimento' or active_page == 'configuracoes' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-sliders w-5 text-center text-cyan-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Configurações</span>
+                </a>
+
+                <div class="pt-4 mt-4 border-t border-gray-700"></div>
+
+                <!-- PORTAL DO CLIENTE NO FIM -->
+                <a href="/portal-cliente" title="Portal do Cliente" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 transition-colors font-bold shadow">
+                    <i class="fa-solid fa-mobile-screen-button w-5 text-center shrink-0"></i>
+                    <span class="sidebar-text truncate">Portal do Cliente (Online)</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer p-4 border-t border-gray-700 flex items-center justify-between text-sm text-gray-400">
+                <span class="sidebar-footer-text truncate">Operador: Admin</span>
+                <button class="hover:text-red-400" title="Sair"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+            </div>
+        </aside>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <div></div>
+
+                    <!-- Canto Superior Direito: Data, Hora e Utilizador Logado -->
+                    <div class="flex items-center space-x-3 sm:space-x-4">
+                        <!-- Relógio & Calendário Digital em tempo real -->
+                        <div class="hidden sm:flex items-center space-x-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl shadow-xs">
+                            <i class="fa-regular fa-clock text-custom-primary text-sm"></i>
+                            <div class="text-right leading-tight">
+                                <span id="headerDataAtual" class="text-[11px] font-bold text-gray-700 block">--/--/----</span>
+                                <span id="headerHoraAtual" class="text-[11px] font-mono font-bold text-custom-primary block">00:00:00</span>
+                            </div>
+                        </div>
+
+                        <!-- CENTRAL DE ALERTAS GERAL (Notificações de Pedidos Online, Stock e Reservas) -->
+                        <div class="relative">
+                            <button type="button" onclick="abrirCentralAlertasGlobal()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition relative cursor-pointer flex items-center justify-center shadow-2xs border border-gray-200" title="Central de Alertas & Notificações">
+                                <i class="fa-solid fa-bell text-lg text-amber-500 animate-bounce"></i>
+                                <span id="badgeAlertasGlobal" class="absolute -top-1 -right-1 bg-red-600 text-white font-black px-1.5 py-0.2 rounded-full text-[10px] min-w-[18px] text-center shadow">0</span>
+                            </button>
+                        </div>
+
+                        <!-- Botão Acesso Rápido PDV -->
+                        <a href="/pdv" class="hidden md:flex px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-cash-register"></i> PDV
+                        </a>
+
+                        <!-- Utilizador Logado -->
+                        <div class="flex items-center space-x-2.5 pl-2 border-l border-gray-200">
+                            <div class="text-right hidden sm:block">
+                                <span id="headerNomeUtilizador" class="text-xs font-bold text-gray-900 block leading-tight">Administrador Central</span>
+                                <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Admin Geral • Online</span>
+                            </div>
+                            <div class="w-9 h-9 rounded-xl bg-custom-primary text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 p-4 md:p-6 overflow-y-auto">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+    </div>
+
+    <!-- MODAL GLOBAL DE GALERIA DE IMAGENS -->
+    <div id="modalGaleriaImagens" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-images text-custom-primary text-xl"></i>
+                    <h3 class="text-lg font-bold text-gray-800">Galeria de Imagens & Fotos</h3>
+                </div>
+                <button type="button" onclick="fecharModal('modalGaleriaImagens')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            
+            <p class="text-xs text-gray-500">Selecione uma imagem da galeria ou carregue do seu dispositivo:</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-80 overflow-y-auto p-1" id="gridGaleria">
+                <!-- Preenchido via renderGaleria() -->
+            </div>
+
+            <div class="border-t pt-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <input type="file" id="inputFileGaleria" accept="image/*" class="text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-100 hover:file:bg-gray-200">
+                <button type="button" onclick="carregarImagemArquivo()" class="px-4 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-bold hover:bg-gray-700">
+                    <i class="fa-solid fa-upload"></i> Carregar do Computador
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL GLOBAL DA CENTRAL DE ALERTAS & NOTIFICAÇÕES (Pedidos do Portal, Reservas, Stock Crítico) -->
+    <div id="modalCentralAlertasGlobal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 leading-tight">Central de Alertas & Notificações</h3>
+                        <p class="text-xs text-gray-500">Monitorização em tempo real de pedidos do portal, reservas e avisos de stock.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="fecharModal('modalCentralAlertasGlobal')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+
+            <!-- Filtros Rápidos de Alertas -->
+            <div class="flex items-center gap-1.5 border-b pb-2 text-xs">
+                <button type="button" onclick="filtrarTipoAlerta('todos')" id="btnAlertaFiltroTodos" class="px-3 py-1 bg-gray-900 text-white font-bold rounded-lg shadow-2xs">Todos</button>
+                <button type="button" onclick="filtrarTipoAlerta('portal')" id="btnAlertaFiltroPortal" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg">Pedidos Portal</button>
+                <button type="button" onclick="filtrarTipoAlerta('reservas')" id="btnAlertaFiltroReservas" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg">Reservas</button>
+                <button type="button" onclick="filtrarTipoAlerta('stock')" id="btnAlertaFiltroStock" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold rounded-lg">Stock Baixo</button>
+            </div>
+
+            <!-- Lista de Alertas -->
+            <div id="listaAlertasGlobalCorpo" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                <!-- Preenchido via renderCentralAlertasGlobal() -->
+            </div>
+
+            <div class="pt-3 border-t flex items-center justify-between">
+                <a href="/pdv" class="px-4 py-2 bg-custom-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition flex items-center gap-2 shadow">
+                    <i class="fa-solid fa-cash-register"></i> Ir ao PDV Validar
+                </a>
+                <button type="button" onclick="fecharModal('modalCentralAlertasGlobal')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var galeriaTargetInputId = null;
+        var galeriaTargetPreviewId = null;
+
+        var IMAGENS_GALERIA = [
+            { titulo: "Carnes / Picanha", url: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80" },
+            { titulo: "Hambúrguer Gourmet", url: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80" },
+            { titulo: "Cocktail / Mojito", url: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400&auto=format&fit=crop&q=80" },
+            { titulo: "Cheesecake / Doces", url: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400&auto=format&fit=crop&q=80" },
+            { titulo: "Pizza Forno a Lenha", url: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80" },
+            { titulo: "Cerveja Gelada", url: "https://images.unsplash.com/photo-1608270191771-464a95684714?w=400&auto=format&fit=crop&q=80" },
+            { titulo: "Logo Restaurante 1", url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&auto=format&fit=crop&q=80" },
+            { titulo: "Logo Restaurante 2", url: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=150&auto=format&fit=crop&q=80" },
+            { titulo: "Café / Pastelaria", url: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&auto=format&fit=crop&q=80" },
+            { titulo: "Mariscos / Peixe", url: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80" }
+        ];
+
+        function abrirGaleria(inputId, previewId) {
+            galeriaTargetInputId = inputId;
+            galeriaTargetPreviewId = previewId;
+            renderGaleria();
+            abrirModal('modalGaleriaImagens');
+        }
+
+        function renderGaleria() {
+            var grid = document.getElementById('gridGaleria');
+            if (!grid) return;
+            var html = '';
+            for (var i = 0; i < IMAGENS_GALERIA.length; i++) {
+                var img = IMAGENS_GALERIA[i];
+                html += '<div onclick="selecionarImagemGaleria(\'' + img.url + '\')" class="group relative rounded-xl overflow-hidden border border-gray-200 hover:border-red-500 cursor-pointer shadow-sm">';
+                html += '  <img src="' + img.url + '" class="w-full h-24 object-cover group-hover:scale-105 transition">';
+                html += '  <span class="absolute inset-x-0 bottom-0 bg-black/70 text-white text-[10px] px-1.5 py-0.5 truncate text-center">' + img.titulo + '</span>';
+                html += '</div>';
+            }
+            grid.innerHTML = html;
+        }
+
+        function selecionarImagemGaleria(url) {
+            if (galeriaTargetInputId) {
+                var input = document.getElementById(galeriaTargetInputId);
+                if (input) input.value = url;
+            }
+            if (galeriaTargetPreviewId) {
+                var prev = document.getElementById(galeriaTargetPreviewId);
+                if (prev) prev.src = url;
+            }
+            fecharModal('modalGaleriaImagens');
+        }
+
+        function carregarImagemArquivo() {
+            var fileInput = document.getElementById('inputFileGaleria');
+            if (fileInput && fileInput.files && fileInput.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var dataUrl = e.target.result;
+                    IMAGENS_GALERIA.unshift({ titulo: "Carregada do PC", url: dataUrl });
+                    selecionarImagemGaleria(dataUrl);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                alert('Selecione um arquivo de imagem no computador primeiro.');
+            }
+        }
+
+        function toggleSidebar() {
+            var sidebar = document.getElementById('mainSidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            if (!sidebar) return;
+
+            var isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('translate-x-0');
+                    if (overlay) overlay.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('translate-x-0');
+                    if (overlay) overlay.classList.add('hidden');
+                }
+            } else {
+                // Desktop: alterna entre recolhido (mini/ícones) e expandido completo
+                var colapsado = sidebar.classList.toggle('sidebar-collapsed');
+                try {
+                    localStorage.setItem('restaurante_sidebar_collapsed', colapsado ? 'true' : 'false');
+                } catch(e) {}
+            }
+        }
+
+        function toggleMenuCaixa() {
+            var sub = document.getElementById('submenuCaixa');
+            var seta = document.getElementById('setaMenuCaixa');
+            if (!sub) return;
+            sub.classList.toggle('hidden');
+            if (seta) {
+                seta.classList.toggle('rotate-180');
+            }
+        }
+
+        // Relógio e Data em Tempo Real no Header Superior Direito
+        function atualizarRelogioCabecalho() {
+            var agora = new Date();
+            var elData = document.getElementById('headerDataAtual');
+            var elHora = document.getElementById('headerHoraAtual');
+
+            if (elData) {
+                var d = String(agora.getDate()).padStart(2, '0');
+                var m = String(agora.getMonth() + 1).padStart(2, '0');
+                var a = agora.getFullYear();
+                elData.innerText = d + '/' + m + '/' + a;
+            }
+
+            if (elHora) {
+                var h = String(agora.getHours()).padStart(2, '0');
+                var mi = String(agora.getMinutes()).padStart(2, '0');
+                var s = String(agora.getSeconds()).padStart(2, '0');
+                elHora.innerText = h + ':' + mi + ':' + s;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            atualizarRelogioCabecalho();
+            setInterval(atualizarRelogioCabecalho, 1000);
+
+            // Restaurar estado da barra lateral no desktop
+            try {
+                if (window.innerWidth >= 768 && localStorage.getItem('restaurante_sidebar_collapsed') === 'true') {
+                    var sidebar = document.getElementById('mainSidebar');
+                    if (sidebar) sidebar.classList.add('sidebar-collapsed');
+                }
+            } catch(e) {}
+
+            // Se a página ativa for de gestão de caixa, abrir o submenu
+            if (window.location.pathname.indexOf('gestao-caixa') !== -1) {
+                var sub = document.getElementById('submenuCaixa');
+                var seta = document.getElementById('setaMenuCaixa');
+                if (sub) sub.classList.remove('hidden');
+                if (seta) seta.classList.add('rotate-180');
+            }
+
+            // Atualização contínua de alertas globais
+            atualizarContadorAlertasGlobal();
+            setInterval(atualizarContadorAlertasGlobal, 3000);
+        });
+
+        // =========================================================================
+        // CENTRAL DE ALERTAS GLOBAL (PEDIDOS PORTAL, RESERVAS, STOCK CRÍTICO)
+        // =========================================================================
+        var filtroAlertaAtual = 'todos';
+
+        function filtrarTipoAlerta(tipo) {
+            filtroAlertaAtual = tipo;
+            ['btnAlertaFiltroTodos', 'btnAlertaFiltroPortal', 'btnAlertaFiltroReservas', 'btnAlertaFiltroStock'].forEach(function(id) {
+                var b = document.getElementById(id);
+                if (b) {
+                    b.className = 'px-3 py-1 font-bold rounded-lg transition text-xs ' + 
+                        (id.toLowerCase().indexOf(tipo) >= 0 ? 'bg-gray-900 text-white shadow-2xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200');
+                }
+            });
+            renderCentralAlertasGlobal();
+        }
+
+        function abrirCentralAlertasGlobal() {
+            renderCentralAlertasGlobal();
+            abrirModal('modalCentralAlertasGlobal');
+        }
+
+        function atualizarContadorAlertasGlobal() {
+            var badge = document.getElementById('badgeAlertasGlobal');
+            if (!badge || !window.RestauranteApp) return;
+
+            var pedidos = (window.RestauranteApp.pedidos_online || []).filter(function(p) {
+                return p.estado === 'PENDENTE_VALIDACAO' || p.estado === 'RESERVA_PENDENTE';
+            });
+
+            var stockCritico = (window.RestauranteApp.stock || []).filter(function(s) {
+                return Number(s.qtd) <= Number(s.minimo);
+            });
+
+            var totalAlertas = pedidos.length + stockCritico.length;
+            badge.innerText = totalAlertas;
+            badge.classList.toggle('hidden', totalAlertas === 0);
+        }
+
+        function renderCentralAlertasGlobal() {
+            var container = document.getElementById('listaAlertasGlobalCorpo');
+            if (!container || !window.RestauranteApp) return;
+
+            var pedidos = window.RestauranteApp.pedidos_online || [];
+            var stockCritico = (window.RestauranteApp.stock || []).filter(function(s) {
+                return Number(s.qtd) <= Number(s.minimo);
+            });
+
+            var itens = [];
+
+            // Pedidos do Portal
+            pedidos.forEach(function(p) {
+                var isReserva = p.tipo_entrega === 'RESERVA' || p.estado === 'RESERVA_PENDENTE';
+                var tipoChave = isReserva ? 'reservas' : 'portal';
+                if (filtroAlertaAtual !== 'todos' && filtroAlertaAtual !== tipoChave) return;
+
+                var isPendente = p.estado === 'PENDENTE_VALIDACAO' || p.estado === 'RESERVA_PENDENTE';
+                var linkDestino = isReserva ? '/mesas' : ('/pdv?carregar_pedido=' + encodeURIComponent(p.id));
+                itens.push({
+                    tipo: isReserva ? 'reserva' : 'pedido_portal',
+                    titulo: isReserva ? ('Reserva ' + p.numero_pedido + ' • ' + p.cliente_nome) : ('Novo Pedido Online ' + p.numero_pedido + ' (' + p.tipo_entrega + ')'),
+                    detalhe: isReserva ? ('Para ' + p.reserva_ocupantes + ' pessoas às ' + p.reserva_hora + ' em ' + p.numero_mesa) : ('Cliente: ' + p.cliente_nome + ' • Total: ' + Number(p.total).toFixed(2) + ' MZN • ' + p.operadora_pagamento),
+                    estado: isPendente ? 'Pendente' : 'Validado',
+                    corBorda: isPendente ? 'border-amber-300 bg-amber-50/50' : 'border-gray-200 bg-white',
+                    icone: isReserva ? 'fa-calendar-check text-purple-600' : 'fa-mobile-screen-button text-amber-500',
+                    link: linkDestino
+                });
+            });
+
+            // Stock Crítico
+            if (filtroAlertaAtual === 'todos' || filtroAlertaAtual === 'stock') {
+                stockCritico.forEach(function(s) {
+                    itens.push({
+                        tipo: 'stock',
+                        titulo: 'Alerta de Stock Crítico: ' + (s.nome || s.item),
+                        detalhe: 'Stock actual: ' + s.qtd + ' ' + s.unidade + ' (Mínimo exigido: ' + s.minimo + ' ' + s.unidade + ')',
+                        estado: 'Abaixo do Mínimo',
+                        corBorda: 'border-red-300 bg-red-50/50',
+                        icone: 'fa-triangle-exclamation text-red-600',
+                        link: '/stock'
+                    });
+                });
+            }
+
+            if (itens.length === 0) {
+                container.innerHTML = '<div class="py-10 text-center text-gray-400 text-xs font-semibold"><i class="fa-solid fa-bell-slash text-2xl mb-1 text-gray-300 block"></i> Nenhum alerta activo no momento.</div>';
+                atualizarContadorAlertasGlobal();
+                return;
+            }
+
+            var html = '';
+            itens.forEach(function(it) {
+                html += '<div class="p-3 rounded-xl border ' + it.corBorda + ' flex items-start justify-between gap-3 text-xs">';
+                html += '  <div class="flex items-start gap-2.5">';
+                html += '    <div class="w-8 h-8 rounded-lg bg-white shadow-2xs border border-gray-100 flex items-center justify-center shrink-0 text-sm mt-0.5"><i class="fa-solid ' + it.icone + '"></i></div>';
+                html += '    <div>';
+                html += '      <h4 class="font-bold text-gray-900 leading-tight">' + it.titulo + '</h4>';
+                html += '      <p class="text-gray-600 text-[11px] mt-0.5">' + it.detalhe + '</p>';
+                html += '    </div>';
+                html += '  </div>';
+                html += '  <a href="' + it.link + '" class="px-2.5 py-1 bg-white hover:bg-gray-50 border rounded-lg font-bold text-[11px] text-gray-700 shadow-2xs whitespace-nowrap shrink-0 transition">Abrir ↗</a>';
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+            atualizarContadorAlertasGlobal();
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/static/service-worker.js');
+            });
+        }
+    </script>
+</body>
+</html>

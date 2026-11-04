@@ -1,0 +1,780 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- CABEÇALHO COM TÍTULO E ABAS DE NAVEGAÇÃO -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Utilizadores & Perfis de Acesso</h1>
+            <p class="text-gray-500 text-sm">Gerencie utilizadores, credenciais de acesso e configure os perfis e permissões dos módulos do sistema.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btnAbaUtilizadoresAcao" onclick="abrirModalUtilizador()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer text-sm">
+                <i class="fa-solid fa-user-plus"></i> Novo Utilizador
+            </button>
+            <button id="btnAbaPerfisAcao" onclick="abrirModalPerfil()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold shadow hover:bg-indigo-700 hidden items-center gap-2 cursor-pointer text-sm">
+                <i class="fa-solid fa-shield-plus"></i> Novo Perfil de Acesso
+            </button>
+        </div>
+    </div>
+
+    <!-- ABAS (TABS) DE NAVEGAÇÃO -->
+    <div class="flex border-b border-gray-200 space-x-4 bg-white px-4 pt-3 rounded-t-xl shadow-xs">
+        <button type="button" id="tabBtnUtilizadores" onclick="alternarAbaGestao('utilizadores')" class="pb-3 text-sm font-bold border-b-2 border-custom-primary text-custom-primary flex items-center gap-2 cursor-pointer transition">
+            <i class="fa-solid fa-users"></i> Utilizadores Cadastrados
+            <span id="badgeContadorUtilizadores" class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+        <button type="button" id="tabBtnPerfis" onclick="alternarAbaGestao('perfis')" class="pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 flex items-center gap-2 cursor-pointer transition">
+            <i class="fa-solid fa-shield-halved"></i> Perfis de Acesso & Permissões
+            <span id="badgeContadorPerfis" class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+    </div>
+
+    <!-- ABA 1: TABELA DE UTILIZADORES -->
+    <div id="secaoAbaUtilizadores" class="bg-white rounded-b-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-3 bg-gray-50 border-b flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                <input type="text" id="filtroUtilizadorTexto" oninput="renderUtilizadores()" placeholder="Pesquisar por nome, código ou email..." class="px-3 py-1.5 border rounded-lg bg-white outline-none w-64">
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-gray-500 font-semibold">Filtrar por Perfil:</span>
+                <select id="filtroUtilizadorPerfil" onchange="renderUtilizadores()" class="px-2.5 py-1.5 border rounded-lg bg-white outline-none">
+                    <option value="todos">Todos os Perfis</option>
+                </select>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Nome Completo</th>
+                        <th class="p-4">Utilizador / Email</th>
+                        <th class="p-4">Restaurante Pertencente</th>
+                        <th class="p-4">Perfil de Acesso</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaUtilizadores" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ABA 2: TABELA DE PERFIS DE ACESSO -->
+    <div id="secaoAbaPerfis" class="bg-white rounded-b-xl shadow-sm border border-gray-100 overflow-hidden hidden">
+        <div class="p-4 bg-indigo-50/50 border-b border-indigo-100 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h3 class="font-bold text-gray-800 text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-indigo-600"></i> Matriz de Perfis e Permissões Modulares
+                </h3>
+                <p class="text-xs text-gray-500">Defina os papéis dos colaboradores e quais áreas do sistema cada perfil tem autorização para visualizar e operar.</p>
+            </div>
+            <button onclick="abrirModalPerfil()" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Criar Novo Perfil
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Nome do Perfil</th>
+                        <th class="p-4">Descrição & Finalidade</th>
+                        <th class="p-4">Módulos com Acesso Liberado</th>
+                        <th class="p-4 text-center">Utilizadores</th>
+                        <th class="p-4 text-center">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaPerfisAcesso" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: FORMULÁRIO DE UTILIZADOR (CRUD)                                  -->
+    <!-- ========================================================================= -->
+    <div id="modalUtilizador" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalUserTitulo" class="font-bold text-lg text-gray-800">Novo Utilizador</h3>
+                <button type="button" onclick="fecharModal('modalUtilizador')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                        <input type="text" id="userCodigo" placeholder="USR-001" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome Completo *</label>
+                        <input type="text" id="userNome" placeholder="Ex: Maria Fernandes" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Utilizador (Login) *</label>
+                        <input type="text" id="userLogin" placeholder="maria.fernandes" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email *</label>
+                        <input type="email" id="userEmail" placeholder="maria@restaurante.com" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+
+                <!-- CAMPO PASSWORD COM OLHO PARA VER E REDEFINIÇÃO -->
+                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-gray-700 uppercase">Password *</label>
+                        <button type="button" onclick="gerarRedefinicaoSenha()" class="text-[11px] text-custom-primary hover:underline font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-arrows-rotate"></i> Gerar Senha
+                        </button>
+                    </div>
+                    <div class="relative flex items-center">
+                        <input type="password" id="userPassword" placeholder="Digite a Password" class="w-full px-3 py-2 pr-12 border rounded-lg text-sm outline-none bg-white font-mono">
+                        <button type="button" onclick="toggleSenhaVisibilidade('userPassword', 'iconOlhoPass')" class="absolute right-0 top-0 bottom-0 px-3 flex items-center justify-center text-gray-500 hover:text-gray-800 cursor-pointer z-10" title="Ver / Ocultar Password">
+                            <i id="iconOlhoPass" class="fa-solid fa-eye text-base pointer-events-none"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2 pt-1">
+                        <input type="checkbox" id="userForcarRedefinicao" class="w-4 h-4 text-custom-primary rounded">
+                        <label for="userForcarRedefinicao" class="text-xs text-gray-600">Exigir redefinição de password no primeiro acesso</label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Restaurante Pertencente *</label>
+                    <select id="userRestaurante" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-gray-800">
+                        <!-- Preenchido dinamicamente -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Perfil de Acesso *</label>
+                    <select id="userPerfil" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-indigo-900">
+                        <!-- Preenchido dinamicamente a partir dos perfis cadastrados -->
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="userAtivo" checked class="w-4 h-4 text-red-600 rounded">
+                    <label for="userAtivo" class="text-sm font-semibold text-gray-700">Utilizador Activo</label>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalUtilizador')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarUtilizador()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar Utilizador</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: FORMULÁRIO DE PERFIL DE ACESSO & PERMISSÕES (NOVO/EDITAR)        -->
+    <!-- ========================================================================= -->
+    <div id="modalPerfilAcesso" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-shield-halved text-indigo-600 text-xl"></i>
+                    <div>
+                        <h3 id="modalPerfilTitulo" class="font-bold text-lg text-gray-800">Novo Perfil de Acesso</h3>
+                        <p class="text-xs text-gray-500">Configure o nome, código e os módulos aos quais este perfil terá acesso.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="fecharModal('modalPerfilAcesso')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+            </div>
+
+            <form id="formPerfilAcesso" onsubmit="salvarPerfilAcesso(event)" class="space-y-4 overflow-y-auto flex-1 pr-1">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                        <input type="text" id="perfilCodigo" placeholder="PRF-001" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono font-bold outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Perfil *</label>
+                        <input type="text" id="perfilNome" placeholder="Ex: CAIXA_NOTURNO, SUPERVISOR_BAR" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-bold outline-none focus:border-indigo-500" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição / Finalidade *</label>
+                    <textarea id="perfilDescricao" rows="2" placeholder="Descreva as responsabilidades e atribuições deste perfil..." class="w-full px-3 py-2 border rounded-lg text-xs outline-none focus:border-indigo-500" required></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Etiqueta de Cor</label>
+                        <select id="perfilCor" class="w-full px-3 py-2 border rounded-lg text-xs outline-none bg-white font-semibold">
+                            <option value="purple">Roxo (Administrativo)</option>
+                            <option value="blue">Azul (Gestão)</option>
+                            <option value="emerald">Verde (Operacional / Vendas)</option>
+                            <option value="amber">Âmbar (Stock / Logística)</option>
+                            <option value="sky">Azul Celeste (Piscina / Lazer)</option>
+                            <option value="rose">Rosa / Vermelho (Especial)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center pt-5">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="perfilAtivo" checked class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="text-xs font-bold text-gray-700">Perfil Ativo para Seleção</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- MATRIZ DE PERMISSÕES MODULARES -->
+                <div class="border rounded-xl p-3 bg-gray-50 space-y-2.5">
+                    <div class="flex items-center justify-between border-b pb-2">
+                        <label class="block text-xs font-bold text-gray-800 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-indigo-600"></i> Permissões de Acesso aos Módulos
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="marcarTodasPermissoes(true)" class="text-[11px] text-indigo-600 hover:underline font-bold cursor-pointer">Marcar Todos</button>
+                            <span class="text-gray-300">|</span>
+                            <button type="button" onclick="marcarTodasPermissoes(false)" class="text-[11px] text-gray-500 hover:underline font-bold cursor-pointer">Desmarcar</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="dashboard" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-chart-line text-purple-500 w-4"></i> Dashboard & Indicadores</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="pdv" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-cash-register text-emerald-500 w-4"></i> Caixa & PDV</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="mesas" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-chair text-blue-500 w-4"></i> Salas & Mesas</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="vendas" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-clock-rotate-left text-purple-500 w-4"></i> Histórico de Vendas</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="delivery" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-motorcycle text-cyan-500 w-4"></i> Delivery & Frotas</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="piscina" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-person-swimming text-sky-500 w-4"></i> Gestão de Piscina</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="cozinha" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-kitchen-set text-orange-500 w-4"></i> Cozinha (KDS)</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="cardapio" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-burger text-amber-500 w-4"></i> Cardápio & Categorias</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="stock" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-boxes-stacked text-teal-500 w-4"></i> Stock & Armazém</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="clientes" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-users text-blue-500 w-4"></i> Dados de Clientes</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="utilizadores" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-id-badge text-amber-500 w-4"></i> Utilizadores & Perfis</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="financeiro" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-coins text-emerald-500 w-4"></i> Financeiro & Caixa</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition">
+                            <input type="checkbox" name="permissaoItem" value="configuracoes" class="w-4 h-4 text-indigo-600 rounded">
+                            <span class="font-semibold text-gray-800"><i class="fa-solid fa-sliders text-cyan-500 w-4"></i> Configurações Estabelecimento</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalPerfilAcesso')" class="px-4 py-2 border rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow cursor-pointer">Gravar Perfil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+var editandoUserId = null;
+var editandoPerfilId = null;
+var abaAtual = 'utilizadores';
+
+var NOMES_MODULOS = {
+    'dashboard': 'Dashboard',
+    'pdv': 'PDV / Caixa',
+    'mesas': 'Salas & Mesas',
+    'vendas': 'Histórico Vendas',
+    'delivery': 'Delivery & Frotas',
+    'piscina': 'Piscina & Lazer',
+    'cozinha': 'Cozinha (KDS)',
+    'cardapio': 'Cardápio',
+    'stock': 'Stock & Compras',
+    'clientes': 'Clientes',
+    'utilizadores': 'Utilizadores',
+    'financeiro': 'Financeiro',
+    'configuracoes': 'Configurações'
+};
+
+// =============================================================================
+// NAVEGAÇÃO ENTRE ABAS
+// =============================================================================
+function alternarAbaGestao(aba) {
+    abaAtual = aba;
+    var btnU = document.getElementById('tabBtnUtilizadores');
+    var btnP = document.getElementById('tabBtnPerfis');
+    var secU = document.getElementById('secaoAbaUtilizadores');
+    var secP = document.getElementById('secaoAbaPerfis');
+    var btnAcaoU = document.getElementById('btnAbaUtilizadoresAcao');
+    var btnAcaoP = document.getElementById('btnAbaPerfisAcao');
+
+    if (aba === 'utilizadores') {
+        btnU.className = 'pb-3 text-sm font-bold border-b-2 border-custom-primary text-custom-primary flex items-center gap-2 cursor-pointer transition';
+        btnP.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 flex items-center gap-2 cursor-pointer transition';
+        secU.classList.remove('hidden');
+        secP.classList.add('hidden');
+        btnAcaoU.classList.remove('hidden');
+        btnAcaoP.classList.add('hidden');
+    } else {
+        btnP.className = 'pb-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 cursor-pointer transition';
+        btnU.className = 'pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-700 flex items-center gap-2 cursor-pointer transition';
+        secP.classList.remove('hidden');
+        secU.classList.add('hidden');
+        btnAcaoP.classList.remove('hidden');
+        btnAcaoU.classList.add('hidden');
+        renderPerfisAcesso();
+    }
+}
+
+// =============================================================================
+// TABELA E CRUD DE UTILIZADORES
+// =============================================================================
+function renderUtilizadores() {
+    var tbody = document.getElementById('tabelaUtilizadores');
+    if (!tbody) return;
+
+    var lista = window.RestauranteApp.utilizadores || [];
+    var termo = (document.getElementById('filtroUtilizadorTexto') ? document.getElementById('filtroUtilizadorTexto').value : '').toLowerCase().trim();
+    var perfilFiltro = document.getElementById('filtroUtilizadorPerfil') ? document.getElementById('filtroUtilizadorPerfil').value : 'todos';
+
+    var filtrados = lista.filter(function(u) {
+        if (perfilFiltro !== 'todos' && u.perfil !== perfilFiltro) return false;
+        if (!termo) return true;
+        var nome = (u.nome || '').toLowerCase();
+        var cod = (u.codigo || '').toLowerCase();
+        var email = (u.email || '').toLowerCase();
+        return nome.indexOf(termo) >= 0 || cod.indexOf(termo) >= 0 || email.indexOf(termo) >= 0;
+    });
+
+    var badgeCount = document.getElementById('badgeContadorUtilizadores');
+    if (badgeCount) badgeCount.innerText = lista.length;
+
+    var html = '';
+    for (var i = 0; i < filtrados.length; i++) {
+        var u = filtrados[i];
+        var restNome = '—';
+        if (u.restaurante_id) {
+            var rest = (window.RestauranteApp.estabelecimentos || []).find(function(e) { return e.id === u.restaurante_id; });
+            if (rest) restNome = rest.nome;
+        }
+        var uCod = u.codigo || ('USR-00' + (i + 1));
+
+        // Encontra o perfil para pegar a cor da etiqueta
+        var perfilObj = (window.RestauranteApp.perfis_acesso || []).find(function(p){ return p.nome === u.perfil || p.id === u.perfil_id; });
+        var corPerfil = perfilObj ? perfilObj.cor : 'purple';
+        var corClass = 'bg-purple-100 text-purple-800';
+        if (corPerfil === 'blue') corClass = 'bg-blue-100 text-blue-800';
+        else if (corPerfil === 'emerald') corClass = 'bg-emerald-100 text-emerald-800';
+        else if (corPerfil === 'amber') corClass = 'bg-amber-100 text-amber-800';
+        else if (corPerfil === 'sky') corClass = 'bg-sky-100 text-sky-800';
+        else if (corPerfil === 'rose') corClass = 'bg-rose-100 text-rose-800';
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (u.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + uCod + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + u.nome + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-600">' + (u.username ? '<span class="text-gray-800 font-semibold">' + u.username + '</span><br>' : '') + u.email + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-800"><i class="fa-solid fa-store text-gray-400 mr-1.5"></i>' + restNome + '</td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full ' + corClass + '"><i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i>' + u.perfil + '</span></td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ' + (u.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800') + '">' + (u.ativo ? 'Activo' : 'Inactivo') + '</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarUtilizador(\'' + u.id + '\')" title="Editar Utilizador" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerUtilizador(\'' + u.id + '\')" title="Excluir Utilizador" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-8 text-center text-gray-400 text-xs font-semibold">Nenhum utilizador encontrado com os filtros aplicados.</td></tr>';
+}
+
+function popularSelectPerfisUtilizador() {
+    var sel = document.getElementById('userPerfil');
+    var filtroSel = document.getElementById('filtroUtilizadorPerfil');
+    var perfis = window.RestauranteApp.perfis_acesso || [];
+
+    if (sel) {
+        sel.innerHTML = perfis.map(function(p) {
+            return '<option value="' + p.nome + '">' + p.nome + ' (' + p.descricao.substring(0, 45) + '...)</option>';
+        }).join('');
+    }
+
+    if (filtroSel) {
+        var optHtml = '<option value="todos">Todos os Perfis</option>';
+        perfis.forEach(function(p) {
+            optHtml += '<option value="' + p.nome + '">' + p.nome + '</option>';
+        });
+        filtroSel.innerHTML = optHtml;
+    }
+}
+
+function preencherSelectRestaurantesUtilizadores() {
+    var sel = document.getElementById('userRestaurante');
+    if (!sel) return;
+    var lista = window.RestauranteApp.estabelecimentos || [];
+    sel.innerHTML = lista.map(function(e) {
+        return '<option value="' + e.id + '">' + e.nome + '</option>';
+    }).join('');
+}
+
+function toggleSenhaVisibilidade(inputId, iconId) {
+    var input = document.getElementById(inputId);
+    var icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+function gerarRedefinicaoSenha() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    var nova = '';
+    for (var i = 0; i < 10; i++) {
+        nova += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    var input = document.getElementById('userPassword');
+    if (input) {
+        input.type = 'text';
+        input.value = nova;
+        var icon = document.getElementById('iconOlhoPass');
+        if (icon) {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    }
+}
+
+function abrirModalUtilizador() {
+    editandoUserId = null;
+    document.getElementById('modalUserTitulo').innerText = 'Novo Utilizador';
+    var nextNum = (window.RestauranteApp.utilizadores || []).length + 1;
+    document.getElementById('userCodigo').value = 'USR-00' + nextNum;
+    document.getElementById('userNome').value = '';
+    document.getElementById('userLogin').value = '';
+    document.getElementById('userEmail').value = '';
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').type = 'password';
+    var icon = document.getElementById('iconOlhoPass');
+    if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+    document.getElementById('userForcarRedefinicao').checked = true;
+    popularSelectPerfisUtilizador();
+    document.getElementById('userAtivo').checked = true;
+    preencherSelectRestaurantesUtilizadores();
+    abrirModal('modalUtilizador');
+}
+
+function editarUtilizador(id) {
+    var u = (window.RestauranteApp.utilizadores || []).find(function(item) { return item.id === id; });
+    if (!u) return;
+    editandoUserId = id;
+    document.getElementById('modalUserTitulo').innerText = 'Editar Utilizador';
+    document.getElementById('userCodigo').value = u.codigo || ('USR-00' + id);
+    document.getElementById('userNome').value = u.nome;
+    document.getElementById('userLogin').value = u.username || u.login || u.nome.toLowerCase().replace(/\s+/g, '.');
+    document.getElementById('userEmail').value = u.email;
+    document.getElementById('userPassword').value = u.password || '••••••••';
+    document.getElementById('userPassword').type = 'password';
+    var icon = document.getElementById('iconOlhoPass');
+    if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+    document.getElementById('userForcarRedefinicao').checked = false;
+    popularSelectPerfisUtilizador();
+    document.getElementById('userPerfil').value = u.perfil;
+    document.getElementById('userAtivo').checked = u.ativo;
+    preencherSelectRestaurantesUtilizadores();
+    if (u.restaurante_id) document.getElementById('userRestaurante').value = u.restaurante_id;
+    abrirModal('modalUtilizador');
+}
+
+function salvarUtilizador() {
+    var cod = document.getElementById('userCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('userNome').value.trim();
+    var login = document.getElementById('userLogin').value.trim();
+    var email = document.getElementById('userEmail').value.trim();
+    var pass = document.getElementById('userPassword').value.trim();
+    var perfil = document.getElementById('userPerfil').value;
+
+    if (!cod || !nome || !email) { alert('Código, nome completo e email são obrigatórios.'); return; }
+    if (!editandoUserId && !pass) { alert('Defina a palavra-passe do utilizador.'); return; }
+
+    var perfilObj = (window.RestauranteApp.perfis_acesso || []).find(function(p){ return p.nome === perfil; });
+
+    var item = {
+        codigo: cod,
+        nome: nome,
+        username: login || nome.toLowerCase().replace(/\s+/g, '.'),
+        email: email,
+        password: pass,
+        forcar_redefinicao: document.getElementById('userForcarRedefinicao').checked,
+        restaurante_id: document.getElementById('userRestaurante').value,
+        perfil: perfil,
+        perfil_id: perfilObj ? perfilObj.id : '',
+        ativo: document.getElementById('userAtivo').checked
+    };
+
+    if (editandoUserId) {
+        var idx = window.RestauranteApp.utilizadores.findIndex(function(x) { return x.id === editandoUserId; });
+        if (idx !== -1) {
+            item.id = editandoUserId;
+            window.RestauranteApp.utilizadores[idx] = Object.assign({}, window.RestauranteApp.utilizadores[idx], item);
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.utilizadores.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalUtilizador');
+    renderUtilizadores();
+    renderPerfisAcesso();
+    alert('Utilizador guardado com sucesso!');
+}
+
+function removerUtilizador(id) {
+    if (confirm('Deseja realmente remover/desativar este utilizador?')) {
+        var idx = (window.RestauranteApp.utilizadores || []).findIndex(function(x){ return x.id === id; });
+        if (idx !== -1) {
+            window.RestauranteApp.utilizadores.splice(idx, 1);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            renderUtilizadores();
+            renderPerfisAcesso();
+        }
+    }
+}
+
+// =============================================================================
+// TABELA E CRUD DE PERFIS DE ACESSO
+// =============================================================================
+function renderPerfisAcesso() {
+    var tbody = document.getElementById('tabelaPerfisAcesso');
+    if (!tbody) return;
+
+    var perfis = window.RestauranteApp.perfis_acesso || [];
+    var badgeCount = document.getElementById('badgeContadorPerfis');
+    if (badgeCount) badgeCount.innerText = perfis.length;
+
+    var html = '';
+    perfis.forEach(function(p) {
+        var corClass = 'bg-purple-100 text-purple-800';
+        if (p.cor === 'blue') corClass = 'bg-blue-100 text-blue-800';
+        else if (p.cor === 'emerald') corClass = 'bg-emerald-100 text-emerald-800';
+        else if (p.cor === 'amber') corClass = 'bg-amber-100 text-amber-800';
+        else if (p.cor === 'sky') corClass = 'bg-sky-100 text-sky-800';
+        else if (p.cor === 'rose') corClass = 'bg-rose-100 text-rose-800';
+
+        // Contar quantos utilizadores estão com este perfil
+        var totalUsers = (window.RestauranteApp.utilizadores || []).filter(function(u) {
+            return u.perfil === p.nome || u.perfil_id === p.id;
+        }).length;
+
+        // Tags dos módulos autorizados
+        var permissoesBadges = '';
+        if (p.permissoes && p.permissoes.length > 0) {
+            p.permissoes.forEach(function(perm) {
+                var nomeMod = NOMES_MODULOS[perm] || perm;
+                permissoesBadges += '<span class="inline-block px-2 py-0.5 m-0.5 rounded text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200">' + nomeMod + '</span>';
+            });
+        } else {
+            permissoesBadges = '<span class="text-xs text-gray-400 italic">Nenhum módulo liberado</span>';
+        }
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + p.codigo + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900"><span class="px-2.5 py-1 text-xs font-bold rounded-full ' + corClass + '"><i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i>' + p.nome + '</span></td>';
+        html += '  <td class="p-4 text-xs text-gray-600 max-w-xs">' + p.descricao + '</td>';
+        html += '  <td class="p-4 max-w-md">' + permissoesBadges + '</td>';
+        html += '  <td class="p-4 text-center font-bold font-mono text-gray-800">' + totalUsers + '</td>';
+        html += '  <td class="p-4 text-center"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ' + (p.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600') + '">' + (p.ativo ? 'Ativo' : 'Inativo') + '</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarPerfilAcesso(\'' + p.id + '\')" title="Editar Perfil" class="text-indigo-600 hover:text-indigo-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        if (p.nome !== 'ADMIN_GERAL') {
+            html += '    <button onclick="removerPerfilAcesso(\'' + p.id + '\')" title="Excluir Perfil" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        }
+        html += '  </td>';
+        html += '</tr>';
+    });
+
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-8 text-center text-gray-400 text-xs font-semibold">Nenhum perfil de acesso registado.</td></tr>';
+}
+
+function marcarTodasPermissoes(marcar) {
+    var checks = document.querySelectorAll('input[name="permissaoItem"]');
+    checks.forEach(function(c) {
+        c.checked = marcar;
+    });
+}
+
+function abrirModalPerfil() {
+    editandoPerfilId = null;
+    document.getElementById('modalPerfilTitulo').innerText = 'Novo Perfil de Acesso';
+    var nextNum = (window.RestauranteApp.perfis_acesso || []).length + 1;
+    document.getElementById('perfilCodigo').value = 'PRF-00' + nextNum;
+    document.getElementById('perfilNome').value = '';
+    document.getElementById('perfilDescricao').value = '';
+    document.getElementById('perfilCor').value = 'blue';
+    document.getElementById('perfilAtivo').checked = true;
+    marcarTodasPermissoes(false);
+    abrirModal('modalPerfilAcesso');
+}
+
+function editarPerfilAcesso(id) {
+    var p = (window.RestauranteApp.perfis_acesso || []).find(function(x) { return x.id === id; });
+    if (!p) return;
+
+    editandoPerfilId = id;
+    document.getElementById('modalPerfilTitulo').innerText = 'Editar Perfil de Acesso: ' + p.nome;
+    document.getElementById('perfilCodigo').value = p.codigo || '';
+    document.getElementById('perfilNome').value = p.nome || '';
+    document.getElementById('perfilDescricao').value = p.descricao || '';
+    document.getElementById('perfilCor').value = p.cor || 'blue';
+    document.getElementById('perfilAtivo').checked = p.ativo !== false;
+
+    // Marca as permissões
+    var checks = document.querySelectorAll('input[name="permissaoItem"]');
+    checks.forEach(function(c) {
+        c.checked = (p.permissoes || []).indexOf(c.value) !== -1;
+    });
+
+    abrirModal('modalPerfilAcesso');
+}
+
+function salvarPerfilAcesso(e) {
+    if (e) e.preventDefault();
+
+    var cod = document.getElementById('perfilCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('perfilNome').value.trim().toUpperCase();
+    var desc = document.getElementById('perfilDescricao').value.trim();
+    var cor = document.getElementById('perfilCor').value;
+    var ativo = document.getElementById('perfilAtivo').checked;
+
+    if (!cod || !nome || !desc) {
+        alert('Por favor, preencha código, nome e descrição do perfil.');
+        return;
+    }
+
+    var selecionadas = [];
+    var checks = document.querySelectorAll('input[name="permissaoItem"]:checked');
+    checks.forEach(function(c) {
+        selecionadas.push(c.value);
+    });
+
+    if (selecionadas.length === 0) {
+        if (!confirm('Atenção: Nenhuma permissão de módulo foi selecionada para este perfil. Deseja gravar mesmo assim?')) {
+            return;
+        }
+    }
+
+    if (!window.RestauranteApp.perfis_acesso) window.RestauranteApp.perfis_acesso = [];
+
+    var item = {
+        codigo: cod,
+        nome: nome,
+        descricao: desc,
+        cor: cor,
+        permissoes: selecionadas,
+        ativo: ativo
+    };
+
+    if (editandoPerfilId) {
+        var idx = window.RestauranteApp.perfis_acesso.findIndex(function(x) { return x.id === editandoPerfilId; });
+        if (idx !== -1) {
+            item.id = editandoPerfilId;
+            window.RestauranteApp.perfis_acesso[idx] = Object.assign({}, window.RestauranteApp.perfis_acesso[idx], item);
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.perfis_acesso.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalPerfilAcesso');
+    renderPerfisAcesso();
+    popularSelectPerfisUtilizador();
+    renderUtilizadores();
+    alert('Perfil de acesso ' + nome + ' guardado com sucesso!');
+}
+
+function removerPerfilAcesso(id) {
+    var p = (window.RestauranteApp.perfis_acesso || []).find(function(x) { return x.id === id; });
+    if (!p) return;
+
+    var associados = (window.RestauranteApp.utilizadores || []).filter(function(u) {
+        return u.perfil === p.nome || u.perfil_id === p.id;
+    });
+
+    if (associados.length > 0) {
+        alert('Não é possível remover o perfil "' + p.nome + '" porque existem ' + associados.length + ' utilizador(es) vinculado(s) a ele.\nAltere o perfil desses utilizadores antes de remover.');
+        return;
+    }
+
+    if (confirm('Deseja realmente remover o perfil de acesso "' + p.nome + '"?')) {
+        var idx = window.RestauranteApp.perfis_acesso.findIndex(function(x) { return x.id === id; });
+        if (idx !== -1) {
+            window.RestauranteApp.perfis_acesso.splice(idx, 1);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            renderPerfisAcesso();
+            popularSelectPerfisUtilizador();
+            alert('Perfil removido com sucesso!');
+        }
+    }
+}
+
+// =============================================================================
+// INICIALIZAÇÃO
+// =============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    popularSelectPerfisUtilizador();
+    renderUtilizadores();
+    renderPerfisAcesso();
+
+    // Se a URL tiver ?tab=perfis, abre diretamente a aba de perfis
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'perfis') {
+        alternarAbaGestao('perfis');
+    }
+});
+</script>
+{% endblock %}

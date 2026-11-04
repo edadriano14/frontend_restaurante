@@ -1,0 +1,507 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Cabeçalho -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl shadow-sm p-6 border-l-4 border-teal-600">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-right-arrow-left text-teal-600"></i> Movimentos & Transferências de Stock
+            </h1>
+            <p class="text-gray-500 mt-1">Registo integral de entradas, saídas e <b>transferências entre estabelecimentos, armazéns e locais físicos</b> (estantes, prateleiras, geleiras e setores).</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="abrirModalTransferenciaGeral()" class="px-4 py-2.5 bg-custom-primary text-white rounded-xl text-xs font-bold shadow hover:opacity-95 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-dolly"></i> Nova Transferência
+            </button>
+            <button onclick="abrirModalNovoMovimento()" class="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold shadow hover:bg-teal-700 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Ajuste / Entrada / Saída
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros de Tipo de Movimento -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="filtrarMovimentos('TODOS')" id="btnFiltroMov-TODOS" class="filtro-mov-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-600 text-white shadow-sm cursor-pointer">
+                Todos os Movimentos
+            </button>
+            <button onclick="filtrarMovimentos('TRANSFERENCIA')" id="btnFiltroMov-TRANSFERENCIA" class="filtro-mov-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer flex items-center gap-1">
+                <i class="fa-solid fa-right-left text-blue-500"></i> Transferências (Estabelecimentos/Armazéns/Locais)
+            </button>
+            <button onclick="filtrarMovimentos('ENTRADA')" id="btnFiltroMov-ENTRADA" class="filtro-mov-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer flex items-center gap-1">
+                <i class="fa-solid fa-arrow-down text-emerald-600"></i> Entradas (Guias/Compras/Ajuste)
+            </button>
+            <button onclick="filtrarMovimentos('SAIDA')" id="btnFiltroMov-SAIDA" class="filtro-mov-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer flex items-center gap-1">
+                <i class="fa-solid fa-arrow-up text-rose-600"></i> Saídas (Vendas/Cozinha/Perdas)
+            </button>
+        </div>
+        <div class="text-xs text-gray-500 font-semibold" id="contadorMovimentos">
+            0 movimentos registados
+        </div>
+    </div>
+
+    <!-- Tabela de Movimentos -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Data & Hora</th>
+                        <th class="p-4">Tipo Movimento</th>
+                        <th class="p-4">Item de Stock</th>
+                        <th class="p-4">Quantidade</th>
+                        <th class="p-4">Origem &rarr; Destino</th>
+                        <th class="p-4">Motivo / Operação</th>
+                        <th class="p-4">Responsável</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaMovimentos" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Nova Transferência (Entre Estabelecimentos, Armazéns e Locais) -->
+    <div id="modalTransferenciaGeral" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-dolly text-custom-primary"></i> Transferência de Stock
+                    </h3>
+                    <p class="text-xs text-gray-500">Mover stock entre estabelecimentos, armazéns centrais ou locais físicos/setores.</p>
+                </div>
+                <button type="button" onclick="fecharModal('modalTransferenciaGeral')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+            </div>
+            
+            <div class="space-y-4 text-xs">
+                <!-- Nível / Âmbito da Transferência -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Tipo de Transferência *</label>
+                    <select id="transAmbitoSelect" onchange="atualizarCamposOrigemDestino()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white outline-none font-semibold focus:border-custom-primary">
+                        <option value="ESTABELECIMENTO">🏢 Entre Estabelecimentos / Filiais da Rede</option>
+                        <option value="ARMAZEM" selected>🏬 Entre Armazéns Centrais e Depósitos</option>
+                        <option value="LOCAL_SETOR">📍 Entre Locais Físicos / Setores (Cozinha, Bar, Pastelaria, Geleiras)</option>
+                    </select>
+                </div>
+
+                <!-- Seleção do Produto / Item -->
+                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
+                    <label class="block font-bold text-gray-700 uppercase">Item de Stock a Transferir *</label>
+                    <select id="transItemSelect" onchange="atualizarInfoItemTransferencia()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white outline-none font-bold text-gray-900 focus:border-custom-primary">
+                        <!-- Preenchido via carregarItensTransferencia() -->
+                    </select>
+                    <div id="transItemInfoDisponivel" class="text-gray-500 text-[11px] font-medium flex items-center gap-2">
+                        <span>Saldo Actual em Stock: <b class="text-emerald-700 font-mono text-xs" id="transSaldoAtualTexto">0 UN</b></span>
+                        <span class="text-gray-300">|</span>
+                        <span>Local Actual: <b class="text-gray-700" id="transLocalAtualTexto">Armazém Principal</b></span>
+                    </div>
+                </div>
+
+                <!-- Origem e Destino Configuráveis -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-blue-50/50 rounded-xl border border-blue-200">
+                    <div>
+                        <label class="block font-bold text-blue-900 uppercase mb-1 flex items-center gap-1">
+                            <i class="fa-solid fa-box text-blue-600"></i> Origem *
+                        </label>
+                        <select id="transOrigemSelect" class="w-full px-3 py-2 border border-blue-300 rounded-lg text-xs bg-white font-semibold outline-none focus:border-blue-500">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-blue-900 uppercase mb-1 flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-right text-blue-600"></i> Destino *
+                        </label>
+                        <select id="transDestinoSelect" class="w-full px-3 py-2 border border-blue-300 rounded-lg text-xs bg-white font-semibold outline-none focus:border-blue-500">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Quantidade e Responsável -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-gray-700 uppercase mb-1">Quantidade a Transferir *</label>
+                        <input type="number" id="transQtdInput" step="0.1" min="0.1" value="1" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-black text-gray-900 focus:border-custom-primary">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 uppercase mb-1">Responsável / Solicitante *</label>
+                        <input type="text" id="transResponsavelInput" placeholder="Ex: Gestor de Stock / Chefe de Cozinha" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-custom-primary">
+                    </div>
+                </div>
+
+                <!-- Justificação / Observações -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Motivo / Justificação da Transferência</label>
+                    <input type="text" id="transMotivoInput" placeholder="Ex: Reposição de stock diário, transferência de requisição interna" class="w-full px-3 py-2 border rounded-lg text-xs outline-none focus:border-custom-primary">
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalTransferenciaGeral')" class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="confirmarTransferenciaGeral()" class="px-5 py-2.5 bg-custom-primary hover:opacity-90 text-white rounded-lg text-xs font-bold shadow flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-check"></i> Concluir Transferência
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Movimento / Ajuste -->
+    <div id="modalNovoMovimento" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-lg text-gray-800">Lançar Ajuste / Entrada / Saída</h3>
+                <button type="button" onclick="fecharModal('modalNovoMovimento')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Item de Stock *</label>
+                    <select id="movItemSelect" class="w-full px-3 py-2 border rounded-lg text-sm bg-white outline-none font-semibold">
+                        <!-- Preenchido via preencherItensStock() -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-gray-700 uppercase mb-1">Tipo de Movimento *</label>
+                        <select id="movTipoSelect" class="w-full px-3 py-2 border rounded-lg text-sm bg-white outline-none font-semibold">
+                            <option value="ENTRADA_AJUSTE">Entrada (Ajuste +)</option>
+                            <option value="SAIDA_PERDA">Saída (Perda / Quebra -)</option>
+                            <option value="SAIDA_CONSUMO">Saída (Consumo Interno -)</option>
+                            <option value="ENTRADA_DEVOLUCAO">Entrada (Devolução +)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 uppercase mb-1">Quantidade *</label>
+                        <input type="number" id="movQtd" step="0.1" min="0.1" value="1" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Motivo / Justificação *</label>
+                    <input type="text" id="movMotivo" placeholder="Ex: Quebra acidental no bar, acerto de inventário" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Responsável</label>
+                    <input type="text" id="movResponsavel" placeholder="Ex: Gestor de Stock" class="w-full px-3 py-2 border rounded-lg text-xs outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalNovoMovimento')" class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarNovoMovimento()" class="px-5 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold shadow hover:bg-teal-700 cursor-pointer">Lançar Movimento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var filtroMovAtual = 'TODOS';
+
+function renderMovimentosStock() {
+    var tbody = document.getElementById('tabelaMovimentos');
+    var contador = document.getElementById('contadorMovimentos');
+    if (!tbody) return;
+
+    var lista = window.RestauranteApp.movimentos_stock || [];
+    if (filtroMovAtual !== 'TODOS') {
+        lista = lista.filter(function(m) {
+            return (m.tipo || '').indexOf(filtroMovAtual) >= 0;
+        });
+    }
+
+    var html = '';
+    for (var i = 0; i < lista.length; i++) {
+        var m = lista[i];
+        var isTransferencia = (m.tipo || '').indexOf('TRANSFERENCIA') >= 0;
+        var isEntrada = !isTransferencia && (m.tipo || '').indexOf('ENTRADA') >= 0;
+        var isSaida = !isTransferencia && (m.tipo || '').indexOf('SAIDA') >= 0;
+
+        var badgeClass = isTransferencia ? 'bg-blue-100 text-blue-800 border border-blue-200' : (isEntrada ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200');
+        var badgeIcon = isTransferencia ? 'fa-right-left' : (isEntrada ? 'fa-arrow-down' : 'fa-arrow-up');
+        var sinal = isTransferencia ? '⇄ ' : (isEntrada ? '+' : (isSaida ? '-' : ''));
+
+        // Formatação de Origem -> Destino
+        var rotaHtml = '—';
+        if (m.origem || m.destino) {
+            rotaHtml = '<span class="font-semibold text-gray-700">' + (m.origem || 'Stock') + '</span> <i class="fa-solid fa-arrow-right text-[10px] text-gray-400 mx-1"></i> <span class="font-bold text-custom-primary">' + (m.destino || 'Destino') + '</span>';
+        } else if (isTransferencia) {
+            rotaHtml = '<span class="text-xs text-blue-700 font-medium">Transferência Interna</span>';
+        }
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono text-xs text-gray-500 whitespace-nowrap">' + m.data_hora + '</td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full ' + badgeClass + ' flex items-center gap-1.5 w-max"><i class="fa-solid ' + badgeIcon + '"></i> ' + m.tipo + '</span></td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + m.item_nome + '</td>';
+        html += '  <td class="p-4 font-mono font-black text-sm ' + (isTransferencia ? 'text-blue-700' : (isEntrada ? 'text-emerald-700' : 'text-rose-700')) + '">' + sinal + m.quantidade + '</td>';
+        html += '  <td class="p-4 text-xs">' + rotaHtml + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-700 font-medium">' + m.motivo + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-500"><i class="fa-solid fa-user text-gray-400 mr-1"></i>' + (m.responsavel || 'Sistema') + '</td>';
+        html += '</tr>';
+    }
+
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-8 text-center text-gray-400 text-xs">Nenhum movimento registado com este filtro.</td></tr>';
+    if (contador) contador.innerText = lista.length + ' movimentos registados';
+}
+
+function filtrarMovimentos(tipo) {
+    filtroMovAtual = tipo;
+    var botoes = document.querySelectorAll('.filtro-mov-btn');
+    botoes.forEach(function(b) {
+        b.classList.remove('bg-teal-600', 'text-white', 'shadow-sm');
+        b.classList.add('text-gray-600', 'hover:bg-gray-100');
+    });
+    var ativo = document.getElementById('btnFiltroMov-' + tipo);
+    if (ativo) {
+        ativo.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+        ativo.classList.remove('text-gray-600', 'hover:bg-gray-100');
+    }
+    renderMovimentosStock();
+}
+
+// ----------------------------------------------------
+// ROTINAS DE TRANSFERÊNCIA DE STOCK
+// ----------------------------------------------------
+function abrirModalTransferenciaGeral() {
+    carregarItensTransferencia();
+    atualizarCamposOrigemDestino();
+    document.getElementById('transQtdInput').value = '1';
+    document.getElementById('transResponsavelInput').value = 'Gestor de Stock';
+    document.getElementById('transMotivoInput').value = '';
+    abrirModal('modalTransferenciaGeral');
+}
+
+function carregarItensTransferencia() {
+    var sel = document.getElementById('transItemSelect');
+    if (!sel) return;
+    var stock = window.RestauranteApp.stock || [];
+    var html = '';
+    for (var i = 0; i < stock.length; i++) {
+        var s = stock[i];
+        html += '<option value="' + s.id + '">' + s.nome + ' (' + s.qtd + ' ' + (s.unidade || 'UN') + ')</option>';
+    }
+    if (stock.length === 0) {
+        html = '<option value="">Nenhum item disponível no stock</option>';
+    }
+    sel.innerHTML = html;
+    atualizarInfoItemTransferencia();
+}
+
+function atualizarInfoItemTransferencia() {
+    var sel = document.getElementById('transItemSelect');
+    if (!sel) return;
+    var itemId = sel.value;
+    var s = (window.RestauranteApp.stock || []).find(function(x) { return String(x.id) === String(itemId); });
+    if (s) {
+        document.getElementById('transSaldoAtualTexto').innerText = s.qtd + ' ' + (s.unidade || 'UN');
+        document.getElementById('transLocalAtualTexto').innerText = (s.local || 'Armazém Principal') + (s.estante ? ' • ' + s.estante : '') + (s.refrigeracao ? ' • ' + s.refrigeracao : '');
+    } else {
+        document.getElementById('transSaldoAtualTexto').innerText = '0 UN';
+        document.getElementById('transLocalAtualTexto').innerText = '—';
+    }
+}
+
+function atualizarCamposOrigemDestino() {
+    var ambito = document.getElementById('transAmbitoSelect').value;
+    var selOrigem = document.getElementById('transOrigemSelect');
+    var selDestino = document.getElementById('transDestinoSelect');
+    if (!selOrigem || !selDestino) return;
+
+    var htmlOrigem = '';
+    var htmlDestino = '';
+
+    if (ambito === 'ESTABELECIMENTO') {
+        // Transferência entre estabelecimentos / filiais da rede
+        var estabs = window.RestauranteApp.estabelecimentos || [];
+        for (var i = 0; i < estabs.length; i++) {
+            var e = estabs[i];
+            var nomeEst = e.nome + ' (' + (e.cidade || 'Filial') + ')';
+            htmlOrigem += '<option value="' + e.nome + '" ' + (i === 0 ? 'selected' : '') + '>🏢 ' + nomeEst + '</option>';
+            htmlDestino += '<option value="' + e.nome + '" ' + (i === 1 ? 'selected' : '') + '>🏢 ' + nomeEst + '</option>';
+        }
+    } else if (ambito === 'ARMAZEM') {
+        // Transferência entre armazéns centrais e depósitos
+        var armazens = window.RestauranteApp.armazens || [
+            { id: "1", nome: "Armazém Principal Central" },
+            { id: "2", nome: "Depósito de Bar & Garrafeira" },
+            { id: "3", nome: "Despensa da Cozinha" }
+        ];
+        for (var j = 0; j < armazens.length; j++) {
+            var a = armazens[j];
+            htmlOrigem += '<option value="' + a.nome + '" ' + (j === 0 ? 'selected' : '') + '>🏬 ' + a.nome + '</option>';
+            htmlDestino += '<option value="' + a.nome + '" ' + (j === 1 ? 'selected' : '') + '>🏬 ' + a.nome + '</option>';
+        }
+    } else {
+        // Transferência entre locais físicos / setores (Cozinha, Bar, Pastelaria, Geleiras, Congeladores, Estantes)
+        var locais = [
+            'Cozinha Principal',
+            'Bar & Balcão',
+            'Pastelaria & Sobremesas',
+            'Piscina & Deck',
+            'Câmara Fria 01 (Carnes)',
+            'Congelador de Sobremesas',
+            'Geleira Expositora Bar 01',
+            'Estante A - Prateleira 02',
+            'Estante C - Prateleira 01'
+        ];
+        // Adicionar locais cadastrados dinamicamente se houver
+        if (window.RestauranteApp.locais_armazenamento) {
+            window.RestauranteApp.locais_armazenamento.forEach(function(loc) {
+                var desc = loc.descricao + (loc.armazem_nome ? ' (' + loc.armazem_nome + ')' : '');
+                if (locais.indexOf(desc) === -1) locais.push(desc);
+            });
+        }
+
+        for (var k = 0; k < locais.length; k++) {
+            var l = locais[k];
+            htmlOrigem += '<option value="' + l + '" ' + (k === 0 ? 'selected' : '') + '>📍 ' + l + '</option>';
+            htmlDestino += '<option value="' + l + '" ' + (k === 1 ? 'selected' : '') + '>📍 ' + l + '</option>';
+        }
+    }
+
+    selOrigem.innerHTML = htmlOrigem;
+    selDestino.innerHTML = htmlDestino;
+}
+
+function confirmarTransferenciaGeral() {
+    var itemId = document.getElementById('transItemSelect').value;
+    var ambito = document.getElementById('transAmbitoSelect').value;
+    var origem = document.getElementById('transOrigemSelect').value;
+    var destino = document.getElementById('transDestinoSelect').value;
+    var qtd = parseFloat(document.getElementById('transQtdInput').value);
+    var resp = document.getElementById('transResponsavelInput').value.trim() || 'Gestor de Stock';
+    var motivo = document.getElementById('transMotivoInput').value.trim();
+
+    if (!itemId) {
+        alert('Selecione um item de stock válido.');
+        return;
+    }
+    if (isNaN(qtd) || qtd <= 0) {
+        alert('Informe uma quantidade válida para transferir.');
+        return;
+    }
+    if (origem === destino) {
+        alert('A origem e o destino da transferência devem ser diferentes!');
+        return;
+    }
+
+    var stockItem = (window.RestauranteApp.stock || []).find(function(s) { return String(s.id) === String(itemId); });
+    if (!stockItem) {
+        alert('Item de stock não encontrado.');
+        return;
+    }
+
+    if (stockItem.qtd < qtd) {
+        alert('Saldo insuficiente em stock!\nQuantidade disponível: ' + stockItem.qtd + ' ' + (stockItem.unidade || 'UN') + '\nQuantidade solicitada: ' + qtd + ' ' + (stockItem.unidade || 'UN'));
+        return;
+    }
+
+    // Se a transferência for para outro estabelecimento ou consumo setorial, debita do saldo central
+    // Se for entre armazéns/locais internos, atualiza a localização física do item
+    if (ambito === 'ESTABELECIMENTO') {
+        stockItem.qtd = Math.round((stockItem.qtd - qtd) * 100) / 100;
+    } else {
+        // Transferência interna: atualiza destino e local
+        stockItem.local = destino;
+    }
+
+    var agora = new Date().toLocaleString('pt-PT');
+    var motivoCompleto = motivo ? (motivo + ' [' + origem + ' -> ' + destino + ']') : ('Transferência ' + ambito + ': ' + origem + ' -> ' + destino);
+
+    if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+    window.RestauranteApp.movimentos_stock.unshift({
+        id: String(Date.now()),
+        data_hora: agora,
+        tipo: 'TRANSFERENCIA',
+        item_nome: stockItem.nome,
+        quantidade: qtd,
+        origem: origem,
+        destino: destino,
+        motivo: motivoCompleto,
+        responsavel: resp
+    });
+
+    // Também sincroniza com transferências legado para compatibilidade total
+    if (!window.RestauranteApp.transferencias) window.RestauranteApp.transferencias = [];
+    window.RestauranteApp.transferencias.unshift({
+        id: String(Date.now() + 1),
+        data: agora,
+        item: stockItem.nome,
+        qtd: qtd + ' ' + (stockItem.unidade || 'UN'),
+        origem: origem,
+        destino: destino,
+        responsavel: resp
+    });
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalTransferenciaGeral');
+    renderMovimentosStock();
+    alert('Transferência de ' + qtd + ' ' + (stockItem.unidade || 'UN') + ' de "' + stockItem.nome + '" registada com sucesso!\n\nDe: ' + origem + '\nPara: ' + destino);
+}
+
+// ----------------------------------------------------
+// ROTINAS DE AJUSTES GERAIS
+// ----------------------------------------------------
+function abrirModalNovoMovimento() {
+    var sel = document.getElementById('movItemSelect');
+    if (sel) {
+        var stock = window.RestauranteApp.stock || [];
+        sel.innerHTML = stock.map(function(s) {
+            return '<option value="' + s.nome + '">' + s.nome + ' (Actual: ' + s.qtd + ' ' + (s.unidade || '') + ')</option>';
+        }).join('');
+    }
+    document.getElementById('movMotivo').value = '';
+    document.getElementById('movQtd').value = '1';
+    document.getElementById('movResponsavel').value = 'Gestor de Stock';
+    abrirModal('modalNovoMovimento');
+}
+
+function salvarNovoMovimento() {
+    var itemNome = document.getElementById('movItemSelect').value;
+    var tipo = document.getElementById('movTipoSelect').value;
+    var qtd = parseFloat(document.getElementById('movQtd').value);
+    var motivo = document.getElementById('movMotivo').value.trim();
+    var resp = document.getElementById('movResponsavel').value.trim() || 'Gestor de Stock';
+
+    if (!motivo || isNaN(qtd) || qtd <= 0) {
+        alert('Por favor informe a quantidade e o motivo do movimento.');
+        return;
+    }
+
+    if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+    window.RestauranteApp.movimentos_stock.unshift({
+        id: String(Date.now()),
+        data_hora: new Date().toLocaleString('pt-PT'),
+        tipo: tipo,
+        item_nome: itemNome,
+        quantidade: qtd,
+        origem: tipo.indexOf('ENTRADA') >= 0 ? 'Ajuste / Fornecedor' : 'Stock Central',
+        destino: tipo.indexOf('ENTRADA') >= 0 ? 'Stock Central' : 'Baixa / Perda',
+        motivo: motivo,
+        responsavel: resp
+    });
+
+    // Atualizar quantidade no stock
+    var s = (window.RestauranteApp.stock || []).find(function(x) { return x.nome === itemNome; });
+    if (s) {
+        if (tipo.indexOf('ENTRADA') >= 0) s.qtd += qtd;
+        if (tipo.indexOf('SAIDA') >= 0) s.qtd = Math.max(0, s.qtd - qtd);
+    }
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalNovoMovimento');
+    renderMovimentosStock();
+    alert('Movimento de stock lançado com sucesso!');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderMovimentosStock();
+});
+</script>
+{% endblock %}

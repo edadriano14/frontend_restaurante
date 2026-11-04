@@ -1,0 +1,1636 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Ciclo de Compras & Abastecimento</h1>
+            <p class="text-gray-500">Fluxo obrigatório: <b>1. Requisição</b> &rarr; <b>2. Aprovação</b> &rarr; <b>3. Compra</b> &rarr; <b>4. Guia de Entrada (Stock)</b>.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="abrirModalNovaRequisicao()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-md flex items-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-file-circle-plus"></i> 1. Nova Requisição
+            </button>
+            <button type="button" onclick="abrirModalCompra()" class="px-4 py-2 bg-custom-primary hover:opacity-90 text-white rounded-xl font-bold shadow-md flex items-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-cart-shopping"></i> Registar Compra
+            </button>
+            <button type="button" onclick="abrirRecebimentoRapidoGuias()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md flex items-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-truck-ramp-box"></i> 4. Guias de Entrada
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS DE NAVEGAÇÃO DO FLUXO DE COMPRAS -->
+    <div class="bg-white rounded-xl shadow-xs border border-gray-100 p-1 flex border-b border-gray-200 space-x-2">
+        <button type="button" onclick="trocarAbaCompras('requisicoes')" id="abaBtn-requisicoes" class="px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-purple-600 text-white shadow-xs cursor-pointer">
+            <i class="fa-solid fa-clipboard-list"></i> 1 & 2. Requisições & Aprovações
+            <span id="badgeReqPendentes" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-white text-purple-700 font-black">0</span>
+        </button>
+        <button type="button" onclick="trocarAbaCompras('compras')" id="abaBtn-compras" class="px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-receipt"></i> 3. Compras Facturadas
+        </button>
+    </div>
+
+    <!-- SEÇÃO 1: REQUISIÇÕES & APROVAÇÃO -->
+    <div id="painel-requisicoes" class="space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 bg-gray-50/70 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h3 class="font-bold text-sm text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-stamp text-purple-600"></i> Requisições de Compras para Aprovação
+                    </h3>
+                    <p class="text-xs text-gray-500">Antes da compra faz-se uma requisição e aprova-se. Ao aprovar, gera-se a compra e a guia de entrada para alimentar o stock.</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                        <tr>
+                            <th class="p-4">Nº Requisição</th>
+                            <th class="p-4">Data</th>
+                            <th class="p-4">Fornecedor</th>
+                            <th class="p-4">Itens Solicitados</th>
+                            <th class="p-4 text-right">Valor Estimado</th>
+                            <th class="p-4 text-center">Estado do Fluxo</th>
+                            <th class="p-4 text-right">Acções de Aprovação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaRequisicoesFluxo" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEÇÃO 2: HISTÓRICO DE COMPRAS -->
+    <div id="painel-compras" class="space-y-4 hidden">
+
+    <!-- Tabela de Compras -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                <tr>
+                    <th class="p-4">Data</th>
+                    <th class="p-4">Nº Factura</th>
+                    <th class="p-4">Nº Requisição</th>
+                    <th class="p-4">Fornecedor</th>
+                    <th class="p-4">Itens</th>
+                    <th class="p-4">Valor Total</th>
+                    <th class="p-4">Estado</th>
+                    <th class="p-4 text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaCompras" class="divide-y divide-gray-100"></tbody>
+        </table>
+    </div>
+
+    <!-- Modal Nova Compra (Layout 100% Fiel à Imagem Anexa: Dark Mode, IDs, Compra Direta) -->
+    <div id="modalCompra" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-2 sm:p-4 backdrop-blur-sm">
+        <div class="bg-[#111827] text-gray-100 rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[94vh] flex flex-col border border-gray-800">
+            <!-- Topo do Modal -->
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                <h3 class="font-bold text-lg text-white tracking-wide">Registar Nova Compra (Stock &lt; 50)</h3>
+                <button type="button" onclick="fecharModal('modalCompra')" class="text-gray-400 hover:text-white text-2xl font-bold cursor-pointer transition">&times;</button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                <!-- Linha 1: ID/Código da Compra e Requisição Vinculada Obrigatória -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">ID/Código da Compra *:</label>
+                        <input type="text" id="compraFatura" class="w-full px-3 py-2 bg-[#1f2937] border border-gray-700 rounded-lg text-sm text-gray-200 font-mono font-bold outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-amber-400 mb-1 flex items-center gap-1">
+                            <i class="fa-solid fa-link"></i> Requisição Prévia Obrigatória *:
+                        </label>
+                        <select id="compraRequisicaoVinculadaSelect" onchange="aoSelecionarRequisicaoParaCompra()" class="w-full px-3 py-2 bg-[#1f2937] border border-amber-600 rounded-lg text-sm text-amber-200 font-semibold outline-none focus:border-amber-400 cursor-pointer">
+                            <!-- Preenchido via preencherSelectRequisicoesCompra() -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Linha 2: Fornecedor e ID do Fornecedor -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Selecionar Fornecedor:</label>
+                        <select id="compraFornecedorSelect" onchange="aoMudarFornecedorCompra()" class="w-full px-3 py-2 bg-[#1f2937] border border-gray-700 rounded-lg text-sm text-white font-semibold outline-none focus:border-blue-500 cursor-pointer">
+                            <!-- Preenchido via preencherSelectFornecedoresCompra() -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">ID do Fornecedor:</label>
+                        <input type="text" id="compraFornecedorId" readonly placeholder="Auto-preenchido" class="w-full px-3 py-2 bg-[#1f2937]/70 border border-gray-700 rounded-lg text-sm text-gray-400 font-mono outline-none cursor-not-allowed">
+                    </div>
+                </div>
+
+                <!-- LISTA DE PRODUTOS (TABELA ESCURA) -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label class="block text-xs font-semibold text-gray-300">
+                            Lista de Produtos (Selecionar para Encomendar):
+                        </label>
+                        <div class="flex items-center gap-2 text-xs">
+                            <button type="button" onclick="marcarTodosProdutosCompra(true)" class="text-blue-400 hover:text-blue-300 font-medium">Marcar Todos</button>
+                            <span class="text-gray-600">|</span>
+                            <button type="button" onclick="marcarTodosProdutosCompra(false)" class="text-gray-400 hover:text-gray-300">Desmarcar</button>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl overflow-hidden border border-gray-800 bg-[#0f172a] text-gray-200 shadow-md">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-[#1e293b] text-gray-400 uppercase font-bold text-[10px] tracking-wider border-b border-gray-800">
+                                <tr>
+                                    <th class="p-3 w-12 text-center">SELECIONAR</th>
+                                    <th class="p-3">PRODUTO</th>
+                                    <th class="p-3 text-center">STOCK</th>
+                                    <th class="p-3 text-center">PENDENTE</th>
+                                    <th class="p-3 text-center">P. CUSTO (MT)</th>
+                                    <th class="p-3 text-center">NOVO P. VENDA (MT)</th>
+                                    <th class="p-3 text-center">QTD. A COMPRAR</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpoItensCompra" class="divide-y divide-gray-800/80">
+                                <!-- Preenchido dinamicamente via renderLinhasItensCompra() -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Rodapé de Opções e Checkbox Compra Direta -->
+                <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-gray-800">
+                    <label class="flex items-center gap-2.5 text-xs text-gray-300 cursor-pointer select-none">
+                        <input type="checkbox" id="compraDiretaCheck" checked class="w-4 h-4 rounded bg-[#1f2937] border-gray-700 text-emerald-500 focus:ring-0 cursor-pointer">
+                        <span class="font-semibold text-white">🚚 Compra Direta (Dar entrada imediata no stock)</span>
+                    </label>
+
+                    <div class="text-right text-xs text-gray-400">
+                        Total Estimado: <span id="compraTotalCalculado" class="font-black text-emerald-400 text-sm font-mono ml-1">0.00 MT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação do Modal de Compra -->
+            <div class="flex items-center justify-end space-x-3 pt-3 border-t border-gray-800">
+                <button type="button" onclick="fecharModal('modalCompra')" class="px-4 py-2 border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg text-xs font-semibold cursor-pointer transition">
+                    Cancelar
+                </button>
+                <button type="button" onclick="salvarCompraCompleta()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-lg flex items-center gap-2 cursor-pointer transition">
+                    <i class="fa-solid fa-floppy-disk"></i> Gravar & Facturar Compra
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
+    <!-- FIM DO PAINEL DE COMPRAS -->
+
+    <!-- Modal Nova Requisição (Passo 1 do Ciclo) -->
+    <div id="modalRequisicao" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-3 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-file-circle-plus"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-900">1. Emitir Nova Requisição de Compra</h3>
+                        <p class="text-xs text-gray-500">Solicitação interna de insumos/produtos que necessita de aprovação.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="fecharModal('modalRequisicao')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto flex-1 pr-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nº Requisição:</label>
+                        <input type="text" id="reqNumero" readonly class="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 font-mono font-bold text-purple-700">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor Pretendido:</label>
+                        <select id="reqFornecedorSelect" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabela de Itens para a Requisição -->
+                <div class="border rounded-xl overflow-hidden">
+                    <div class="bg-gray-50 px-3 py-2 border-b flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-700 uppercase">Itens da Requisição</span>
+                        <button type="button" onclick="adicionarLinhaItemRequisicao()" class="text-xs text-purple-600 font-bold hover:text-purple-800 cursor-pointer flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Adicionar Item
+                        </button>
+                    </div>
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-100 text-gray-600 uppercase font-semibold text-[10px]">
+                            <tr>
+                                <th class="p-2.5">Insumo / Produto</th>
+                                <th class="p-2.5 text-center">Unidade</th>
+                                <th class="p-2.5 text-center">Qtd Solicitada</th>
+                                <th class="p-2.5 text-right">Preço Estimado</th>
+                                <th class="p-2.5 text-right">Subtotal</th>
+                                <th class="p-2.5 text-center w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoItensRequisicao" class="divide-y divide-gray-100">
+                            <!-- Inserido dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-purple-50/50 rounded-xl border border-purple-200 text-xs">
+                    <span class="font-bold text-purple-900">Total Estimado da Requisição:</span>
+                    <span id="reqTotalEstimado" class="text-base font-black font-mono text-purple-700">0.00 MT</span>
+                </div>
+            </div>
+
+            <div class="flex justify-end items-center gap-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalRequisicao')" class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="salvarNovaRequisicao()" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-xs shadow cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-paper-plane"></i> Submeter Requisição para Aprovação
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4. Guia de Entrada & Recepção Física dos Produtos (Stock) -->
+    <div id="modalGuiaEntrada" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-2 sm:p-4 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-3 shrink-0">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-truck-ramp-box"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 leading-snug">4. Recepção de Mercadorias & Guia de Entrada</h2>
+                        <p class="text-xs text-gray-500">Conferência dos itens entregues pelo fornecedor e abastecimento efectivo do Stock.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="fecharModal('modalGuiaEntrada')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto flex-1 pr-1">
+                <input type="hidden" id="guiaModalReqId">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nº Guia de Entrada:</label>
+                        <input type="text" id="guiaModalNumero" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-50 font-mono font-bold text-teal-700 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Requisição Vinculada:</label>
+                        <input type="text" id="guiaModalReqNumero" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-50 font-mono font-bold text-purple-700 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Factura de Compra:</label>
+                        <input type="text" id="guiaModalFatura" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-50 font-mono font-bold text-blue-700 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor Entregador:</label>
+                        <input type="text" id="guiaModalFornecedor" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-50 font-bold text-gray-800 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Data & Hora de Recepção:</label>
+                        <input type="text" id="guiaModalDataHora" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-50 font-mono text-gray-600 outline-none">
+                    </div>
+                </div>
+
+                <!-- Tabela de Itens Entregues a Dar Entrada no Stock -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
+                    <div class="bg-gray-50 px-3 py-2.5 border-b flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-800 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-boxes-stacked text-teal-600"></i> Conferência de Itens & Insumos Entregues
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="preencherTodasQuantidadesGuia()" class="px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-800 text-[11px] font-bold rounded-md transition cursor-pointer">
+                                <i class="fa-solid fa-check-double"></i> Receber Tudo
+                            </button>
+                            <button type="button" onclick="zerarTodasQuantidadesGuia()" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-[11px] font-bold rounded-md transition cursor-pointer">
+                                <i class="fa-solid fa-eraser"></i> Zerar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="guiaResumoConferenciaBanner" class="p-3 bg-blue-50 border-b border-blue-200 text-blue-900 text-xs font-medium">
+                        <i class="fa-solid fa-circle-info text-blue-600 mr-1.5"></i> Insira as quantidades físicas conferidas trazidas pelo fornecedor. Se alguma quantidade for menor, o restante ficará automaticamente em falta.
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-gray-600">
+                            <thead class="bg-gray-100 text-gray-700 uppercase font-semibold text-[10px] border-b">
+                                <tr>
+                                    <th class="p-2.5 text-center w-10">#</th>
+                                    <th class="p-2.5">Insumo / Produto</th>
+                                    <th class="p-2.5 text-center">Unidade</th>
+                                    <th class="p-2.5 text-center">Qtd Comprada</th>
+                                    <th class="p-2.5 text-center">Já Recebido</th>
+                                    <th class="p-2.5 text-center bg-teal-50 text-teal-800">Qtd a Receber Hoje</th>
+                                    <th class="p-2.5 text-center">Em Falta</th>
+                                    <th class="p-2.5 text-center">Estado Item</th>
+                                    <th class="p-2.5 text-right">P. Unitário (MT)</th>
+                                    <th class="p-2.5 text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guiaModalCorpoItens" class="divide-y divide-gray-100">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Painel de Totais -->
+                <div class="flex items-center justify-between p-3.5 bg-teal-50 rounded-xl border border-teal-200 text-xs">
+                    <div class="text-teal-900 font-medium">
+                        Total Geral das Mercadorias Recebidas:
+                    </div>
+                    <div id="guiaModalTotalValor" class="text-base font-black font-mono text-teal-800">
+                        0.00 MT
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2.5 border-t pt-3 shrink-0">
+                <button type="button" onclick="fecharModal('modalGuiaEntrada')" class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" onclick="confirmarRecepcaoEEntradaStock()" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold shadow-md flex items-center gap-2 cursor-pointer transition">
+                    <i class="fa-solid fa-circle-check"></i> Emitir Guia & Dar Entrada no Stock
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var ITENS_COMPRA_TEMP = [];
+
+function formatarDataHoje() {
+    var hoje = new Date();
+    var yyyy = hoje.getFullYear();
+    var mm = String(hoje.getMonth() + 1).padStart(2, '0');
+    var dd = String(hoje.getDate()).padStart(2, '0');
+    return yyyy + '-' + mm + '-' + dd;
+}
+
+function preencherSelectFornecedoresCompra() {
+    var sel = document.getElementById('compraFornecedorSelect');
+    if (!sel) return;
+    var forn = window.RestauranteApp.fornecedores || [];
+    var html = '';
+    for (var i = 0; i < forn.length; i++) {
+        html += '<option value="' + forn[i].nome + '" data-id="' + forn[i].id + '">' + forn[i].nome + '</option>';
+    }
+    if (html === '') {
+        html = '<option value="Distribuidora Geral">Distribuidora Geral</option>';
+    }
+    sel.innerHTML = html;
+}
+
+function renderCompras() {
+    var tbody = document.getElementById('tabelaCompras');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.compras || [];
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var c = lista[i];
+        var acoesCompra = '<button onclick="gerarPdfFaturaCompra(window.RestauranteApp.compras[' + i + '])" class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1" title="Gerar / Baixar Factura PDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>';
+        
+        // Se a compra estiver aguardando guia de entrada/entrega física, permitir emitir a guia diretamente daqui
+        var reqAssoc = (window.RestauranteApp.requisicoes || []).find(function(r) { return r.numero_requisicao === c.numero_requisicao; });
+        if (reqAssoc && (reqAssoc.status === 'APROVADA_COMPRA_FEITA' || reqAssoc.status === 'AGUARDANDO_RECEBIMENTO' || (c.status && c.status.indexOf('Aguardando') >= 0))) {
+            acoesCompra = '<button onclick="gerarGuiaDeEntradaDaRequisicao(\'' + reqAssoc.id + '\')" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1" title="Fornecedor entregou: Emitir Guia & Dar Entrada no Stock"><i class="fa-solid fa-truck-ramp-box"></i> 4. Emitir Guia</button> ' + acoesCompra;
+        }
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono text-xs text-gray-700">' + c.data + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900 font-mono">' + c.fatura + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-semibold text-blue-700">' + (c.numero_requisicao || 'REQ-2026/0' + (i + 88)) + '</td>';
+        html += '  <td class="p-4 text-gray-800 font-semibold">' + c.fornecedor + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-500">' + (c.itens ? c.itens.length + ' produtos' : '1 item') + '</td>';
+        html += '  <td class="p-4 font-bold text-green-700">' + Number(c.total).toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">' + (c.status || 'Concluída') + '</span></td>';
+        html += '  <td class="p-4 text-right space-x-1.5 whitespace-nowrap">';
+        html += '    ' + acoesCompra;
+        html += '    <button onclick="removerCompra(' + i + ')" class="text-red-500 hover:text-red-700 p-1 cursor-pointer" title="Eliminar"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhuma compra registada.</td></tr>';
+}
+
+function prepararItensCompra() {
+    var stock = window.RestauranteApp.stock || [];
+    var tabelaPrecos = window.RestauranteApp.tabela_precos_fornecedores || [];
+
+    ITENS_COMPRA_TEMP = [];
+
+    // Priorizar produtos cujo stock é baixo ou igual a zero (precisam de compra)
+    stock.forEach(function(s, idx) {
+        var precisaCompra = (s.qtd <= (s.minimo || 10));
+        var precoRef = tabelaPrecos.find(function(tp) {
+            return tp.produto_nome.toLowerCase().includes(s.nome.toLowerCase()) || s.nome.toLowerCase().includes(tp.produto_nome.toLowerCase());
+        });
+
+        var custoUnit = Number(precoRef ? precoRef.custo_unitario : (s.custo || 50.0)) || 0;
+        var novoVenda = Number(precoRef ? precoRef.preco_venda_sugerido : (custoUnit * 1.6)) || 0;
+
+        ITENS_COMPRA_TEMP.push({
+            id: s.id,
+            nome: s.nome,
+            unidade: s.unidade || 'UN',
+            stock_atual: Number(s.qtd) || 0,
+            precisa_compra: precisaCompra,
+            selecionado: precisaCompra, // Seleciona automaticamente os que precisam de compra!
+            pendente: '-',
+            custo: custoUnit,
+            novo_venda: novoVenda,
+            qtd_comprar: precisaCompra ? Math.max(10, Math.ceil((s.minimo || 15) * 1.5 - s.qtd)) : 10
+        });
+    });
+
+    // Se a tabela de preços de fornecedores tiver produtos que ainda não constam no stock, adicioná-los também
+    tabelaPrecos.forEach(function(tp) {
+        var jaExiste = ITENS_COMPRA_TEMP.some(function(i) { return i.nome.toLowerCase() === tp.produto_nome.toLowerCase(); });
+        if (!jaExiste) {
+            var cUnit = Number(tp.custo_unitario) || 0;
+            var pVend = Number(tp.preco_venda_sugerido) || 0;
+            ITENS_COMPRA_TEMP.push({
+                id: 'TP-' + tp.id,
+                nome: tp.produto_nome,
+                unidade: 'UN',
+                stock_atual: 0,
+                precisa_compra: true,
+                selecionado: true,
+                pendente: '-',
+                custo: cUnit,
+                novo_venda: pVend,
+                qtd_comprar: tp.unidades_caixa || 10
+            });
+        }
+    });
+
+    renderLinhasItensCompra();
+}
+
+function renderLinhasItensCompra() {
+    var tbody = document.getElementById('corpoItensCompra');
+    if (!tbody) return;
+    var html = '';
+
+    ITENS_COMPRA_TEMP.forEach(function(item, idx) {
+        // Badges idênticas à 3ª imagem: laranja para pouco stock, vermelho para 0
+        var badgeStockClass = 'bg-gray-800 text-gray-300';
+        if (item.stock_atual === 0) {
+            badgeStockClass = 'bg-red-950 text-red-300 border border-red-800';
+        } else if (item.stock_atual <= 15) {
+            badgeStockClass = 'bg-amber-950 text-amber-300 border border-amber-800';
+        }
+
+        var custoFormatado = (Number(item.custo) || 0).toFixed(1);
+        var vendaFormatada = (Number(item.novo_venda) || 0).toFixed(1);
+
+        html += '<tr class="hover:bg-gray-800/50 transition">';
+        html += '  <td class="p-3 text-center">';
+        html += '    <input type="checkbox" onchange="alternarSelecaoItemCompra(' + idx + ', this.checked)" ' + (item.selecionado ? 'checked' : '') + ' class="w-4 h-4 rounded text-blue-600 focus:ring-0 cursor-pointer">';
+        html += '  </td>';
+        html += '  <td class="p-3 font-bold text-white">';
+        html += '    <span>' + item.nome + '</span>';
+        if (item.precisa_compra) {
+            html += '  <span class="ml-2 text-[9px] bg-red-900/60 text-red-300 font-bold px-1.5 py-0.5 rounded uppercase">Repor Stock</span>';
+        }
+        html += '  </td>';
+        html += '  <td class="p-3 text-center">';
+        html += '    <span class="px-2 py-0.5 rounded text-[11px] font-black ' + badgeStockClass + '">' + item.stock_atual + ' ' + (item.unidade || 'unid.') + '</span>';
+        html += '  </td>';
+        html += '  <td class="p-3 text-center text-purple-400 font-mono">' + item.pendente + '</td>';
+        html += '  <td class="p-3 text-center">';
+        html += '    <input type="number" step="0.01" value="' + custoFormatado + '" onchange="atualizarCustoItemCompra(' + idx + ', this.value)" class="w-20 px-2 py-1 rounded bg-[#0f1422] border border-gray-700 text-center text-white font-mono outline-none">';
+        html += '  </td>';
+        html += '  <td class="p-3 text-center">';
+        html += '    <input type="number" step="0.01" value="' + vendaFormatada + '" onchange="atualizarVendaItemCompra(' + idx + ', this.value)" class="w-20 px-2 py-1 rounded bg-[#0f1422] border border-gray-700 text-center text-blue-400 font-bold font-mono outline-none">';
+        html += '  </td>';
+        html += '  <td class="p-3 text-center">';
+        html += '    <input type="number" min="1" value="' + item.qtd_comprar + '" onchange="atualizarQtdItemCompra(' + idx + ', this.value)" class="w-20 px-2 py-1 rounded bg-[#0f1422] border border-gray-700 text-center text-white font-bold font-mono outline-none">';
+        html += '  </td>';
+        html += '</tr>';
+    });
+
+    tbody.innerHTML = html;
+    recalcularTotalCompra();
+}
+
+function alternarSelecaoItemCompra(idx, marcado) {
+    if (ITENS_COMPRA_TEMP[idx]) {
+        ITENS_COMPRA_TEMP[idx].selecionado = marcado;
+        recalcularTotalCompra();
+    }
+}
+
+function atualizarCustoItemCompra(idx, val) {
+    if (ITENS_COMPRA_TEMP[idx]) {
+        ITENS_COMPRA_TEMP[idx].custo = parseFloat(val) || 0;
+        recalcularTotalCompra();
+    }
+}
+
+function atualizarVendaItemCompra(idx, val) {
+    if (ITENS_COMPRA_TEMP[idx]) {
+        ITENS_COMPRA_TEMP[idx].novo_venda = parseFloat(val) || 0;
+    }
+}
+
+function atualizarQtdItemCompra(idx, val) {
+    if (ITENS_COMPRA_TEMP[idx]) {
+        ITENS_COMPRA_TEMP[idx].qtd_comprar = parseInt(val) || 1;
+        recalcularTotalCompra();
+    }
+}
+
+function marcarTodosProdutosCompra(marcar) {
+    ITENS_COMPRA_TEMP.forEach(function(i) { i.selecionado = marcar; });
+    renderLinhasItensCompra();
+}
+
+function recalcularTotalCompra() {
+    var total = 0;
+    var qtdItens = 0;
+    ITENS_COMPRA_TEMP.forEach(function(i) {
+        if (i.selecionado) {
+            total += (i.custo * i.qtd_comprar);
+            qtdItens++;
+        }
+    });
+    var elTotal = document.getElementById('compraTotalCalculado');
+    var elQtd = document.getElementById('resumoQtdItens');
+    if (elTotal) elTotal.innerText = total.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    if (elQtd) elQtd.innerText = qtdItens + ' produto(s) selecionado(s)';
+}
+
+function aoMudarFornecedorCompra() {
+    var sel = document.getElementById('compraFornecedorSelect');
+    var inputId = document.getElementById('compraFornecedorId');
+    if (!sel || !inputId) return;
+    var opt = sel.options[sel.selectedIndex];
+    var fornId = opt ? opt.getAttribute('data-id') : '';
+    inputId.value = fornId ? ('FORN-' + fornId) : 'FORN-01';
+}
+
+function preencherSelectRequisicoesCompra() {
+    var sel = document.getElementById('compraRequisicaoVinculadaSelect');
+    if (!sel) return;
+    if (!window.RestauranteApp.requisicoes) window.RestauranteApp.requisicoes = [];
+    var reqs = window.RestauranteApp.requisicoes;
+    var html = '<option value="">-- Selecione uma Requisição Prévia --</option>';
+
+    reqs.forEach(function(r) {
+        var statusTxt = (r.status === 'APROVADA_COMPRA_FEITA') ? ' (Aprovada)' : ((r.status === 'ENTREGUE_E_PAGA') ? ' (Concluída)' : ' (Pendente)');
+        html += '<option value="' + r.numero_requisicao + '" data-id="' + r.id + '">' + r.numero_requisicao + ' - ' + r.fornecedor + ' (' + Number(r.total_estimado || 0).toFixed(2) + ' MT)' + statusTxt + '</option>';
+    });
+
+    sel.innerHTML = html;
+}
+
+function aoSelecionarRequisicaoParaCompra() {
+    var sel = document.getElementById('compraRequisicaoVinculadaSelect');
+    if (!sel || !sel.value) return;
+    var numReq = sel.value;
+    var req = (window.RestauranteApp.requisicoes || []).find(function(r) { return r.numero_requisicao === numReq; });
+    if (!req) return;
+
+    // Sincronizar fornecedor automaticamente
+    var selForn = document.getElementById('compraFornecedorSelect');
+    if (selForn) {
+        for (var i = 0; i < selForn.options.length; i++) {
+            if (selForn.options[i].text.toLowerCase().indexOf(req.fornecedor.toLowerCase()) >= 0) {
+                selForn.selectedIndex = i;
+                aoMudarFornecedorCompra();
+                break;
+            }
+        }
+    }
+
+    // Marcar produtos solicitados na requisição
+    if (req.itens && req.itens.length > 0) {
+        var nomesReq = req.itens.map(function(x) { return (x.nome || '').toLowerCase(); });
+        ITENS_COMPRA_TEMP.forEach(function(i) {
+            var achou = nomesReq.some(function(n) { return (i.nome || '').toLowerCase().indexOf(n) >= 0 || n.indexOf((i.nome || '').toLowerCase()) >= 0; });
+            if (achou) {
+                i.selecionado = true;
+                var itemR = req.itens.find(function(x) { return (x.nome || '').toLowerCase().indexOf((i.nome || '').toLowerCase()) >= 0 || (i.nome || '').toLowerCase().indexOf((x.nome || '').toLowerCase()) >= 0; });
+                if (itemR) {
+                    i.qtd_comprar = Number(itemR.qtd_solicitada || itemR.qtd || i.qtd_comprar);
+                    if (itemR.preco_unitario) i.custo = Number(itemR.preco_unitario);
+                }
+            }
+        });
+        renderLinhasItensCompra();
+    }
+}
+
+function abrirRecebimentoRapidoGuias() {
+    // Se houver alguma compra/requisição aguardando recebimento, abre diretamente a guia para ela
+    var reqsAguardando = (window.RestauranteApp.requisicoes || []).filter(function(r) {
+        return r.status === 'APROVADA_COMPRA_FEITA' || r.status === 'AGUARDANDO_RECEBIMENTO' || r.status === 'PARCIALMENTE_RECEBIDO' || r.status === 'EM_FALTA';
+    });
+
+    if (reqsAguardando.length > 0) {
+        gerarGuiaDeEntradaDaRequisicao(reqsAguardando[0].id);
+    } else {
+        window.location.href = '/guias-entrada';
+    }
+}
+
+function abrirModalCompra(reqIdToSelect) {
+    // Se não houver requisição, cria uma automática ou permite registar compra direta
+    if (!window.RestauranteApp.requisicoes) window.RestauranteApp.requisicoes = [];
+    if (window.RestauranteApp.requisicoes.length === 0) {
+        var autoReq = {
+            id: String(Date.now()),
+            numero_requisicao: 'REQ-2026/' + Math.floor(Math.random() * 900 + 100),
+            fornecedor: (window.RestauranteApp.fornecedores && window.RestauranteApp.fornecedores[0]) ? window.RestauranteApp.fornecedores[0].nome : 'Distribuidora Geral',
+            data_pedido: formatarDataHoje(),
+            total_estimado: 0.00,
+            status: 'APROVADA_COMPRA_FEITA',
+            itens: []
+        };
+        window.RestauranteApp.requisicoes.push(autoReq);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderRequisicoesFluxo();
+    }
+
+    try {
+        preencherSelectFornecedoresCompra();
+        aoMudarFornecedorCompra();
+        preencherSelectRequisicoesCompra();
+        
+        var numCompra = Math.floor(Math.random() * 90 + 10);
+        var elFatura = document.getElementById('compraFatura');
+        if (elFatura) elFatura.value = String(numCompra);
+
+        // Se o utilizador abriu para comprar após requisição aprovada, a mercadoria é encomendada (não é imediata)
+        // portanto a guia de entrada é emitida no momento da recepção física
+        var checkDireta = document.getElementById('compraDiretaCheck');
+        if (checkDireta) {
+            checkDireta.checked = reqIdToSelect ? false : true;
+        }
+
+        prepararItensCompra();
+
+        // Se uma requisição específica foi fornecida, selecioná-la e carregar seus itens
+        if (reqIdToSelect) {
+            var selReq = document.getElementById('compraRequisicaoVinculadaSelect');
+            if (selReq) {
+                var reqEncontrada = (window.RestauranteApp.requisicoes || []).find(function(r) {
+                    return String(r.id) === String(reqIdToSelect) || r.numero_requisicao === reqIdToSelect;
+                });
+                if (reqEncontrada) {
+                    selReq.value = reqEncontrada.numero_requisicao;
+                    aoSelecionarRequisicaoParaCompra();
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Erro na preparação do modal de compra:', err);
+    }
+    
+    // Garantir exibição do modal mesmo em caso de aviso não crítico
+    if (typeof abrirModal === 'function') {
+        abrirModal('modalCompra');
+    } else {
+        var m = document.getElementById('modalCompra');
+        if (m) {
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+    }
+}
+
+function salvarCompraCompleta() {
+    var selReq = document.getElementById('compraRequisicaoVinculadaSelect');
+    var numReq = selReq ? selReq.value : '';
+
+    if (!numReq) {
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel('A compra só pode ser registada se tiver requisição vinculada!\n\nPor favor, selecione uma requisição prévia no campo destacado.', 'Requisição Obrigatória', 'aviso');
+        } else {
+            alert('A compra só pode ser registada se tiver uma requisição vinculada!');
+        }
+        return;
+    }
+
+    var fatura = document.getElementById('compraFatura').value.trim() || String(Math.floor(Math.random() * 90 + 10));
+    var data = formatarDataHoje();
+    var selForn = document.getElementById('compraFornecedorSelect');
+    var fornecedor = selForn ? selForn.value : 'Distribuidora Geral';
+    var fornId = selForn && selForn.options[selForn.selectedIndex] ? selForn.options[selForn.selectedIndex].getAttribute('data-id') : '1';
+    var isCompraDireta = document.getElementById('compraDiretaCheck') ? document.getElementById('compraDiretaCheck').checked : true;
+
+    var itensSelecionados = ITENS_COMPRA_TEMP.filter(function(i) { return i.selecionado; });
+    if (itensSelecionados.length === 0) {
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel('Por favor, selecione ao menos um produto para encomendar ou registar na compra!', 'Aviso de Compra', 'aviso');
+        } else {
+            alert('Por favor selecione ao menos um produto para a compra!');
+        }
+        return;
+    }
+
+    var totalCompra = 0;
+    var itensCompra = [];
+
+    itensSelecionados.forEach(function(i) {
+        var sub = i.custo * i.qtd_comprar;
+        totalCompra += sub;
+        itensCompra.push({
+            item_id: i.id,
+            nome: i.nome,
+            qtd: i.qtd_comprar,
+            preco_custo: i.custo,
+            novo_preco_venda: i.novo_venda,
+            subtotal: sub
+        });
+
+        // 1. Se for Compra Direta, dar entrada imediata no stock
+        if (isCompraDireta) {
+            var stockItem = (window.RestauranteApp.stock || []).find(function(s) {
+                return s.id === i.id || s.nome.toLowerCase() === i.nome.toLowerCase();
+            });
+            if (stockItem) {
+                stockItem.qtd = Number(stockItem.qtd) + Number(i.qtd_comprar);
+                stockItem.custo = i.custo;
+            } else {
+                if (!window.RestauranteApp.stock) window.RestauranteApp.stock = [];
+                window.RestauranteApp.stock.push({
+                    id: String(Date.now() + Math.random()),
+                    nome: i.nome,
+                    tipo: 'comida',
+                    unidade: i.unidade || 'UN',
+                    qtd: i.qtd_comprar,
+                    minimo: 10,
+                    custo: i.custo,
+                    local: 'armazem_principal'
+                });
+            }
+
+            // Atualiza também novo preço de venda no catálogo de produtos se informado
+            var prodVenda = (window.RestauranteApp.produtos || []).find(function(p) {
+                return p.id === i.id || (p.nome && i.nome && p.nome.toLowerCase() === i.nome.toLowerCase());
+            });
+            if (prodVenda && i.novo_venda > 0) {
+                prodVenda.preco = i.novo_venda;
+            }
+
+            // 2. Registar movimento de entrada de stock
+            if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+            window.RestauranteApp.movimentos_stock.unshift({
+                id: String(Date.now() + Math.random()),
+                data_hora: new Date().toLocaleString('pt-PT'),
+                tipo: 'ENTRADA_COMPRA',
+                item_nome: i.nome,
+                quantidade: i.qtd_comprar,
+                motivo: 'Compra ' + fatura + ' (' + fornecedor + ') - Entrada Direta',
+                responsavel: 'Gestor de Compras'
+            });
+        }
+    });
+
+    // 3. Atualizar status da Requisição vinculada
+    var reqExistente = (window.RestauranteApp.requisicoes || []).find(function(r) { return r.numero_requisicao === numReq; });
+    if (reqExistente) {
+        reqExistente.status = isCompraDireta ? 'ENTREGUE_E_PAGA' : 'APROVADA_COMPRA_FEITA';
+    }
+
+    // 4. Registar a Compra Concluída / Facturada
+    var novaCompra = {
+        id: String(Date.now()),
+        fatura: 'CMP-' + fatura,
+        numero_requisicao: numReq,
+        data: data,
+        fornecedor: fornecedor,
+        fornecedor_id: fornId,
+        total: totalCompra,
+        itens: itensCompra,
+        compra_direta: isCompraDireta,
+        status: isCompraDireta ? 'Facturada & Concluída (Stock Atualizado)' : 'Facturada (Pendente de Entrega)'
+    };
+
+    if (!window.RestauranteApp.compras) window.RestauranteApp.compras = [];
+    window.RestauranteApp.compras.unshift(novaCompra);
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalCompra');
+    renderCompras();
+    renderRequisicoesFluxo();
+
+    // GERAR PDF E GUARDAR AUTOMATICAMENTE
+    gerarPdfFaturaCompra(novaCompra);
+
+    var msgFeedback = 'Compra ' + fatura + ' facturada com sucesso!\n\n' +
+        '• Fornecedor: ' + fornecedor + ' (ID: ' + fornId + ')\n' +
+        '• Total: ' + totalCompra.toFixed(2) + ' MT\n' +
+        '• Requisição Vinculada: ' + numReq + '\n' +
+        '• Documento PDF da Factura gerado e pronto para guardar.\n' +
+        (isCompraDireta ? '• Stock actualizado imediatamente.' : '• Aguardando Guia de Entrada física.');
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel(msgFeedback, 'Compra Facturada & PDF Gerado', 'sucesso');
+    } else {
+        alert(msgFeedback);
+    }
+}
+
+// GERAÇÃO DE PDF E IMPRESSÃO DA FACTURA DE COMPRA
+function gerarPdfFaturaCompra(compra) {
+    if (!compra) return;
+    var iframe = document.getElementById('iframeImpressaoCompra');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframeImpressaoCompra';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var itensLinhas = '';
+    (compra.itens || []).forEach(function(it, idx) {
+        var sub = (Number(it.subtotal) || (Number(it.preco_custo || it.custo || 0) * Number(it.qtd || 1)));
+        itensLinhas += '<tr>' +
+            '<td style="padding: 6px; border: 1px solid #ddd; text-align: center;">' + (idx + 1) + '</td>' +
+            '<td style="padding: 6px; border: 1px solid #ddd; font-weight: bold;">' + (it.nome || 'Insumo') + '</td>' +
+            '<td style="padding: 6px; border: 1px solid #ddd; text-align: center;">' + (it.qtd || 1) + '</td>' +
+            '<td style="padding: 6px; border: 1px solid #ddd; text-align: right;">' + Number(it.preco_custo || it.custo || 0).toFixed(2) + ' MT</td>' +
+            '<td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-weight: bold;">' + sub.toFixed(2) + ' MT</td>' +
+        '</tr>';
+    });
+
+    var conteudoHtml = [
+        '<!DOCTYPE html>',
+        '<html><head><title>Factura de Compra ' + compra.fatura + '</title>',
+        '<style>',
+        '  @page { size: A4; margin: 15mm; }',
+        '  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #333; margin: 0; padding: 20px; }',
+        '  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 16px; }',
+        '  .title { font-size: 22px; font-weight: bold; color: #0f172a; margin: 0; }',
+        '  .subtitle { font-size: 11px; color: #64748b; margin-top: 4px; }',
+        '  .badge { background: #0d9488; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }',
+        '  .info-grid { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12px; }',
+        '  .info-box { width: 48%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }',
+        '  .info-box h4 { margin: 0 0 6px 0; font-size: 12px; color: #0d9488; text-transform: uppercase; }',
+        '  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }',
+        '  th { background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; text-align: left; }',
+        '  .total-box { margin-top: 16px; text-align: right; font-size: 14px; }',
+        '  .total-box b { font-size: 18px; color: #0d9488; }',
+        '  .footer { margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 10px; font-size: 10px; color: #94a3b8; text-align: center; }',
+        '</style>',
+        '</head><body>',
+        '<div class="header">',
+        '  <div>',
+        '    <h1 class="title">DOCUMENTO DE COMPRA & FACTURA</h1>',
+        '    <div class="subtitle">Comprovativo Oficial de Aquisição de Mercadoria / Insumos</div>',
+        '  </div>',
+        '  <div style="text-align: right;">',
+        '    <span class="badge">' + compra.fatura + '</span>',
+        '    <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Data: ' + compra.data + '</div>',
+        '  </div>',
+        '</div>',
+        '<div class="info-grid">',
+        '  <div class="info-box">',
+        '    <h4>Dados do Estabelecimento</h4>',
+        '    <div><b>Nome:</b> {{ estabelecimento.nome }}</div>',
+        '    <div><b>Endereço:</b> {{ estabelecimento.endereco }}</div>',
+        '    <div><b>Cidade:</b> {{ estabelecimento.cidade }} • Moçambique</div>',
+        '  </div>',
+        '  <div class="info-box">',
+        '    <h4>Dados do Fornecedor & Requisição</h4>',
+        '    <div><b>Fornecedor:</b> ' + compra.fornecedor + '</div>',
+        '    <div><b>Nº da Requisição Prévia:</b> <span style="color:#7c3aed;font-weight:bold;">' + (compra.numero_requisicao || 'N/A') + '</span></div>',
+        '    <div><b>Estado:</b> ' + (compra.status || 'Concluída') + '</div>',
+        '  </div>',
+        '</div>',
+        '<table>',
+        '  <thead>',
+        '    <tr>',
+        '      <th style="width: 30px; text-align: center;">#</th>',
+        '      <th>Item / Insumo</th>',
+        '      <th style="width: 80px; text-align: center;">Quantidade</th>',
+        '      <th style="width: 120px; text-align: right;">Preço Unitário</th>',
+        '      <th style="width: 130px; text-align: right;">Subtotal</th>',
+        '    </tr>',
+        '  </thead>',
+        '  <tbody>' + itensLinhas + '</tbody>',
+        '</table>',
+        '<div class="total-box">',
+        '  <span>Total Facturado: </span><b>' + Number(compra.total).toFixed(2) + ' {{ estabelecimento.moeda }}</b>',
+        '</div>',
+        '<div class="footer">Documento processado digitalmente por computador pelo Sistema Restaurante & Bar • Guardar para efeitos fiscais e contabilidade</div>',
+        '</body></html>'
+    ].join('\n');
+
+    try {
+        var doc = iframe.contentWindow || iframe.contentDocument;
+        if (doc.document) doc = doc.document;
+        doc.open();
+        doc.write(conteudoHtml);
+        doc.close();
+
+        setTimeout(function() {
+            try {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                }
+            } catch(e) {
+                console.warn('Impressão direta do PDF de compra bloqueada pelo navegador:', e);
+            }
+        }, 300);
+    } catch(err) {
+        console.error('Erro ao renderizar PDF da compra:', err);
+    }
+}
+
+function trocarAbaCompras(aba) {
+    var pReq = document.getElementById('painel-requisicoes');
+    var pCmp = document.getElementById('painel-compras');
+    var bReq = document.getElementById('abaBtn-requisicoes');
+    var bCmp = document.getElementById('abaBtn-compras');
+
+    if (aba === 'requisicoes') {
+        if (pReq) pReq.classList.remove('hidden');
+        if (pCmp) pCmp.classList.add('hidden');
+        if (bReq) {
+            bReq.className = 'px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-purple-600 text-white shadow-xs cursor-pointer';
+        }
+        if (bCmp) {
+            bCmp.className = 'px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer';
+        }
+        renderRequisicoesFluxo();
+    } else {
+        if (pReq) pReq.classList.add('hidden');
+        if (pCmp) pCmp.classList.remove('hidden');
+        if (bCmp) {
+            bCmp.className = 'px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-custom-primary text-white shadow-xs cursor-pointer';
+        }
+        if (bReq) {
+            bReq.className = 'px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer';
+        }
+        renderCompras();
+    }
+}
+
+// ── FLUXO DE REQUISIÇÕES & APROVAÇÕES ──────────────────────────────
+var ITENS_NOVA_REQ = [];
+
+function renderRequisicoesFluxo() {
+    var tbody = document.getElementById('tabelaRequisicoesFluxo');
+    var badge = document.getElementById('badgeReqPendentes');
+    if (!tbody) return;
+
+    if (!window.RestauranteApp.requisicoes) window.RestauranteApp.requisicoes = [];
+    var lista = window.RestauranteApp.requisicoes;
+    var html = '';
+    var pendentesContagem = 0;
+
+    for (var i = 0; i < lista.length; i++) {
+        var r = lista[i];
+        var isPendente = (!r.status || r.status === 'AGUARDANDO_APROVACAO' || r.status === 'AGUARDANDO_RECEBIMENTO' || r.status === 'ENVIADA_AO_FORNECEDOR');
+        if (isPendente && r.status !== 'RECEBIDO_COM_GUIA' && r.status !== 'ENTREGUE_E_PAGA') {
+            pendentesContagem++;
+        }
+
+        // Badge de status
+        var badgeStatus = '';
+        if (r.status === 'APROVADA_COMPRA_FEITA') {
+            badgeStatus = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-800 flex items-center gap-1 justify-center"><i class="fa-solid fa-check"></i> 3. Compra Registada</span>';
+        } else if (r.status === 'PARCIALMENTE_RECEBIDO' || r.status === 'EM_FALTA') {
+            badgeStatus = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 justify-center"><i class="fa-solid fa-triangle-exclamation"></i> ⚠️ Itens em Falta</span>';
+        } else if (r.status === 'RECEBIDO_COM_GUIA' || r.status === 'ENTREGUE_E_PAGA') {
+            badgeStatus = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1 justify-center"><i class="fa-solid fa-circle-check"></i> 4. Entrada Completa</span>';
+        } else if (r.status === 'REJEITADA') {
+            badgeStatus = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 flex items-center gap-1 justify-center"><i class="fa-solid fa-xmark"></i> Rejeitada</span>';
+        } else {
+            badgeStatus = '<span class="px-2.5 py-1 text-xs font-bold rounded-full bg-purple-100 text-purple-800 animate-pulse flex items-center gap-1 justify-center"><i class="fa-solid fa-hourglass-half"></i> 1. Aguardando Aprovação</span>';
+        }
+
+        var qtdItensTxt = (r.itens && r.itens.length > 0) ? (r.itens.length + ' item(ns): ' + r.itens.map(function(x){ return x.nome + ' (' + (x.qtd_solicitada||x.qtd||1) + ')'; }).join(', ')) : '1 insumo';
+
+        html += '<tr class="hover:bg-purple-50/20 transition">';
+        html += '  <td class="p-4 font-mono font-bold text-purple-700">' + r.numero_requisicao + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-500">' + (r.data_pedido || '-') + '</td>';
+        html += '  <td class="p-4 font-semibold text-gray-900">' + (r.fornecedor || 'Fornecedor Local') + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-600 max-w-xs truncate" title="' + qtdItensTxt + '">' + qtdItensTxt + '</td>';
+        html += '  <td class="p-4 text-right font-mono font-black text-gray-900">' + Number(r.total_estimado || 0).toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-center">' + badgeStatus + '</td>';
+        html += '  <td class="p-4 text-right space-x-1.5 whitespace-nowrap">';
+
+        if (!r.status || r.status === 'AGUARDANDO_APROVACAO') {
+            html += '    <button onclick="aprovarRequisicaoEComprar(\'' + r.id + '\')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold shadow-xs cursor-pointer" title="Aprovar e Registar Compra"><i class="fa-solid fa-thumbs-up"></i> 2. Aprovar & Registar Compra</button>';
+            html += '    <button onclick="rejeitarRequisicao(\'' + r.id + '\')" class="px-2.5 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-xs font-bold cursor-pointer" title="Rejeitar"><i class="fa-solid fa-xmark"></i></button>';
+        } else if (r.status === 'APROVADA_COMPRA_FEITA' || r.status === 'AGUARDANDO_RECEBIMENTO' || r.status === 'ENVIADA_AO_FORNECEDOR') {
+            html += '    <button onclick="gerarGuiaDeEntradaDaRequisicao(\'' + r.id + '\')" class="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold shadow-xs cursor-pointer" title="Conferir Mercadorias e Emitir Guia de Entrada"><i class="fa-solid fa-truck-ramp-box"></i> 4. Emitir Guia & Dar Entrada</button>';
+        } else if (r.status === 'PARCIALMENTE_RECEBIDO' || r.status === 'EM_FALTA') {
+            html += '    <button onclick="gerarGuiaDeEntradaDaRequisicao(\'' + r.id + '\')" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-bold shadow-xs cursor-pointer" title="Conferir e Completar Mercadorias em Falta"><i class="fa-solid fa-boxes-stacked"></i> Completar / Dar Entrada</button>';
+        } else {
+            html += '    <span class="text-xs text-gray-400 font-semibold italic"><i class="fa-solid fa-check-double text-emerald-600"></i> Ciclo Concluído</span>';
+        }
+
+        html += '    <button onclick="removerRequisicaoFluxo(' + i + ')" class="text-red-500 hover:text-red-700 p-1 cursor-pointer" title="Remover"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-8 text-center text-gray-400 text-xs">Nenhuma requisição registada. Clique em <b>"1. Nova Requisição"</b> para iniciar o ciclo de abastecimento.</td></tr>';
+    if (badge) badge.innerText = String(pendentesContagem);
+}
+
+function abrirModalNovaRequisicao() {
+    var num = 'REQ-2026/' + Math.floor(Math.random() * 900 + 100);
+    document.getElementById('reqNumero').value = num;
+
+    // Preencher select de fornecedores
+    var sel = document.getElementById('reqFornecedorSelect');
+    var forns = window.RestauranteApp.fornecedores || [];
+    var html = '';
+    forns.forEach(function(f) {
+        html += '<option value="' + f.nome + '">' + f.nome + '</option>';
+    });
+    sel.innerHTML = html || '<option value="Distribuidora Geral">Distribuidora Geral</option>';
+
+    // Inicializar com itens pré-selecionados de stock baixo ou vazio
+    ITENS_NOVA_REQ = [];
+    var stock = window.RestauranteApp.stock || [];
+    var produtosBaixo = stock.filter(function(s) { return Number(s.qtd) <= Number(s.minimo || 15); });
+    
+    if (produtosBaixo.length > 0) {
+        produtosBaixo.slice(0, 3).forEach(function(s) {
+            ITENS_NOVA_REQ.push({
+                stock_id: s.id,
+                nome: s.nome,
+                unidade: s.unidade || 'UN',
+                qtd: Math.max(10, Math.ceil((s.minimo || 15) * 1.5 - s.qtd)),
+                preco_unitario: Number(s.custo || 50.0)
+            });
+        });
+    } else {
+        adicionarLinhaItemRequisicao();
+    }
+
+    renderLinhasModalRequisicao();
+    if (typeof abrirModal === 'function') {
+        abrirModal('modalRequisicao');
+    } else {
+        var m = document.getElementById('modalRequisicao');
+        if (m) {
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+    }
+}
+
+function adicionarLinhaItemRequisicao() {
+    var stock = window.RestauranteApp.stock || [];
+    var itemPadrao = stock.length > 0 ? stock[0] : { id: "1", nome: "Item Insumo", unidade: "UN", custo: 50.0 };
+    ITENS_NOVA_REQ.push({
+        stock_id: itemPadrao.id,
+        nome: itemPadrao.nome,
+        unidade: itemPadrao.unidade || 'UN',
+        qtd: 10,
+        preco_unitario: Number(itemPadrao.custo || 50.0)
+    });
+    renderLinhasModalRequisicao();
+}
+
+function removerLinhaItemRequisicao(idx) {
+    ITENS_NOVA_REQ.splice(idx, 1);
+    renderLinhasModalRequisicao();
+}
+
+function renderLinhasModalRequisicao() {
+    var tbody = document.getElementById('corpoItensRequisicao');
+    if (!tbody) return;
+    var stock = window.RestauranteApp.stock || [];
+    var html = '';
+    var total = 0;
+
+    ITENS_NOVA_REQ.forEach(function(item, idx) {
+        var sub = (Number(item.qtd) || 0) * (Number(item.preco_unitario) || 0);
+        total += sub;
+
+        html += '<tr>';
+        html += '  <td class="p-2.5">';
+        html += '    <select onchange="aoMudarItemRequisicao(' + idx + ', this.value)" class="w-full px-2 py-1.5 border rounded text-xs bg-white font-semibold outline-none">';
+        stock.forEach(function(s) {
+            var sel = (s.nome === item.nome) ? 'selected' : '';
+            html += '<option value="' + s.id + '" ' + sel + '>' + s.nome + ' (Stock: ' + s.qtd + ' ' + s.unidade + ')</option>';
+        });
+        html += '    </select>';
+        html += '  </td>';
+        html += '  <td class="p-2.5 text-center font-bold text-gray-600">' + (item.unidade || 'UN') + '</td>';
+        html += '  <td class="p-2.5 text-center">';
+        html += '    <input type="number" min="1" step="0.1" value="' + item.qtd + '" onchange="ITENS_NOVA_REQ[' + idx + '].qtd = parseFloat(this.value)||1; renderLinhasModalRequisicao();" class="w-20 px-2 py-1 border rounded text-center text-xs font-bold outline-none">';
+        html += '  </td>';
+        html += '  <td class="p-2.5 text-right">';
+        html += '    <input type="number" step="0.1" value="' + item.preco_unitario + '" onchange="ITENS_NOVA_REQ[' + idx + '].preco_unitario = parseFloat(this.value)||0; renderLinhasModalRequisicao();" class="w-24 px-2 py-1 border rounded text-right text-xs font-mono outline-none">';
+        html += '  </td>';
+        html += '  <td class="p-2.5 text-right font-mono font-bold text-gray-900">' + sub.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-2.5 text-center">';
+        html += '    <button type="button" onclick="removerLinhaItemRequisicao(' + idx + ')" class="text-red-500 hover:text-red-700 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    });
+
+    tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400">Nenhum item adicionado à requisição.</td></tr>';
+    var elTotal = document.getElementById('reqTotalEstimado');
+    if (elTotal) elTotal.innerText = total.toFixed(2) + ' MT';
+}
+
+function aoMudarItemRequisicao(idx, stockId) {
+    var stock = window.RestauranteApp.stock || [];
+    var s = stock.find(function(item) { return String(item.id) === String(stockId); });
+    if (s && ITENS_NOVA_REQ[idx]) {
+        ITENS_NOVA_REQ[idx].stock_id = s.id;
+        ITENS_NOVA_REQ[idx].nome = s.nome;
+        ITENS_NOVA_REQ[idx].unidade = s.unidade || 'UN';
+        ITENS_NOVA_REQ[idx].preco_unitario = Number(s.custo || 50.0);
+        renderLinhasModalRequisicao();
+    }
+}
+
+function salvarNovaRequisicao() {
+    if (ITENS_NOVA_REQ.length === 0) {
+        alert('Adicione pelo menos um item à requisição.');
+        return;
+    }
+    var num = document.getElementById('reqNumero').value;
+    var forn = document.getElementById('reqFornecedorSelect').value;
+    var total = 0;
+    var itens = ITENS_NOVA_REQ.map(function(i) {
+        var sub = (Number(i.qtd) || 0) * (Number(i.preco_unitario) || 0);
+        total += sub;
+        return {
+            item_id: i.stock_id,
+            nome: i.nome,
+            unidade: i.unidade,
+            qtd_solicitada: i.qtd,
+            preco_unitario: i.preco_unitario,
+            subtotal: sub
+        };
+    });
+
+    if (!window.RestauranteApp.requisicoes) window.RestauranteApp.requisicoes = [];
+    window.RestauranteApp.requisicoes.unshift({
+        id: String(Date.now()),
+        numero_requisicao: num,
+        fornecedor: forn,
+        data_pedido: formatarDataHoje(),
+        total_estimado: total,
+        status: 'AGUARDANDO_APROVACAO',
+        itens: itens
+    });
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalRequisicao');
+    renderRequisicoesFluxo();
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Requisição ' + num + ' submetida com sucesso!\n\nPróximo passo: Aprovar para gerar a Compra e Guia de Entrada.', '1. Requisição Emitida', 'sucesso');
+    } else {
+        alert('Requisição ' + num + ' submetida com sucesso!');
+    }
+}
+
+// 2. APROVAR REQUISIÇÃO E GERAR COMPRA (PEDIDO ENVIADO AO FORNECEDOR)
+function aprovarRequisicaoEComprar(reqId) {
+    var req = (window.RestauranteApp.requisicoes || []).find(function(r) { return String(r.id) === String(reqId); });
+    if (!req) return;
+
+    var numFat = 'FAT-' + Math.floor(Math.random() * 9000 + 1000);
+    var data = formatarDataHoje();
+
+    // 1. Atualiza status da requisição: aprovada e enviada ao fornecedor para trazer a mercadoria
+    req.status = 'APROVADA_COMPRA_FEITA';
+
+    // 2. Cria a Compra no histórico vinculada à requisição (aguardando a entrega do fornecedor)
+    if (!window.RestauranteApp.compras) window.RestauranteApp.compras = [];
+    var itensCompra = (req.itens || []).map(function(it) {
+        return {
+            item_id: it.item_id,
+            nome: it.nome,
+            qtd: it.qtd_solicitada,
+            preco_custo: it.preco_unitario,
+            subtotal: (it.qtd_solicitada * it.preco_unitario)
+        };
+    });
+
+    // Verificar se já existe compra para esta requisição para evitar duplicados
+    var compraExistente = window.RestauranteApp.compras.find(function(c) { return c.numero_requisicao === req.numero_requisicao; });
+    var compraObj;
+    if (compraExistente) {
+        compraExistente.status = 'Compra Aprovada (Aguardando Entrega & Guia)';
+        compraObj = compraExistente;
+    } else {
+        compraObj = {
+            id: String(Date.now()),
+            fatura: numFat,
+            numero_requisicao: req.numero_requisicao,
+            data: data,
+            fornecedor: req.fornecedor,
+            total: req.total_estimado,
+            itens: itensCompra,
+            compra_direta: false,
+            status: 'Compra Aprovada (Aguardando Entrega & Guia)'
+        };
+        window.RestauranteApp.compras.unshift(compraObj);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    renderRequisicoesFluxo();
+    renderCompras();
+
+    var msg = 'Requisição ' + req.numero_requisicao + ' APROVADA com sucesso!\n\n' +
+        '• Compra Gerada / Factura: ' + (compraObj.fatura || numFat) + '\n' +
+        '• Fornecedor: ' + req.fornecedor + '\n' +
+        '• Total: ' + Number(req.total_estimado).toFixed(2) + ' MT\n\n' +
+        'Quando o fornecedor trouxer as mercadorias, clique em "4. Emitir Guia & Dar Entrada" para conferir os itens e abastecer o stock fisicamente.';
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel(msg, '2. Requisição Aprovada & Encomendada', 'sucesso');
+    } else {
+        alert(msg);
+    }
+}
+
+// 4. ABRIR MODAL DE GUIA DE ENTRADA QUANDO O FORNECEDOR TRAZ AS MERCADORIAS
+function recalcularLinhasConferenciaGuia() {
+    var tbody = document.getElementById('guiaModalCorpoItens');
+    if (!tbody) return;
+    var rows = tbody.querySelectorAll('tr[data-item-index]');
+    var totalRecebidoValor = 0;
+    var temAlgumaFalta = false;
+    var temAlgumaEntrega = false;
+
+    rows.forEach(function(row) {
+        var idx = row.getAttribute('data-item-index');
+        var inputRec = row.querySelector('.input-qtd-recebida');
+        var tdFalta = row.querySelector('.td-qtd-falta');
+        var tdStatus = row.querySelector('.td-status-item');
+        var tdSubtotal = row.querySelector('.td-subtotal-item');
+
+        var qtdComprada = parseFloat(row.getAttribute('data-qtd-comprada') || 0);
+        var qtdJaRecebida = parseFloat(row.getAttribute('data-qtd-anterior') || 0);
+        var precoUnit = parseFloat(row.getAttribute('data-preco-unit') || 0);
+
+        var saldoRestante = Math.max(0, qtdComprada - qtdJaRecebida);
+        var qtdHoje = inputRec ? parseFloat(inputRec.value || 0) : 0;
+        if (isNaN(qtdHoje) || qtdHoje < 0) qtdHoje = 0;
+        if (qtdHoje > saldoRestante) {
+            qtdHoje = saldoRestante;
+            if (inputRec) inputRec.value = qtdHoje;
+        }
+
+        var novaFalta = Math.max(0, saldoRestante - qtdHoje);
+        var subtotalLinha = qtdHoje * precoUnit;
+        totalRecebidoValor += subtotalLinha;
+
+        if (qtdHoje > 0) temAlgumaEntrega = true;
+        if (novaFalta > 0) temAlgumaFalta = true;
+
+        if (tdFalta) {
+            tdFalta.innerHTML = novaFalta > 0 ? ('<span class="text-amber-600 font-bold">' + novaFalta + '</span>') : '<span class="text-emerald-600 font-bold">0</span>';
+        }
+
+        if (tdStatus) {
+            if (novaFalta === 0 && (qtdJaRecebida + qtdHoje) >= qtdComprada) {
+                tdStatus.innerHTML = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check"></i> Completo</span>';
+            } else if (qtdHoje > 0) {
+                tdStatus.innerHTML = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-hourglass-half"></i> Parcial</span>';
+            } else {
+                tdStatus.innerHTML = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700"><i class="fa-solid fa-triangle-exclamation"></i> Em Falta</span>';
+            }
+        }
+
+        if (tdSubtotal) {
+            tdSubtotal.innerText = subtotalLinha.toFixed(2) + ' MT';
+        }
+    });
+
+    var elTotal = document.getElementById('guiaModalTotalValor');
+    if (elTotal) elTotal.innerText = totalRecebidoValor.toFixed(2) + ' MT';
+
+    var resumoBanner = document.getElementById('guiaResumoConferenciaBanner');
+    if (resumoBanner) {
+        if (!temAlgumaEntrega) {
+            resumoBanner.innerHTML = '<i class="fa-solid fa-circle-info text-blue-600 mr-1.5"></i> Insira as quantidades físicas conferidas trazidas pelo fornecedor.';
+            resumoBanner.className = 'p-3 rounded-xl border text-xs bg-blue-50 border-blue-200 text-blue-900 font-medium';
+        } else if (temAlgumaFalta) {
+            resumoBanner.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i> <b>Atenção: Entrega Parcial!</b> Existem produtos em falta. Ao confirmar, o stock receberá apenas os produtos entregues e a requisição ficará marcada com <b>"Itens em Falta"</b> até que o fornecedor complete.';
+            resumoBanner.className = 'p-3 rounded-xl border text-xs bg-amber-50 border-amber-300 text-amber-900 font-medium';
+        } else {
+            resumoBanner.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> <b>Entrega 100% Completa!</b> Todas as quantidades conferidas batem com o pedido de compra. Ciclo pronto para conclusão integral.';
+            resumoBanner.className = 'p-3 rounded-xl border text-xs bg-emerald-50 border-emerald-300 text-emerald-900 font-medium';
+        }
+    }
+}
+
+function preencherTodasQuantidadesGuia() {
+    var tbody = document.getElementById('guiaModalCorpoItens');
+    if (!tbody) return;
+    var rows = tbody.querySelectorAll('tr[data-item-index]');
+    rows.forEach(function(row) {
+        var qtdComprada = parseFloat(row.getAttribute('data-qtd-comprada') || 0);
+        var qtdJaRecebida = parseFloat(row.getAttribute('data-qtd-anterior') || 0);
+        var saldoRestante = Math.max(0, qtdComprada - qtdJaRecebida);
+        var inputRec = row.querySelector('.input-qtd-recebida');
+        if (inputRec) inputRec.value = saldoRestante;
+    });
+    recalcularLinhasConferenciaGuia();
+}
+
+function zerarTodasQuantidadesGuia() {
+    var tbody = document.getElementById('guiaModalCorpoItens');
+    if (!tbody) return;
+    var rows = tbody.querySelectorAll('tr[data-item-index]');
+    rows.forEach(function(row) {
+        var inputRec = row.querySelector('.input-qtd-recebida');
+        if (inputRec) inputRec.value = 0;
+    });
+    recalcularLinhasConferenciaGuia();
+}
+
+function gerarGuiaDeEntradaDaRequisicao(reqId) {
+    var req = (window.RestauranteApp.requisicoes || []).find(function(r) { return String(r.id) === String(reqId); });
+    if (!req) return;
+
+    var numGuia = 'GE-2026/' + Math.floor(Math.random() * 9000 + 1000);
+    var agora = new Date().toLocaleString('pt-PT');
+    var compraAssoc = (window.RestauranteApp.compras || []).find(function(c) { return c.numero_requisicao === req.numero_requisicao; });
+
+    // Preencher campos do modal
+    var elId = document.getElementById('guiaModalReqId');
+    var elNum = document.getElementById('guiaModalNumero');
+    var elReqNum = document.getElementById('guiaModalReqNumero');
+    var elFat = document.getElementById('guiaModalFatura');
+    var elForn = document.getElementById('guiaModalFornecedor');
+    var elData = document.getElementById('guiaModalDataHora');
+    var elTotal = document.getElementById('guiaModalTotalValor');
+    var tbody = document.getElementById('guiaModalCorpoItens');
+
+    if (elId) elId.value = String(req.id);
+    if (elNum) elNum.value = numGuia;
+    if (elReqNum) elReqNum.value = req.numero_requisicao;
+    if (elFat) elFat.value = compraAssoc ? compraAssoc.fatura : 'FAT-' + req.numero_requisicao.replace(/[^0-9]/g, '');
+    if (elForn) elForn.value = req.fornecedor || 'Fornecedor';
+    if (elData) elData.value = agora;
+
+    if (tbody) {
+        var html = '';
+        var itens = req.itens || [];
+        for (var i = 0; i < itens.length; i++) {
+            var it = itens[i];
+            var qtdSolicitada = Number(it.qtd_solicitada || it.qtd || 1);
+            var qtdJaEntregue = Number(it.qtd_entregue || 0);
+            var saldoRestante = Math.max(0, qtdSolicitada - qtdJaEntregue);
+            var preco = Number(it.preco_unitario || 0);
+            var sub = saldoRestante * preco;
+
+            html += '<tr class="hover:bg-gray-50 transition" data-item-index="' + i + '" data-qtd-comprada="' + qtdSolicitada + '" data-qtd-anterior="' + qtdJaEntregue + '" data-preco-unit="' + preco + '">';
+            html += '  <td class="p-2.5 text-center font-mono text-gray-500">' + (i + 1) + '</td>';
+            html += '  <td class="p-2.5">';
+            html += '    <div class="font-bold text-gray-800">' + it.nome + '</div>';
+            if (qtdJaEntregue > 0) {
+                html += '    <div class="text-[10px] text-gray-400">Entregue anteriormente: ' + qtdJaEntregue + ' ' + (it.unidade || 'UN') + '</div>';
+            }
+            html += '  </td>';
+            html += '  <td class="p-2.5 text-center text-gray-500 uppercase font-semibold">' + (it.unidade || 'UN') + '</td>';
+            html += '  <td class="p-2.5 text-center font-bold font-mono text-gray-700">' + qtdSolicitada + '</td>';
+            html += '  <td class="p-2.5 text-center font-mono text-blue-600 font-semibold">' + qtdJaEntregue + '</td>';
+            html += '  <td class="p-2 text-center bg-teal-50/70">';
+            html += '    <input type="number" step="0.01" min="0" max="' + saldoRestante + '" value="' + saldoRestante + '" oninput="recalcularLinhasConferenciaGuia()" class="input-qtd-recebida w-20 px-2 py-1 border border-teal-400 rounded-lg text-center font-black font-mono text-teal-800 bg-white shadow-xs focus:ring-1 focus:ring-teal-500 outline-none">';
+            html += '  </td>';
+            html += '  <td class="p-2.5 text-center font-mono font-bold td-qtd-falta text-emerald-600">0</td>';
+            html += '  <td class="p-2.5 text-center td-status-item"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check"></i> Completo</span></td>';
+            html += '  <td class="p-2.5 text-right font-mono text-gray-700">' + preco.toFixed(2) + '</td>';
+            html += '  <td class="p-2.5 text-right font-mono font-bold text-gray-900 td-subtotal-item">' + sub.toFixed(2) + ' MT</td>';
+            html += '</tr>';
+        }
+        tbody.innerHTML = html || '<tr><td colspan="10" class="p-4 text-center text-gray-400">Sem itens registados.</td></tr>';
+    }
+
+    recalcularLinhasConferenciaGuia();
+
+    if (typeof abrirModal === 'function') {
+        abrirModal('modalGuiaEntrada');
+    } else {
+        var m = document.getElementById('modalGuiaEntrada');
+        if (m) {
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+    }
+}
+
+// 5. CONFIRMAÇÃO DO RECEBIMENTO: GERA A GUIA E DÁ ENTRADA EFECTIVA NO STOCK CONFORME AS QUANTIDADES RECEBIDAS
+function confirmarRecepcaoEEntradaStock() {
+    var reqId = document.getElementById('guiaModalReqId') ? document.getElementById('guiaModalReqId').value : '';
+    var req = (window.RestauranteApp.requisicoes || []).find(function(r) { return String(r.id) === String(reqId); });
+    if (!req) return;
+
+    var numGuia = document.getElementById('guiaModalNumero') ? document.getElementById('guiaModalNumero').value : ('GE-2026/' + Math.floor(Math.random() * 9000 + 1000));
+    var agora = new Date().toLocaleString('pt-PT');
+
+    if (!window.RestauranteApp.stock) window.RestauranteApp.stock = [];
+    var stock = window.RestauranteApp.stock;
+
+    var tbody = document.getElementById('guiaModalCorpoItens');
+    var rows = tbody ? tbody.querySelectorAll('tr[data-item-index]') : [];
+
+    var itensEntradaEfectiva = [];
+    var itensEmFaltaResumo = [];
+    var tudoCompleto = true;
+    var totalValorRecebido = 0;
+
+    for (var k = 0; k < rows.length; k++) {
+        var row = rows[k];
+        var idx = parseInt(row.getAttribute('data-item-index'), 10);
+        var it = req.itens[idx];
+        if (!it) continue;
+
+        var qtdComprada = parseFloat(row.getAttribute('data-qtd-comprada') || 0);
+        var qtdAnterior = parseFloat(row.getAttribute('data-qtd-anterior') || 0);
+        var saldoRestante = Math.max(0, qtdComprada - qtdAnterior);
+
+        var inputRec = row.querySelector('.input-qtd-recebida');
+        var qtdHoje = inputRec ? parseFloat(inputRec.value || 0) : 0;
+        if (isNaN(qtdHoje) || qtdHoje < 0) qtdHoje = 0;
+        if (qtdHoje > saldoRestante) qtdHoje = saldoRestante;
+
+        var faltaItem = Math.max(0, saldoRestante - qtdHoje);
+        var totalJaRecebidoAcumulado = qtdAnterior + qtdHoje;
+
+        it.qtd_entregue = totalJaRecebidoAcumulado;
+        it.qtd_em_falta = Math.max(0, qtdComprada - totalJaRecebidoAcumulado);
+
+        if (it.qtd_em_falta > 0) {
+            tudoCompleto = false;
+            itensEmFaltaResumo.push({
+                nome: it.nome,
+                comprado: qtdComprada,
+                recebido_hoje: qtdHoje,
+                acumulado: totalJaRecebidoAcumulado,
+                falta: it.qtd_em_falta,
+                unidade: it.unidade || 'UN'
+            });
+        }
+
+        if (qtdHoje > 0) {
+            var subtotalHoje = qtdHoje * Number(it.preco_unitario || 0);
+            totalValorRecebido += subtotalHoje;
+
+            itensEntradaEfectiva.push({
+                item_nome: it.nome,
+                unidade: it.unidade || 'UN',
+                quantidade_recebida: qtdHoje,
+                preco_custo: it.preco_unitario || 0,
+                subtotal: subtotalHoje
+            });
+
+            // 1. Dar entrada no stock
+            var s = stock.find(function(item) {
+                return String(item.id) === String(it.item_id) || (item.nome && it.nome && item.nome.toLowerCase() === it.nome.toLowerCase());
+            });
+
+            if (s) {
+                s.qtd = Math.round((Number(s.qtd) + qtdHoje) * 100) / 100;
+                if (it.preco_unitario) s.custo = it.preco_unitario;
+            } else {
+                stock.push({
+                    id: String(Date.now() + Math.random()),
+                    nome: it.nome,
+                    tipo: 'comida',
+                    unidade: it.unidade || 'UN',
+                    qtd: qtdHoje,
+                    minimo: 10,
+                    custo: it.preco_unitario || 50.0,
+                    local: 'armazem_principal'
+                });
+            }
+
+            // 2. Registar movimento de entrada no histórico
+            if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+            window.RestauranteApp.movimentos_stock.unshift({
+                id: String(Date.now() + Math.random()),
+                data_hora: agora,
+                tipo: 'ENTRADA_GUIA',
+                item_nome: it.nome,
+                quantidade: qtdHoje,
+                motivo: 'Recepção de Mercadorias Guia ' + numGuia + ' (Req: ' + req.numero_requisicao + ')',
+                responsavel: 'Fiel de Armazém'
+            });
+        }
+    }
+
+    if (itensEntradaEfectiva.length === 0 && !tudoCompleto) {
+        alert('Nenhuma quantidade a receber foi informada! Se nada foi entregue, cancele ou insira as quantidades físicas conferidas.');
+        return;
+    }
+
+    // 3. Registar Guia de Entrada emitida no sistema
+    if (!window.RestauranteApp.guias) window.RestauranteApp.guias = [];
+    window.RestauranteApp.guias.unshift({
+        id: String(Date.now()),
+        numero: numGuia,
+        requisicao_origem: req.numero_requisicao,
+        data: agora,
+        fornecedor: req.fornecedor,
+        total: totalValorRecebido,
+        itens: itensEntradaEfectiva,
+        status: tudoCompleto ? 'Recebido Total & Stock Abastecido' : 'Recebido Parcial (Stock Abastecido c/ Faltas)'
+    });
+
+    // 4. Atualizar status da Requisição e Compra conforme conferência
+    var compraAssoc = (window.RestauranteApp.compras || []).find(function(c) { return c.numero_requisicao === req.numero_requisicao; });
+
+    if (tudoCompleto) {
+        req.status = 'RECEBIDO_COM_GUIA';
+        req.itens_em_falta = [];
+        if (compraAssoc) {
+            compraAssoc.status = 'Concluída 100% (Stock Abastecido via Guia ' + numGuia + ')';
+        }
+    } else {
+        req.status = 'PARCIALMENTE_RECEBIDO';
+        req.itens_em_falta = itensEmFaltaResumo;
+        if (compraAssoc) {
+            compraAssoc.status = 'Recebimento Parcial (Itens em Falta - Guia Parcial ' + numGuia + ')';
+        }
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalGuiaEntrada');
+    renderRequisicoesFluxo();
+    renderCompras();
+
+        var msg;
+    if (tudoCompleto) {
+        msg = "Guia de Entrada " + numGuia + " emitida com sucesso!\n\n" +
+            "- Requisição Origem: " + req.numero_requisicao + "\n" +
+            "- Fornecedor: " + req.fornecedor + "\n" +
+            "- Total Recebido: " + totalValorRecebido.toFixed(2) + " MT\n" +
+            "- Estado: Todos os produtos foram entregues e confirmados! Stock abastecido.";
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel(msg, "Recepção 100% Concluída", "sucesso");
+        } else {
+            alert(msg);
+        }
+    } else {
+        var faltasTxt = itensEmFaltaResumo.map(function(f) {
+            return " - " + f.nome + ": " + f.recebido_hoje + " recebidos, em falta: " + f.falta + " " + f.unidade;
+        }).join("\n");
+
+        msg = "Guia de Entrada Parcial " + numGuia + " emitida!\n\n" +
+            "- Stock abastecido com as quantidades entregues (" + totalValorRecebido.toFixed(2) + " MT).\n\n" +
+            "PRODUTOS EM FALTA:\n" + faltasTxt + "\n\n" +
+            "A requisição permanecerá com status 'Itens em Falta' até que o fornecedor complete.";
+
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel(msg, "Entrega Parcial Registada c/ Faltas", "aviso");
+        } else {
+            alert(msg);
+        }
+    }
+}
+
+function rejeitarRequisicao(reqId) {
+    if (confirm('Deseja rejeitar esta requisição de compra?')) {
+        var req = (window.RestauranteApp.requisicoes || []).find(function(r) { return String(r.id) === String(reqId); });
+        if (req) {
+            req.status = 'REJEITADA';
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            renderRequisicoesFluxo();
+        }
+    }
+}
+
+function removerRequisicaoFluxo(idx) {
+    if (confirm('Deseja remover este registo de requisição?')) {
+        window.RestauranteApp.requisicoes.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderRequisicoesFluxo();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderRequisicoesFluxo();
+    renderCompras();
+});
+</script>
+{% endblock %}

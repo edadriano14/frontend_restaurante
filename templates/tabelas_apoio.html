@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-5">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Tabelas de Apoio &mdash; ConfigurAc&ccedil;&otilde;es</h1>
+            <p class="text-gray-500 text-sm">Gest&atilde;o centralizada de tabelas relacionais do sistema.</p>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex flex-wrap border-b border-gray-200 gap-0.5">
+        <button onclick="trocarTabApoio('pagamentos')" id="tabApoio-pagamentos" class="tab-apoio px-4 py-2.5 font-bold text-xs border-b-2 border-red-600 text-red-600 cursor-pointer flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-credit-card"></i> M&eacute;todos de Pagamento
+        </button>
+        <button onclick="trocarTabApoio('tipos')" id="tabApoio-tipos" class="tab-apoio px-4 py-2.5 font-bold text-xs text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent">
+            <i class="fa-solid fa-tags"></i> Tipos de Pedidos
+        </button>
+        <button onclick="trocarTabApoio('iva')" id="tabApoio-iva" class="tab-apoio px-4 py-2.5 font-bold text-xs text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent">
+            <i class="fa-solid fa-percent"></i> Taxas de IVA
+        </button>
+        <button onclick="trocarTabApoio('utilizadores')" id="tabApoio-utilizadores" class="tab-apoio px-4 py-2.5 font-bold text-xs text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent">
+            <i class="fa-solid fa-id-badge"></i> Utilizadores
+        </button>
+        <button onclick="trocarTabApoio('unidades')" id="tabApoio-unidades" class="tab-apoio px-4 py-2.5 font-bold text-xs text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent">
+            <i class="fa-solid fa-scale-balanced"></i> Unidades de Medida
+        </button>
+        <button onclick="trocarTabApoio('armazens')" id="tabApoio-armazens" class="tab-apoio px-4 py-2.5 font-bold text-xs text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent">
+            <i class="fa-solid fa-warehouse"></i> Armaz&eacute;ns &amp; Locais
+        </button>
+    </div>
+
+    <!-- 1. PAINEL MÉTODOS DE PAGAMENTO -->
+    <div id="painel-pagamentos" class="space-y-4">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-bold text-gray-700">Formas de Pagamento Disponíveis no PDV e Portal</span>
+            <button onclick="abrirModalPagamento()" class="px-3.5 py-1.5 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Novo Método de Pagamento
+            </button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Ícone</th>
+                        <th class="p-4">Nome do Método</th>
+                        <th class="p-4">Nº Associado</th>
+                        <th class="p-4">Permite Troco</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaMetodosPagamento" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. PAINEL UNIDADES DE MEDIDA -->
+    <div id="painel-unidades" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-bold text-gray-700">Padrões de Medida para Itens de Stock e Compras</span>
+            <button onclick="abrirModalUnidade()" class="px-3.5 py-1.5 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Nova Unidade de Medida
+            </button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Código / Símbolo</th>
+                        <th class="p-4">Nome por Extenso</th>
+                        <th class="p-4">Aceita Fracionamento (Decimais)</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaUnidadesMedida" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. PAINEL ARMAZÉNS E LOCAIS -->
+    <div id="painel-armazens" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-bold text-gray-700">Armazéns Físicos e Estruturas (Estantes, Geleiras, Congeladores)</span>
+            <div class="flex gap-2">
+                <button onclick="abrirModalArmazem()" class="px-3 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-bold shadow hover:bg-gray-700 cursor-pointer">
+                    <i class="fa-solid fa-plus"></i> Novo Armazém
+                </button>
+                <button onclick="abrirModalLocal()" class="px-3 py-1.5 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 cursor-pointer">
+                    <i class="fa-solid fa-plus"></i> Novo Local (Geleira/Estante)
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-warehouse text-blue-600"></i> Armazéns Cadastrados
+                </h3>
+                <div id="listaArmazens" class="space-y-2"></div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-snowflake text-cyan-600"></i> Locais & Estruturas Físicas
+                </h3>
+                <div id="listaLocais" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 2. PAINEL TIPOS DE PEDIDOS -->
+    <div id="painel-tipos" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-bold text-gray-700">Tipos de Pedido (Balc&atilde;o, Takeaway, Delivery, Encomenda)</span>
+            <button onclick="abrirModalTipoPedido()" class="px-3.5 py-1.5 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Novo Tipo
+            </button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">C&oacute;digo</th>
+                        <th class="p-4">Descri&ccedil;&atilde;o</th>
+                        <th class="p-4 text-right">Ac&ccedil;&otilde;es</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaTiposPedidos" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. PAINEL TAXAS DE IVA -->
+    <div id="painel-iva" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-bold text-gray-700">Tabela de IVA e Moeda</span>
+            <button onclick="abrirModalIva()" class="px-3.5 py-1.5 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Nova Taxa de IVA
+            </button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">C&oacute;digo</th>
+                        <th class="p-4">Taxa IVA (%)</th>
+                        <th class="p-4">Moeda</th>
+                        <th class="p-4">Descri&ccedil;&atilde;o</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4">Predefinida</th>
+                        <th class="p-4 text-right">Ac&ccedil;&otilde;es</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaTaxasIva" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. PAINEL UTILIZADORES -->
+    <div id="painel-utilizadores" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-bold text-gray-700">Gest&atilde;o de Utilizadores e Restaurante Pertencente</span>
+            <button onclick="abrirModalUtilizadorConfig()" class="px-3.5 py-1.5 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-user-plus"></i> Novo Utilizador
+            </button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Código</th>
+                        <th class="p-4">Nome</th>
+                        <th class="p-4">Email</th>
+                        <th class="p-4">Restaurante Pertencente</th>
+                        <th class="p-4">Perfil</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaUtilizadoresConfig" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MÉTODO PAGAMENTO -->
+<div id="modalPagamento" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800">M&eacute;todo de Pagamento</h3>
+            <button type="button" onclick="fecharModal('modalPagamento')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">C&oacute;digo Operadora *</label>
+                    <input type="text" id="pagCodigo" placeholder="Ex: MPESA" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">N&uacute;mero Associado</label>
+                    <input type="text" id="pagNumero" placeholder="Ex: 841234567" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descri&ccedil;&atilde;o / Nome *</label>
+                <input type="text" id="pagNome" placeholder="Ex: M-Pesa (Vodacom)" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">&Iacute;cone FontAwesome</label>
+                <input type="text" id="pagIcone" value="fa-solid fa-credit-card" class="w-full px-3 py-2 border rounded-lg text-xs font-mono outline-none">
+            </div>
+            <div class="flex items-center space-x-2 pt-1">
+                <input type="checkbox" id="pagTroco" class="w-4 h-4 text-red-600 rounded">
+                <label for="pagTroco" class="text-xs font-semibold text-gray-700">Permite dar troco em numer&aacute;rio</label>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalPagamento')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+                <button type="button" onclick="salvarMetodoPagamento()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90">Gravar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL TIPO DE PEDIDO -->
+<div id="modalTipoPedido" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800">Tipo de Pedido</h3>
+            <button type="button" onclick="fecharModal('modalTipoPedido')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">C&oacute;digo *</label>
+                <input type="text" id="tpCodigo" placeholder="Ex: TP-BALCAO" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descri&ccedil;&atilde;o *</label>
+                <input type="text" id="tpDescricao" placeholder="Ex: Balc&atilde;o (Atendimento R&aacute;pido)" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalTipoPedido')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+                <button type="button" onclick="salvarTipoPedido()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90">Gravar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL TAXA IVA -->
+<div id="modalIva" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800">Taxa de IVA</h3>
+            <button type="button" onclick="fecharModal('modalIva')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">C&oacute;digo *</label>
+                    <input type="text" id="ivaCodigo" placeholder="Ex: IVA-16" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Taxa IVA (%) *</label>
+                    <input type="number" id="ivaPercentagem" placeholder="16" step="0.01" min="0" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda</label>
+                    <input type="text" id="ivaMoeda" value="MZN" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descri&ccedil;&atilde;o</label>
+                    <input type="text" id="ivaDescricao" placeholder="Ex: Taxa Normal" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+            </div>
+            <div class="flex items-center gap-6 pt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="ivaAtivo" checked class="w-4 h-4 text-red-600 rounded">
+                    <span class="text-xs font-semibold text-gray-700">Activa</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="ivaPadrao" class="w-4 h-4 text-red-600 rounded">
+                    <span class="text-xs font-semibold text-gray-700">Predefinida</span>
+                </label>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalIva')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+                <button type="button" onclick="salvarTaxaIva()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90">Gravar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL UTILIZADOR CONFIG -->
+<div id="modalUtilizadorConf" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 id="modalUtilizadorConfTitulo" class="font-bold text-lg text-gray-800">Novo Utilizador</h3>
+            <button type="button" onclick="fecharModal('modalUtilizadorConf')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código *</label>
+                    <input type="text" id="ucCodigo" placeholder="USR-001" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome Completo *</label>
+                    <input type="text" id="ucNome" placeholder="Ex: Maria Fernandes" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email *</label>
+                <input type="email" id="ucEmail" placeholder="maria@restaurante.co.mz" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Restaurante Pertencente *</label>
+                <select id="ucRestaurante" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white"></select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Perfil de Acesso</label>
+                <select id="ucPerfil" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
+                    <option value="ADMIN_GERAL">Administrador Geral</option>
+                    <option value="GESTOR">Gestor</option>
+                    <option value="OPERADOR">Operador (PDV / Caixa)</option>
+                    <option value="STOCK">Respons&aacute;vel de Stock</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="ucAtivo" checked class="w-4 h-4 text-red-600 rounded">
+                <label for="ucAtivo" class="text-xs font-semibold text-gray-700">Utilizador Activo</label>
+            </div>
+            <div class="flex justify-end gap-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalUtilizadorConf')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancelar</button>
+                <button type="button" onclick="salvarUtilizadorConfig()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90">Gravar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var TABS_APOIO = ['pagamentos', 'tipos', 'iva', 'utilizadores', 'unidades', 'armazens'];
+
+function trocarTabApoio(tab) {
+    TABS_APOIO.forEach(function(t) {
+        var btn = document.getElementById('tabApoio-' + t);
+        var painel = document.getElementById('painel-' + t);
+        if (btn) {
+            btn.className = 'tab-apoio px-4 py-2.5 font-bold text-xs text-gray-500 hover:text-gray-700 cursor-pointer flex items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent';
+        }
+        if (painel) painel.classList.add('hidden');
+    });
+    var ativo = document.getElementById('tabApoio-' + tab);
+    var painelAtivo = document.getElementById('painel-' + tab);
+    if (ativo) {
+        ativo.className = 'tab-apoio px-4 py-2.5 font-bold text-xs border-b-2 border-red-600 text-red-600 cursor-pointer flex items-center gap-1.5 whitespace-nowrap';
+    }
+    if (painelAtivo) painelAtivo.classList.remove('hidden');
+}
+
+// 1. MÉTODOS DE PAGAMENTO
+function renderPagamentos() {
+    var tbody = document.getElementById('tabelaMetodosPagamento');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.metodos_pagamento || [];
+    var html = '';
+    lista.forEach(function(m, i) {
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (m.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + m.codigo + '</td>';
+        html += '  <td class="p-4 text-center"><i class="' + (m.icone || 'fa-solid fa-credit-card') + ' text-lg ' + (m.cor || 'text-gray-600') + '"></i></td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + m.nome + '</td>';
+        html += '  <td class="p-4 text-xs font-mono text-gray-600">' + (m.numero || m.numero_associado || '—') + '</td>';
+        html += '  <td class="p-4 text-xs">' + (m.permite_troco ? '<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> Sim</span>' : '<span class="text-gray-400">Não</span>') + '</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-bold rounded-full ' + (m.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700') + '">' + (m.ativo ? 'Activo' : 'Inactivo') + '</span></td>';
+        html += '  <td class="p-4 text-right">';
+        html += '    <button onclick="removerMetodoPag(' + i + ')" class="text-red-500 hover:text-red-700 cursor-pointer text-xs"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhum método registado.</td></tr>';
+}
+
+function abrirModalPagamento() {
+    document.getElementById('pagCodigo').value = '';
+    document.getElementById('pagNome').value = '';
+    document.getElementById('pagNumero').value = '';
+    document.getElementById('pagIcone').value = 'fa-solid fa-credit-card';
+    document.getElementById('pagTroco').checked = false;
+    abrirModal('modalPagamento');
+}
+
+function salvarMetodoPagamento() {
+    var cod = document.getElementById('pagCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('pagNome').value.trim();
+    if (!cod || !nome) { alert('Preencha o código da operadora e a descrição!'); return; }
+    if (!window.RestauranteApp.metodos_pagamento) window.RestauranteApp.metodos_pagamento = [];
+    window.RestauranteApp.metodos_pagamento.push({
+        id: String(Date.now()),
+        codigo: cod,
+        nome: nome,
+        numero: document.getElementById('pagNumero').value.trim(),
+        icone: document.getElementById('pagIcone').value.trim() || 'fa-solid fa-money-bill',
+        cor: 'text-blue-500',
+        permite_troco: document.getElementById('pagTroco').checked,
+        ativo: true
+    });
+    fecharModal('modalPagamento');
+    renderPagamentos();
+}
+
+function removerMetodoPag(idx) {
+    if (confirm('Remover este método de pagamento?')) {
+        window.RestauranteApp.metodos_pagamento.splice(idx, 1);
+        renderPagamentos();
+    }
+}
+
+// 2. TIPOS DE PEDIDOS
+function renderTiposPedidos() {
+    var tbody = document.getElementById('tabelaTiposPedidos');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.tipos_pedidos || [];
+    var html = '';
+    lista.forEach(function(t, i) {
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400">' + t.id + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + t.codigo + '</td>';
+        html += '  <td class="p-4 font-semibold text-gray-900">' + t.descricao + '</td>';
+        html += '  <td class="p-4 text-right">';
+        html += '    <button onclick="removerTipoPedido(' + i + ')" class="text-red-500 hover:text-red-700 cursor-pointer text-xs"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="4" class="p-6 text-center text-gray-400 text-xs">Nenhum tipo de pedido registado.</td></tr>';
+}
+
+function abrirModalTipoPedido() {
+    document.getElementById('tpCodigo').value = '';
+    document.getElementById('tpDescricao').value = '';
+    abrirModal('modalTipoPedido');
+}
+
+function salvarTipoPedido() {
+    var cod = document.getElementById('tpCodigo').value.trim().toUpperCase();
+    var desc = document.getElementById('tpDescricao').value.trim();
+    if (!cod || !desc) { alert('Preencha o código e a descrição!'); return; }
+    if (!window.RestauranteApp.tipos_pedidos) window.RestauranteApp.tipos_pedidos = [];
+    var lista = window.RestauranteApp.tipos_pedidos;
+    lista.push({ id: String(lista.length + 1), codigo: cod, descricao: desc });
+    fecharModal('modalTipoPedido');
+    renderTiposPedidos();
+}
+
+function removerTipoPedido(idx) {
+    if (confirm('Remover este tipo de pedido?')) {
+        window.RestauranteApp.tipos_pedidos.splice(idx, 1);
+        renderTiposPedidos();
+    }
+}
+
+// 3. TAXAS DE IVA
+function renderTaxasIva() {
+    var tbody = document.getElementById('tabelaTaxasIva');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.taxas_iva || [];
+    var html = '';
+    lista.forEach(function(t, i) {
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400">' + t.id + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + t.codigo + '</td>';
+        html += '  <td class="p-4 font-black text-lg text-custom-primary">' + Number(t.iva).toFixed(1) + '%</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-600">' + (t.moeda || 'MZN') + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-500">' + (t.descricao || '—') + '</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-bold rounded-full ' + (t.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600') + '">' + (t.ativo ? 'Activa' : 'Inactiva') + '</span></td>';
+        html += '  <td class="p-4 text-center">' + (t.padrao ? '<button type="button" class="text-amber-500 cursor-default" title="Taxa Predefinida"><i class="fa-solid fa-star text-base"></i></button>' : '<button type="button" onclick="definirIvaPadrao(' + i + ')" class="text-gray-300 hover:text-amber-500 cursor-pointer transition" title="Definir como Predefinida"><i class="fa-regular fa-star text-base"></i></button>') + '</td>';
+        html += '  <td class="p-4 text-right">';
+        html += '    <button onclick="removerIva(' + i + ')" class="text-red-500 hover:text-red-700 cursor-pointer text-xs p-1" title="Eliminar taxa"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhuma taxa registada.</td></tr>';
+}
+
+function abrirModalIva() {
+    document.getElementById('ivaCodigo').value = '';
+    document.getElementById('ivaPercentagem').value = '';
+    document.getElementById('ivaMoeda').value = 'MZN';
+    document.getElementById('ivaDescricao').value = '';
+    document.getElementById('ivaAtivo').checked = true;
+    document.getElementById('ivaPadrao').checked = false;
+    abrirModal('modalIva');
+}
+
+function salvarTaxaIva() {
+    var cod = document.getElementById('ivaCodigo').value.trim().toUpperCase();
+    var perc = parseFloat(document.getElementById('ivaPercentagem').value);
+    if (!cod || isNaN(perc)) { alert('Preencha o código e a taxa (%)!'); return; }
+    if (!window.RestauranteApp.taxas_iva) window.RestauranteApp.taxas_iva = [];
+    var lista = window.RestauranteApp.taxas_iva;
+    var isPad = document.getElementById('ivaPadrao').checked;
+    if (isPad) lista.forEach(function(t) { t.padrao = false; });
+    lista.push({
+        id: String(lista.length + 1),
+        codigo: cod,
+        iva: perc,
+        moeda: document.getElementById('ivaMoeda').value.trim() || 'MZN',
+        descricao: document.getElementById('ivaDescricao').value.trim(),
+        ativo: document.getElementById('ivaAtivo').checked,
+        padrao: isPad
+    });
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+    fecharModal('modalIva');
+    renderTaxasIva();
+}
+
+function definirIvaPadrao(idx) {
+    var lista = window.RestauranteApp.taxas_iva || [];
+    if (lista[idx]) {
+        lista.forEach(function(t) { t.padrao = false; });
+        lista[idx].padrao = true;
+        lista[idx].ativo = true;
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+        renderTaxasIva();
+    }
+}
+
+function removerIva(idx) {
+    if (confirm('Remover esta taxa de IVA?')) {
+        window.RestauranteApp.taxas_iva.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+        renderTaxasIva();
+    }
+}
+
+// 4. UTILIZADORES
+var editandoUserConfigId = null;
+
+function preencherSelectRestaurantes() {
+    var sel = document.getElementById('ucRestaurante');
+    if (!sel) return;
+    var lista = window.RestauranteApp.estabelecimentos || [];
+    sel.innerHTML = lista.map(function(e) {
+        return '<option value="' + e.id + '">' + e.nome + '</option>';
+    }).join('');
+}
+
+function renderUtilizadoresConfig() {
+    var tbody = document.getElementById('tabelaUtilizadoresConfig');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.utilizadores || [];
+    var html = '';
+    lista.forEach(function(u, i) {
+        var rNome = '—';
+        if (u.restaurante_id) {
+            var r = (window.RestauranteApp.estabelecimentos || []).find(function(e) { return e.id === u.restaurante_id; });
+            if (r) rNome = r.nome;
+        }
+        var uCod = u.codigo || ('USR-00' + (i + 1));
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (u.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + uCod + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + u.nome + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-500">' + u.email + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-800"><i class="fa-solid fa-store text-gray-400 mr-1.5"></i>' + rNome + '</td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">' + u.perfil + '</span></td>';
+        html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-semibold rounded-full ' + (u.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700') + '">' + (u.ativo ? 'Activo' : 'Inactivo') + '</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarUtilizadorConfig(\'' + u.id + '\')" class="text-blue-500 hover:text-blue-700 cursor-pointer text-xs"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerUtilizadorConfig(' + i + ')" class="text-red-500 hover:text-red-700 cursor-pointer text-xs"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhum utilizador registado.</td></tr>';
+}
+
+function abrirModalUtilizadorConfig() {
+    editandoUserConfigId = null;
+    document.getElementById('modalUtilizadorConfTitulo').innerText = 'Novo Utilizador';
+    var nextNum = (window.RestauranteApp.utilizadores || []).length + 1;
+    document.getElementById('ucCodigo').value = 'USR-00' + nextNum;
+    document.getElementById('ucNome').value = '';
+    document.getElementById('ucEmail').value = '';
+    document.getElementById('ucPerfil').value = 'OPERADOR';
+    document.getElementById('ucAtivo').checked = true;
+    preencherSelectRestaurantes();
+    abrirModal('modalUtilizadorConf');
+}
+
+function editarUtilizadorConfig(id) {
+    var u = (window.RestauranteApp.utilizadores || []).find(function(x) { return x.id === id; });
+    if (!u) return;
+    editandoUserConfigId = id;
+    document.getElementById('modalUtilizadorConfTitulo').innerText = 'Editar Utilizador';
+    document.getElementById('ucCodigo').value = u.codigo || ('USR-00' + id);
+    document.getElementById('ucNome').value = u.nome;
+    document.getElementById('ucEmail').value = u.email;
+    document.getElementById('ucPerfil').value = u.perfil;
+    document.getElementById('ucAtivo').checked = u.ativo;
+    preencherSelectRestaurantes();
+    if (u.restaurante_id) document.getElementById('ucRestaurante').value = u.restaurante_id;
+    abrirModal('modalUtilizadorConf');
+}
+
+function salvarUtilizadorConfig() {
+    var cod = document.getElementById('ucCodigo').value.trim().toUpperCase();
+    var nome = document.getElementById('ucNome').value.trim();
+    var email = document.getElementById('ucEmail').value.trim();
+    if (!cod || !nome || !email) { alert('Código, nome e email são obrigatórios.'); return; }
+    var item = {
+        codigo: cod,
+        nome: nome,
+        email: email,
+        restaurante_id: document.getElementById('ucRestaurante').value,
+        perfil: document.getElementById('ucPerfil').value,
+        ativo: document.getElementById('ucAtivo').checked
+    };
+    if (!window.RestauranteApp.utilizadores) window.RestauranteApp.utilizadores = [];
+    if (editandoUserConfigId) {
+        var idx = window.RestauranteApp.utilizadores.findIndex(function(x) { return x.id === editandoUserConfigId; });
+        if (idx !== -1) { item.id = editandoUserConfigId; window.RestauranteApp.utilizadores[idx] = item; }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.utilizadores.push(item);
+    }
+    fecharModal('modalUtilizadorConf');
+    renderUtilizadoresConfig();
+}
+
+function removerUtilizadorConfig(idx) {
+    if (confirm('Remover este utilizador?')) {
+        window.RestauranteApp.utilizadores.splice(idx, 1);
+        renderUtilizadoresConfig();
+    }
+}
+
+// 5. UNIDADES DE MEDIDA
+function renderUnidades() {
+    var tbody = document.getElementById('tabelaUnidadesMedida');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.unidades_medida || [];
+    var html = '';
+    lista.forEach(function(u, i) {
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-black font-mono text-red-600 text-sm">' + u.codigo + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + u.nome + '</td>';
+        html += '  <td class="p-4 text-xs font-medium">' + (u.permite_decimal ? 'Sim (Ex: 1.5 KG, 2.75 LT)' : 'Não (Números inteiros)') + '</td>';
+        html += '  <td class="p-4 text-right"><button onclick="removerUnidade(' + i + ')" class="text-red-500 hover:text-red-700 cursor-pointer text-xs"><i class="fa-solid fa-trash"></i></button></td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html || '<tr><td colspan="4" class="p-6 text-center text-gray-400 text-xs">Nenhuma unidade registada.</td></tr>';
+}
+
+function abrirModalUnidade() { alert('Funcionalidade de cadastro de nova unidade rápida.'); }
+
+function removerUnidade(idx) {
+    if (confirm('Remover esta unidade de medida?')) {
+        window.RestauranteApp.unidades_medida.splice(idx, 1);
+        renderUnidades();
+    }
+}
+
+// 6. ARMAZÉNS E LOCAIS
+function renderArmazensELocais() {
+    var divArm = document.getElementById('listaArmazens');
+    var divLoc = document.getElementById('listaLocais');
+    if (!divArm || !divLoc) return;
+
+    var arm = window.RestauranteApp.armazens || [];
+    divArm.innerHTML = arm.map(function(a) {
+        return '<div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">'
+            + '<div><h4 class="font-bold text-xs text-gray-900">' + a.nome + '</h4>'
+            + '<span class="text-[10px] text-gray-500 font-mono">' + a.codigo + ' • ' + a.tipo + '</span></div>'
+            + '<span class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Activo</span></div>';
+    }).join('') || '<p class="text-xs text-gray-400">Nenhum armazém.</p>';
+
+    var loc = window.RestauranteApp.locais_armazenamento || [];
+    divLoc.innerHTML = loc.map(function(l) {
+        var ic = (['GELEIRA', 'CONGELADOR', 'CAMARA_FRIA'].indexOf(l.tipo) >= 0) ? 'fa-snowflake text-cyan-600' : 'fa-layer-group text-amber-600';
+        return '<div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">'
+            + '<div class="flex items-center space-x-3"><div class="w-8 h-8 rounded-lg bg-white border flex items-center justify-center"><i class="fa-solid ' + ic + '"></i></div>'
+            + '<div><h4 class="font-bold text-xs text-gray-900">' + l.descricao + '</h4>'
+            + '<span class="text-[10px] text-gray-500 font-mono">' + l.codigo + ' • ' + l.armazem_nome + '</span></div></div>'
+            + '<span class="text-[10px] uppercase font-bold text-gray-600 bg-gray-200 px-2 py-0.5 rounded">' + l.tipo + '</span></div>';
+    }).join('') || '<p class="text-xs text-gray-400">Nenhum local.</p>';
+}
+
+function abrirModalArmazem() { alert('Funcionalidade em desenvolvimento.'); }
+function abrirModalLocal() { alert('Funcionalidade em desenvolvimento.'); }
+
+// INIT
+function renderTabelasApoio() {
+    renderPagamentos();
+    renderTiposPedidos();
+    renderTaxasIva();
+    renderUtilizadoresConfig();
+    renderUnidades();
+    renderArmazensELocais();
+    trocarTabApoio('pagamentos');
+}
+
+document.addEventListener('DOMContentLoaded', renderTabelasApoio);
+</script>
+{% endblock %}

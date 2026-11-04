@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Guias de Entrada & Recepção de Produtos</h1>
+            <p class="text-gray-500">A Guia de Entrada é invocada e emitida <b>na recepção física dos produtos e mercadorias</b> compradas, conferindo itens e abastecendo o stock em tempo real.</p>
+        </div>
+        <button onclick="abrirModalGuia()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-file-invoice"></i> Invocar Guia na Recepção de Produtos
+        </button>
+    </div>
+
+    <!-- SEÇÃO: COMPRAS/REQUISIÇÕES AGUARDANDO RECEBIMENTO -->
+    <div class="bg-amber-50 rounded-2xl p-5 border border-amber-200 space-y-3">
+        <h3 class="text-sm font-bold text-amber-900 flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left"></i> Reisições de Compras Pendentes de Entrega do Fornecedor
+        </h3>
+        <div id="listaRequisicoesPendentes" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Preenchido via renderRequisicoesPendentes() -->
+        </div>
+    </div>
+
+    <!-- TABELA DE GUIAS DE ENTRADA PROCESSADAS -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-4 border-b">
+            <h3 class="font-bold text-sm text-gray-800">Histórico de Guias de Entrada Processadas (Stock Abastecido)</h3>
+        </div>
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                <tr>
+                    <th class="p-4">Nº Guia de Entrada</th>
+                    <th class="p-4">Data Recebimento</th>
+                    <th class="p-4">Requisicão Origem</th>
+                    <th class="p-4">Fornecedor</th>
+                    <th class="p-4">Valor Total</th>
+                    <th class="p-4">Estado no Stock</th>
+                    <th class="p-4 text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaGuias" class="divide-y divide-gray-100"></tbody>
+        </table>
+    </div>
+
+    <!-- Modal Nova Guia no Recebimento da Compra (Layout da 3ª Imagem) -->
+    <div id="modalGuia" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8 max-h-[92vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-3 shrink-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-file-invoice text-custom-primary text-xl"></i>
+                    <h2 class="text-lg font-bold text-gray-800">Receber Compra / Guia de Entrada de Mercadorias</h2>
+                </div>
+                <button type="button" onclick="fecharModal('modalGuia')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto flex-1 pr-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Requisição de Compra a Receber *</label>
+                        <select id="guiaReqSelect" onchange="selecionarRequisicaoNaGuia()" class="w-full px-3 py-2 border rounded-lg text-xs outline-none bg-white font-semibold">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nº Guia de Remessa / Factura *</label>
+                        <input type="text" id="guiaNumero" value="GE-2026/0442" class="w-full px-3 py-2 border rounded-lg text-xs outline-none font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código do Fornecedor</label>
+                        <input type="text" id="guiaFornecedorCodigo" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-100 font-mono font-bold text-gray-700">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Empresa / Fornecedor</label>
+                        <input type="text" id="guiaFornecedorNome" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-100 font-bold text-gray-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">NUIT do Fornecedor (10 Dígitos)</label>
+                        <input type="text" id="guiaFornecedorNuit" readonly class="w-full px-3 py-2 border rounded-lg text-xs bg-gray-100 font-mono font-bold text-gray-700">
+                    </div>
+                </div>
+
+                <!-- Tabela Detalhada de Itens da Guia de Entrada (3ª IMAGEM) -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden shadow-xs">
+                    <div class="bg-gray-50 px-3 py-2 border-b flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-800 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-custom-primary"></i> Itens da Recepção (Entrada Directa no Stock)
+                        </span>
+                        <span class="text-[11px] text-gray-500">Taxa de IVA Aplicada: 16%</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-gray-600">
+                            <thead class="bg-gray-100 text-gray-700 uppercase font-semibold text-[10px] border-b">
+                                <tr>
+                                    <th class="p-2.5 text-center">Nº Item</th>
+                                    <th class="p-2.5">Item / Insumo</th>
+                                    <th class="p-2.5 text-center">Quantidade</th>
+                                    <th class="p-2.5 text-right">Preço Unitário</th>
+                                    <th class="p-2.5 text-right">Preço Total</th>
+                                    <th class="p-2.5 text-right">Subtotal</th>
+                                    <th class="p-2.5 text-right">+ IVA (16%)</th>
+                                    <th class="p-2.5 text-right">Valor Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaItensGuiaDetalhe" class="divide-y divide-gray-100">
+                                <!-- Preenchido dinamicamente via selecionarRequisicaoNaGuia() -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Painel Consolidado de Totais da Guia de Entrada -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs">
+                    <div>
+                        <span class="text-gray-500 block">Subtotal Mercadorias:</span>
+                        <span id="guiaSubtotalConsolidado" class="font-bold text-gray-800 font-mono text-sm">0.00 {{ estabelecimento.moeda }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-500 block">Total IVA Liquidado (+16%):</span>
+                        <span id="guiaIvaConsolidado" class="font-bold text-amber-700 font-mono text-sm">0.00 {{ estabelecimento.moeda }}</span>
+                    </div>
+                    <div class="sm:text-right">
+                        <span class="text-gray-500 block">Valor Total Final:</span>
+                        <span id="guiaTotalValor" class="font-black text-emerald-700 font-mono text-base">0.00 {{ estabelecimento.moeda }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 border-t pt-3 shrink-0">
+                <button type="button" onclick="fecharModal('modalGuia')" class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="processarRecebimentoGuia()" class="px-5 py-2 bg-custom-primary text-white rounded-lg text-xs font-bold shadow hover:opacity-90 flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-check-double"></i> Confirmar Recepção & Abastecer Stock
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function renderRequisicoesPendentes() {
+    var container = document.getElementById('listaRequisicoesPendentes');
+    if (!container) return;
+    var reqs = window.RestauranteApp.requisicoes.filter(function(r) { return r.status === 'AGUARDANDO_RECEBIMENTO'; });
+    var html = '';
+
+    if (reqs.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Nenhuma compra aguardando recebimento no momento.</p>';
+        return;
+    }
+
+    for (var i = 0; i < reqs.length; i++) {
+        var r = reqs[i];
+        html += '<div class="bg-white p-3.5 rounded-xl border border-amber-300 flex items-center justify-between shadow-sm">';
+        html += '  <div>';
+        html += '    <span class="text-xs font-mono font-bold text-amber-900">' + r.numero_requisicao + '</span>';
+        html += '    <h4 class="font-bold text-xs text-gray-900">' + r.fornecedor + '</h4>';
+        html += '    <span class="text-[11px] text-gray-500">Data Pedido: ' + r.data_pedido + ' | Total: ' + r.total_estimado + ' {{ estabelecimento.moeda }}</span>';
+        html += '  </div>';
+        html += '  <button onclick="receberDiretoRequisicao(\'' + r.id + '\')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow cursor-pointer">';
+        html += '    <i class="fa-solid fa-box-open"></i> Receber';
+        html += '  </button>';
+        html += '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function renderGuias() {
+    var tbody = document.getElementById('tabelaGuias');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.guias;
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var g = lista[i];
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-gray-900">' + g.numero + '</td>';
+        html += '  <td class="p-4 font-mono text-xs">' + g.data + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-amber-800 font-semibold">' + (g.requisicao_origem || '-') + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-800">' + g.fornecedor + '</td>';
+        html += '  <td class="p-4 font-bold text-green-700">' + g.total + ' {{ estabelecimento.moeda }}</td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full flex items-center gap-1 w-max"><i class="fa-solid fa-circle-check"></i> Stock Alimentado</span></td>';
+        html += '  <td class="p-4 text-right"><button onclick="removerGuia(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button></td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+function abrirModalGuia() {
+    var select = document.getElementById('guiaReqSelect');
+    if (!select) return;
+    if (!window.RestauranteApp.requisicoes) window.RestauranteApp.requisicoes = [];
+    var reqs = window.RestauranteApp.requisicoes.filter(function(r) { return r.status === 'AGUARDANDO_RECEBIMENTO'; });
+    var html = '';
+    for (var i = 0; i < reqs.length; i++) {
+        html += '<option value="' + reqs[i].id + '">' + reqs[i].numero_requisicao + ' - ' + reqs[i].fornecedor + '</option>';
+    }
+    if (reqs.length === 0) {
+        html = '<option value="DIRECTA">Entrada Directa / Recepção sem Requisição Prévia</option>';
+    }
+    select.innerHTML = html;
+    document.getElementById('guiaNumero').value = 'GE-2026/044' + ((window.RestauranteApp.guias || []).length + 2);
+    selecionarRequisicaoNaGuia();
+    abrirModal('modalGuia');
+}
+
+function receberDiretoRequisicao(reqId) {
+    abrirModalGuia();
+    var select = document.getElementById('guiaReqSelect');
+    if (select) {
+        select.value = reqId;
+        selecionarRequisicaoNaGuia();
+    }
+}
+
+function selecionarRequisicaoNaGuia() {
+    var select = document.getElementById('guiaReqSelect');
+    if (!select) return;
+    var reqId = select.value;
+    var req = (window.RestauranteApp.requisicoes || []).find(function(r) { return r.id === reqId; });
+    var inputFornNome = document.getElementById('guiaFornecedorNome');
+    var inputFornCod = document.getElementById('guiaFornecedorCodigo');
+    var inputFornNuit = document.getElementById('guiaFornecedorNuit');
+    var totalEl = document.getElementById('guiaTotalValor');
+    var subtotalEl = document.getElementById('guiaSubtotalConsolidado');
+    var ivaEl = document.getElementById('guiaIvaConsolidado');
+    var tbodyItens = document.getElementById('tabelaItensGuiaDetalhe');
+
+    if (!req) {
+        if (inputFornNome) inputFornNome.value = 'Fornecedor Local';
+        if (inputFornCod) inputFornCod.value = 'FORN-01';
+        if (inputFornNuit) inputFornNuit.value = '4001239999';
+        if (subtotalEl) subtotalEl.innerText = '0.00 {{ estabelecimento.moeda }}';
+        if (ivaEl) ivaEl.innerText = '0.00 {{ estabelecimento.moeda }}';
+        if (totalEl) totalEl.innerText = '0.00 {{ estabelecimento.moeda }}';
+        if (tbodyItens) tbodyItens.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-400">Nenhuma requisição seleccionada.</td></tr>';
+        return;
+    }
+
+    // Localizar fornecedor correspondente
+    var fornObj = (window.RestauranteApp.fornecedores || []).find(function(f) {
+        return f.nome.toLowerCase() === req.fornecedor.toLowerCase();
+    });
+    var codForn = fornObj ? fornObj.codigo : 'FORN-01';
+    var nuitForn = fornObj ? (fornObj.nuit || '4001239999') : '4001239999';
+
+    if (inputFornNome) inputFornNome.value = req.fornecedor;
+    if (inputFornCod) inputFornCod.value = codForn;
+    if (inputFornNuit) inputFornNuit.value = nuitForn;
+
+    var html = '';
+    var subtotalGeral = 0;
+    var taxaIva = 0.16; // 16% IVA padrão em Moçambique
+
+    if (req.itens && req.itens.length > 0) {
+        for (var i = 0; i < req.itens.length; i++) {
+            var it = req.itens[i];
+            var precoUnit = Number(it.preco_unitario) || Number(it.preco_estimado) || 75.00;
+            var precoTotal = (Number(it.qtd_solicitada) || 1) * precoUnit;
+            var valorIvaItem = precoTotal * taxaIva;
+            var valorTotalItem = precoTotal + valorIvaItem;
+
+            subtotalGeral += precoTotal;
+
+            html += '<tr class="hover:bg-gray-50">';
+            html += '  <td class="p-2.5 text-center font-mono font-bold text-gray-400">' + (i + 1) + '</td>';
+            html += '  <td class="p-2.5 font-bold text-gray-800">' + it.nome + '</td>';
+            html += '  <td class="p-2.5 text-center font-bold font-mono text-emerald-700 bg-emerald-50/40">' + it.qtd_solicitada + '</td>';
+            html += '  <td class="p-2.5 text-right font-mono">' + precoUnit.toFixed(2) + '</td>';
+            html += '  <td class="p-2.5 text-right font-mono font-semibold">' + precoTotal.toFixed(2) + '</td>';
+            html += '  <td class="p-2.5 text-right font-mono font-bold text-gray-900">' + precoTotal.toFixed(2) + '</td>';
+            html += '  <td class="p-2.5 text-right font-mono text-amber-700 font-semibold">' + valorIvaItem.toFixed(2) + '</td>';
+            html += '  <td class="p-2.5 text-right font-mono font-black text-emerald-700">' + valorTotalItem.toFixed(2) + '</td>';
+            html += '</tr>';
+        }
+    } else {
+        html = '<tr><td colspan="8" class="p-4 text-center text-gray-400">Nenhum item discriminado na requisição.</td></tr>';
+    }
+
+    var totalIvaGeral = subtotalGeral * taxaIva;
+    var totalFinalComIva = subtotalGeral + totalIvaGeral;
+
+    if (tbodyItens) tbodyItens.innerHTML = html;
+    if (subtotalEl) subtotalEl.innerText = subtotalGeral.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    if (ivaEl) ivaEl.innerText = totalIvaGeral.toFixed(2) + ' {{ estabelecimento.moeda }}';
+    if (totalEl) totalEl.innerText = totalFinalComIva.toFixed(2) + ' {{ estabelecimento.moeda }}';
+}
+
+function processarRecebimentoGuia() {
+    var select = document.getElementById('guiaReqSelect');
+    var reqId = select ? select.value : '';
+    var req = (window.RestauranteApp.requisicoes || []).find(function(r) { return r.id === reqId; });
+    var numeroGuia = document.getElementById('guiaNumero').value || ('GE-' + Date.now());
+    var agora = new Date().toLocaleString('pt-PT');
+
+    if (req) {
+        // ALIMENTA AUTOMATICAMENTE O STOCK DOS ITENS RECEBIDOS
+        if (req.itens && req.itens.length > 0) {
+            for (var i = 0; i < req.itens.length; i++) {
+                var it = req.itens[i];
+                var s = (window.RestauranteApp.stock || []).find(function(item) { return item.id === it.item_id || item.nome === it.nome; });
+                if (s) {
+                    s.qtd = Math.round((s.qtd + it.qtd_solicitada) * 100) / 100;
+                }
+            }
+        }
+        req.status = 'RECEBIDO_COM_GUIA';
+
+        if (!window.RestauranteApp.guias) window.RestauranteApp.guias = [];
+        window.RestauranteApp.guias.unshift({
+            id: String(Date.now()),
+            numero: numeroGuia,
+            requisicao_origem: req.numero_requisicao,
+            data: agora,
+            fornecedor: req.fornecedor,
+            total: req.total_estimado,
+            status: 'Processada & Entrada Efectuada'
+        });
+    } else {
+        // Entrada Directa
+        var inputForn = document.getElementById('guiaFornecedorNome');
+        var fornNome = inputForn ? inputForn.value : 'Fornecedor Local';
+        if (!window.RestauranteApp.guias) window.RestauranteApp.guias = [];
+        window.RestauranteApp.guias.unshift({
+            id: String(Date.now()),
+            numero: numeroGuia,
+            requisicao_origem: 'Recepção Directa',
+            data: agora,
+            fornecedor: fornNome,
+            total: 0.00,
+            status: 'Processada & Entrada Efectuada'
+        });
+    }
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalGuia');
+    renderRequisicoesPendentes();
+    renderGuias();
+    alert('Guia de Entrada processada na recepção da mercadoria com sucesso!\nO Armazém Principal teve o seu stock abastecido.');
+}
+
+function removerGuia(idx) {
+    if (confirm('Deseja remover esta guia?')) {
+        window.RestauranteApp.guias.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+        renderGuias();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderRequisicoesPendentes();
+    renderGuias();
+});
+</script>
+{% endblock %}

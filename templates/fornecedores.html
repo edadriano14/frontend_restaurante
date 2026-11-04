@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Fornecedores</h1>
+            <p class="text-gray-500">Gestão e cadastro de parceiros comerciais e distribuidores.</p>
+        </div>
+        <button onclick="abrirModalFornecedor()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-plus"></i> Novo Fornecedor
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                <tr>
+                    <th class="p-4">Empresa</th>
+                    <th class="p-4">NIF</th>
+                    <th class="p-4">Contacto</th>
+                    <th class="p-4">Telefone</th>
+                    <th class="p-4">Morada</th>
+                    <th class="p-4 text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaFornecedores" class="divide-y divide-gray-100"></tbody>
+        </table>
+    </div>
+
+    <!-- Modal CRUD Fornecedor (NATIVO INFALÍVEL) -->
+    <div id="modalFornecedor" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalFornTitulo" class="font-bold text-lg text-gray-800">Novo Fornecedor</h3>
+                <button type="button" onclick="fecharModal('modalFornecedor')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome da Empresa *</label>
+                    <input type="text" id="fornNome" placeholder="Ex: Carnes do Sul Lda" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">NIF</label>
+                        <input type="text" id="fornNif" placeholder="400123456" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Contacto / Responsável</label>
+                        <input type="text" id="fornContacto" placeholder="Carlos Silva" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Telefone</label>
+                        <input type="text" id="fornTelefone" placeholder="+258 84 123 4567" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email</label>
+                        <input type="email" id="fornEmail" placeholder="vendas@fornecedor.mz" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Morada / Endereço</label>
+                    <input type="text" id="fornMorada" placeholder="Zona Industrial de Maputo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalFornecedor')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarFornecedor()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- SEÇÃO: TABELA DE PREÇOS DE FORNECEDORES -->
+    <div class="space-y-4 pt-6 border-t border-gray-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-tags text-custom-primary"></i> Tabela de Preços dos Fornecedores
+                </h2>
+                <p class="text-gray-500 text-xs">Acompanhamento de custos de caixas, unidades por caixa e cálculo instantâneo do custo unitário.</p>
+            </div>
+            <button onclick="abrirModalPrecoFornecedorPage()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs shadow flex items-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-plus"></i> Novo Preço de Produto
+            </button>
+        </div>
+
+        <!-- Banner com Fórmula -->
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-amber-600 text-base"></i>
+                <span><b>Cálculo Instantâneo:</b> <span class="font-mono bg-white px-2 py-0.5 rounded border border-amber-300 font-bold">Custo Unitário Calculado = Preço da Caixa ÷ Unidades por Caixa</span></span>
+            </div>
+            <span class="font-bold text-[11px] bg-amber-200/80 px-2.5 py-1 rounded text-amber-900 border border-amber-300">Moeda: {{ estabelecimento.moeda or 'MT' }}</span>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Produto</th>
+                        <th class="p-4">Fornecedor</th>
+                        <th class="p-4 text-right">Custo Actual</th>
+                        <th class="p-4 text-right">Preço da Caixa</th>
+                        <th class="p-4 text-center">Unidades / Caixa</th>
+                        <th class="p-4 text-right">Custo Unitário Calculado</th>
+                        <th class="p-4 text-right">Novo P. Venda</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaPrecosFornecedoresPage" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal CRUD Preço de Fornecedor -->
+    <div id="modalPrecoFornecedorPage" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modalPrecoFornTituloPage" class="font-bold text-lg text-gray-800">Preço de Fornecedor</h3>
+                <button type="button" onclick="fecharModal('modalPrecoFornecedorPage')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Produto *</label>
+                    <select id="tabFornProdSelectPage" onchange="aoMudarProdTabPrecoPage()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor *</label>
+                    <select id="tabFornFornecedorSelectPage" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço da Caixa (MT) *</label>
+                        <input type="number" step="0.01" id="tabFornPrecoCaixaPage" oninput="calcularCustoUnitarioModalPage()" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-gray-900 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidades por Caixa *</label>
+                        <input type="number" min="1" id="tabFornUnidadesCaixaPage" oninput="calcularCustoUnitarioModalPage()" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-gray-900 outline-none">
+                    </div>
+                </div>
+
+                <!-- Destaque do Custo Unitário Calculado -->
+                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-900 block">Custo Unitário Calculado</span>
+                        <span class="text-[10px] text-emerald-700">Preço da Caixa ÷ Unidades por Caixa</span>
+                    </div>
+                    <span id="tabFornCustoUnitarioCalcPage" class="text-lg font-black text-emerald-700 font-mono">0.00 MT</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço de Venda Sugerido (MT)</label>
+                    <input type="number" step="0.01" id="tabFornPrecoVendaPage" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-blue-700 outline-none">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalPrecoFornecedorPage')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarPrecoFornecedorPage()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow cursor-pointer">Gravar Preço</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var editandoFornId = null;
+var editandoPrecoFornId = null;
+
+function renderFornecedores() {
+    var tbody = document.getElementById('tabelaFornecedores');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.fornecedores || [];
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var f = lista[i];
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-bold text-gray-900">' + f.nome + '</td>';
+        html += '  <td class="p-4 font-mono text-xs">' + (f.nif || '-') + '</td>';
+        html += '  <td class="p-4">' + (f.contacto || '-') + '</td>';
+        html += '  <td class="p-4 font-mono text-xs">' + (f.telefone || '-') + '</td>';
+        html += '  <td class="p-4 text-gray-500">' + (f.morada || '-') + '</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarFornecedor(\'' + f.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerFornecedor(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+function abrirModalFornecedor() {
+    editandoFornId = null;
+    document.getElementById('modalFornTitulo').innerText = 'Novo Fornecedor';
+    document.getElementById('fornNome').value = '';
+    document.getElementById('fornNif').value = '';
+    document.getElementById('fornContacto').value = '';
+    document.getElementById('fornTelefone').value = '';
+    document.getElementById('fornEmail').value = '';
+    document.getElementById('fornMorada').value = '';
+    abrirModal('modalFornecedor');
+}
+
+function editarFornecedor(id) {
+    var f = (window.RestauranteApp.fornecedores || []).find(function(item) { return String(item.id) === String(id); });
+    if (!f) return;
+    editandoFornId = id;
+    document.getElementById('modalFornTitulo').innerText = 'Editar Fornecedor';
+    document.getElementById('fornNome').value = f.nome || '';
+    document.getElementById('fornNif').value = f.nif || '';
+    document.getElementById('fornContacto').value = f.contacto || '';
+    document.getElementById('fornTelefone').value = f.telefone || '';
+    document.getElementById('fornEmail').value = f.email || '';
+    document.getElementById('fornMorada').value = f.morada || '';
+    abrirModal('modalFornecedor');
+}
+
+function salvarFornecedor() {
+    var nome = document.getElementById('fornNome').value;
+    if (!nome) { 
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel('Por favor informe o nome do fornecedor.', 'Campo Obrigatório', 'aviso');
+        else alert('Informe o nome do fornecedor.'); 
+        return; 
+    }
+
+    var item = {
+        nome: nome,
+        nif: document.getElementById('fornNif').value,
+        contacto: document.getElementById('fornContacto').value,
+        telefone: document.getElementById('fornTelefone').value,
+        email: document.getElementById('fornEmail').value,
+        morada: document.getElementById('fornMorada').value
+    };
+
+    if (editandoFornId) {
+        var idx = window.RestauranteApp.fornecedores.findIndex(function(x) { return x.id === editandoFornId; });
+        if (idx !== -1) {
+            item.id = editandoFornId;
+            window.RestauranteApp.fornecedores[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.fornecedores.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalFornecedor');
+    renderFornecedores();
+    if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel('Fornecedor gravado com sucesso!', 'Fornecedor Gravado', 'sucesso');
+    else alert('Fornecedor gravado com sucesso!');
+}
+
+function removerFornecedor(idx) {
+    var msg = 'Deseja realmente remover este fornecedor?';
+    if (window.confirmarAcaoAmigavel) {
+        window.confirmarAcaoAmigavel(msg, 'Remover Fornecedor', function() {
+            window.RestauranteApp.fornecedores.splice(idx, 1);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            renderFornecedores();
+        });
+    } else if (confirm(msg)) {
+        window.RestauranteApp.fornecedores.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderFornecedores();
+    }
+}
+
+// ======================== TABELA DE PREÇOS ========================
+function renderPrecosFornecedoresPage() {
+    var tbody = document.getElementById('tabelaPrecosFornecedoresPage');
+    if (!tbody) return;
+    var precos = window.RestauranteApp.tabela_precos_fornecedores || [];
+    var html = '';
+
+    for (var i = 0; i < precos.length; i++) {
+        var p = precos[i];
+        var unCaixa = p.unidades_caixa || p.unidades_por_caixa || 1;
+        var prCaixa = p.preco_caixa || 0;
+        var custoUnit = unCaixa > 0 ? (prCaixa / unCaixa) : (p.custo_unitario || p.custo_unitario_calculado || 0);
+        var custoAtual = p.custo_atual || p.custo_atual_stock || 0;
+        var pVenda = p.preco_venda_sugerido || 0;
+
+        html += '<tr class="hover:bg-amber-50/30 transition">';
+        html += '  <td class="p-4 font-bold text-gray-900">' + p.produto_nome + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-600"><span class="px-2 py-0.5 rounded bg-gray-100">' + (p.fornecedor_nome || 'Distribuidor') + '</span></td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-gray-500">' + Number(custoAtual).toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-emerald-700 bg-emerald-50/40">' + Number(prCaixa).toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-center font-bold text-gray-800">' + unCaixa + ' un</td>';
+        html += '  <td class="p-4 text-right font-mono font-black text-amber-600 bg-amber-50/60">' + Number(custoUnit).toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-gray-900">' + Number(pVenda).toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarPrecoFornecedorPage(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerPrecoFornecedorPage(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="8" class="p-6 text-center text-gray-400 text-xs">Nenhum preço de fornecedor registado.</td></tr>';
+}
+
+function abrirModalPrecoFornecedorPage() {
+    editandoPrecoFornId = null;
+    document.getElementById('modalPrecoFornTituloPage').innerText = 'Novo Preço de Fornecedor';
+
+    var selProd = document.getElementById('tabFornProdSelectPage');
+    var prods = window.RestauranteApp.produtos || [];
+    var htmlP = '';
+    for (var i = 0; i < prods.length; i++) {
+        htmlP += '<option value="' + prods[i].id + '">' + prods[i].nome + ' (Custo: ' + prods[i].preco_custo + ' MT)</option>';
+    }
+    selProd.innerHTML = htmlP;
+
+    var selForn = document.getElementById('tabFornFornecedorSelectPage');
+    var forns = window.RestauranteApp.fornecedores || [];
+    var htmlF = '';
+    for (var j = 0; j < forns.length; j++) {
+        htmlF += '<option value="' + forns[j].nome + '">' + forns[j].nome + '</option>';
+    }
+    selForn.innerHTML = htmlF || '<option value="Distribuidora Geral">Distribuidora Geral</option>';
+
+    document.getElementById('tabFornPrecoCaixaPage').value = '1200.00';
+    document.getElementById('tabFornUnidadesCaixaPage').value = '24';
+    document.getElementById('tabFornPrecoVendaPage').value = '80.00';
+    calcularCustoUnitarioModalPage();
+
+    abrirModal('modalPrecoFornecedorPage');
+}
+
+function aoMudarProdTabPrecoPage() {
+    var sel = document.getElementById('tabFornProdSelectPage');
+    var prod = (window.RestauranteApp.produtos || []).find(function(p) { return p.id === sel.value; });
+    if (prod) {
+        document.getElementById('tabFornPrecoVendaPage').value = prod.preco_venda || '';
+    }
+    calcularCustoUnitarioModalPage();
+}
+
+function calcularCustoUnitarioModalPage() {
+    var cx = parseFloat(document.getElementById('tabFornPrecoCaixaPage').value) || 0;
+    var un = parseInt(document.getElementById('tabFornUnidadesCaixaPage').value) || 1;
+    var unit = un > 0 ? (cx / un) : 0;
+    var el = document.getElementById('tabFornCustoUnitarioCalcPage');
+    if (el) el.innerText = unit.toFixed(2) + ' MT';
+}
+
+function editarPrecoFornecedorPage(id) {
+    var p = (window.RestauranteApp.tabela_precos_fornecedores || []).find(function(item) { return String(item.id) === String(id); });
+    if (!p) return;
+    abrirModalPrecoFornecedorPage();
+    editandoPrecoFornId = id;
+    document.getElementById('modalPrecoFornTituloPage').innerText = 'Editar Preço de Fornecedor';
+
+    var selProd = document.getElementById('tabFornProdSelectPage');
+    var optEncontrada = null;
+    for (var i = 0; i < selProd.options.length; i++) {
+        if ((p.produto_id && selProd.options[i].value === String(p.produto_id)) ||
+            (p.produto_nome && selProd.options[i].text.toLowerCase().indexOf(p.produto_nome.toLowerCase().trim()) >= 0)) {
+            optEncontrada = selProd.options[i];
+            break;
+        }
+    }
+    if (optEncontrada) {
+        selProd.value = optEncontrada.value;
+    } else {
+        var opt = document.createElement('option');
+        opt.value = p.produto_id || ('prod_' + p.id);
+        opt.textContent = p.produto_nome + ' (Custo: ' + Number(p.custo_atual || p.custo_atual_stock || 0).toFixed(2) + ' MT)';
+        selProd.appendChild(opt);
+        selProd.value = opt.value;
+    }
+
+    var selForn = document.getElementById('tabFornFornecedorSelectPage');
+    var fornNomeAlvo = p.fornecedor_nome;
+    if (!fornNomeAlvo && p.fornecedor_id) {
+        var fMatch = (window.RestauranteApp.fornecedores || []).find(function(f) { return String(f.id) === String(p.fornecedor_id); });
+        if (fMatch) fornNomeAlvo = fMatch.nome;
+    }
+    if (fornNomeAlvo) {
+        var achouForn = false;
+        for (var j = 0; j < selForn.options.length; j++) {
+            if (selForn.options[j].value.toLowerCase().trim() === fornNomeAlvo.toLowerCase().trim() ||
+                selForn.options[j].text.toLowerCase().trim() === fornNomeAlvo.toLowerCase().trim()) {
+                selForn.selectedIndex = j;
+                achouForn = true;
+                break;
+            }
+        }
+        if (!achouForn) {
+            var optF = document.createElement('option');
+            optF.value = fornNomeAlvo;
+            optF.textContent = fornNomeAlvo;
+            selForn.appendChild(optF);
+            selForn.value = fornNomeAlvo;
+        }
+    }
+
+    var cxVal = (p.preco_caixa !== undefined && p.preco_caixa !== null) ? p.preco_caixa : 0;
+    var unVal = p.unidades_caixa || p.unidades_por_caixa || 1;
+    var pvVal = (p.preco_venda_sugerido !== undefined && p.preco_venda_sugerido !== null) ? p.preco_venda_sugerido : '';
+
+    document.getElementById('tabFornPrecoCaixaPage').value = cxVal;
+    document.getElementById('tabFornUnidadesCaixaPage').value = unVal;
+    document.getElementById('tabFornPrecoVendaPage').value = pvVal;
+    calcularCustoUnitarioModalPage();
+}
+
+function salvarPrecoFornecedorPage() {
+    var selProd = document.getElementById('tabFornProdSelectPage');
+    var selForn = document.getElementById('tabFornFornecedorSelectPage');
+    var prodId = selProd.value;
+    var prodNome = selProd.options[selProd.selectedIndex].text.split(' (')[0];
+    var fornNome = selForn.value;
+    var cx = parseFloat(document.getElementById('tabFornPrecoCaixaPage').value) || 0;
+    var un = parseInt(document.getElementById('tabFornUnidadesCaixaPage').value) || 1;
+    var pv = parseFloat(document.getElementById('tabFornPrecoVendaPage').value) || 0;
+    var unit = un > 0 ? (cx / un) : 0;
+
+    var prod = (window.RestauranteApp.produtos || []).find(function(x) { return x.id === prodId; });
+    var custoAtual = prod ? prod.preco_custo : unit;
+
+    var item = {
+        produto_id: prodId,
+        produto_nome: prodNome,
+        fornecedor_nome: fornNome,
+        custo_atual: custoAtual,
+        custo_atual_stock: custoAtual,
+        preco_caixa: cx,
+        unidades_caixa: un,
+        unidades_por_caixa: un,
+        custo_unitario: unit,
+        custo_unitario_calculado: unit,
+        preco_venda_sugerido: pv
+    };
+
+    if (!window.RestauranteApp.tabela_precos_fornecedores) window.RestauranteApp.tabela_precos_fornecedores = [];
+
+    if (editandoPrecoFornId) {
+        var idx = window.RestauranteApp.tabela_precos_fornecedores.findIndex(function(x) { return x.id === editandoPrecoFornId; });
+        if (idx !== -1) {
+            item.id = editandoPrecoFornId;
+            window.RestauranteApp.tabela_precos_fornecedores[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.tabela_precos_fornecedores.push(item);
+    }
+
+    if (prod) {
+        prod.preco_custo = unit;
+        if (pv > 0) prod.preco_venda = pv;
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalPrecoFornecedorPage');
+    renderPrecosFornecedoresPage();
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Preço de fornecedor gravado com sucesso!\n\n• Produto: ' + prodNome + '\n• Preço Caixa: ' + cx.toFixed(2) + ' MT\n• Unidades: ' + un + '\n• Custo Unitário Calculado: ' + unit.toFixed(2) + ' MT', 'Preço Gravado', 'sucesso');
+    } else {
+        alert('Preço de fornecedor gravado com sucesso! Custo Unitário: ' + unit.toFixed(2) + ' MT');
+    }
+}
+
+function removerPrecoFornecedorPage(idx) {
+    var msg = 'Deseja remover este item da tabela de preços?';
+    if (window.confirmarAcaoAmigavel) {
+        window.confirmarAcaoAmigavel(msg, 'Remover Preço', function() {
+            window.RestauranteApp.tabela_precos_fornecedores.splice(idx, 1);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            renderPrecosFornecedoresPage();
+        });
+    } else if (confirm(msg)) {
+        window.RestauranteApp.tabela_precos_fornecedores.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderPrecosFornecedoresPage();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderFornecedores();
+    renderPrecosFornecedoresPage();
+});
+</script>
+{% endblock %}

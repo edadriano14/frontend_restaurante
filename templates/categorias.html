@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Categorias do Cardápio</h1>
+            <p class="text-gray-500">Gestão das categorias com emojis, ordenação automática e contagem de produtos associados.</p>
+        </div>
+        <button onclick="abrirModalCategoria()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-plus"></i> Nova Categoria
+        </button>
+    </div>
+
+    <!-- Tabela de Categorias -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                <tr>
+                    <th class="p-4 w-16">Ordem</th>
+                    <th class="p-4 w-16">Emoji</th>
+                    <th class="p-4">Código</th>
+                    <th class="p-4">Nome da Categoria</th>
+                    <th class="p-4">Produtos Associados</th>
+                    <th class="p-4 text-right">Acções</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaCategorias" class="divide-y divide-gray-100"></tbody>
+        </table>
+    </div>
+
+    <!-- Modal Nova/Editar Categoria (NATIVO INFALÍVEL) -->
+    <div id="modalCategoria" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h2 id="modalCatTitulo" class="text-lg font-bold text-gray-800">Nova Categoria</h2>
+                <button type="button" onclick="fecharModal('modalCategoria')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Emoji Selecionado</label>
+                        <input type="text" id="catEmoji" value="🍲" class="w-full text-center text-2xl px-2 py-2 border rounded-lg outline-none bg-gray-50 font-bold" readonly>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código</label>
+                        <input type="text" id="catCodigo" value="CAT-05" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+
+                <!-- Seletor Rápido de Emojis -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1.5 flex items-center justify-between">
+                        <span>Escolher Emoji de Restauração</span>
+                        <span class="text-[10px] text-gray-400 font-normal">Clique para selecionar</span>
+                    </label>
+                    <div class="p-2 border rounded-xl bg-gray-50 max-h-40 overflow-y-auto space-y-2">
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pratos & Refeições</span>
+                            <div class="flex flex-wrap gap-1.5 text-lg" id="emojiGridPratos">
+                                <button type="button" onclick="selecionarEmoji('🍲')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍲</button>
+                                <button type="button" onclick="selecionarEmoji('🥩')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥩</button>
+                                <button type="button" onclick="selecionarEmoji('🍗')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍗</button>
+                                <button type="button" onclick="selecionarEmoji('🍖')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍖</button>
+                                <button type="button" onclick="selecionarEmoji('🍔')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍔</button>
+                                <button type="button" onclick="selecionarEmoji('🍟')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍟</button>
+                                <button type="button" onclick="selecionarEmoji('🍕')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍕</button>
+                                <button type="button" onclick="selecionarEmoji('🌭')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🌭</button>
+                                <button type="button" onclick="selecionarEmoji('🥪')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥪</button>
+                                <button type="button" onclick="selecionarEmoji('🌮')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🌮</button>
+                                <button type="button" onclick="selecionarEmoji('🌯')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🌯</button>
+                                <button type="button" onclick="selecionarEmoji('🥗')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥗</button>
+                                <button type="button" onclick="selecionarEmoji('🍝')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍝</button>
+                                <button type="button" onclick="selecionarEmoji('🍜')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍜</button>
+                                <button type="button" onclick="selecionarEmoji('🍱')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍱</button>
+                                <button type="button" onclick="selecionarEmoji('🍣')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍣</button>
+                                <button type="button" onclick="selecionarEmoji('🍤')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍤</button>
+                                <button type="button" onclick="selecionarEmoji('🦐')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🦐</button>
+                                <button type="button" onclick="selecionarEmoji('🦞')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🦞</button>
+                                <button type="button" onclick="selecionarEmoji('🐟')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🐟</button>
+                                <button type="button" onclick="selecionarEmoji('🍛')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍛</button>
+                                <button type="button" onclick="selecionarEmoji('🍚')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍚</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Bebidas & Cafés</span>
+                            <div class="flex flex-wrap gap-1.5 text-lg" id="emojiGridBebidas">
+                                <button type="button" onclick="selecionarEmoji('🍺')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍺</button>
+                                <button type="button" onclick="selecionarEmoji('🍻')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍻</button>
+                                <button type="button" onclick="selecionarEmoji('🍷')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍷</button>
+                                <button type="button" onclick="selecionarEmoji('🍸')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍸</button>
+                                <button type="button" onclick="selecionarEmoji('🍹')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍹</button>
+                                <button type="button" onclick="selecionarEmoji('🥂')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥂</button>
+                                <button type="button" onclick="selecionarEmoji('🍾')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍾</button>
+                                <button type="button" onclick="selecionarEmoji('☕')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">☕</button>
+                                <button type="button" onclick="selecionarEmoji('🍵')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍵</button>
+                                <button type="button" onclick="selecionarEmoji('🧃')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🧃</button>
+                                <button type="button" onclick="selecionarEmoji('🥤')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥤</button>
+                                <button type="button" onclick="selecionarEmoji('🧊')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🧊</button>
+                                <button type="button" onclick="selecionarEmoji('🥛')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥛</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Sobremesas, Pastelaria & Outros</span>
+                            <div class="flex flex-wrap gap-1.5 text-lg" id="emojiGridSobremesas">
+                                <button type="button" onclick="selecionarEmoji('🍰')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍰</button>
+                                <button type="button" onclick="selecionarEmoji('🎂')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🎂</button>
+                                <button type="button" onclick="selecionarEmoji('🧁')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🧁</button>
+                                <button type="button" onclick="selecionarEmoji('🍦')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍦</button>
+                                <button type="button" onclick="selecionarEmoji('🍨')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍨</button>
+                                <button type="button" onclick="selecionarEmoji('🍩')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍩</button>
+                                <button type="button" onclick="selecionarEmoji('🍪')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍪</button>
+                                <button type="button" onclick="selecionarEmoji('🥐')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥐</button>
+                                <button type="button" onclick="selecionarEmoji('🥖')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥖</button>
+                                <button type="button" onclick="selecionarEmoji('🍞')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍞</button>
+                                <button type="button" onclick="selecionarEmoji('🥞')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🥞</button>
+                                <button type="button" onclick="selecionarEmoji('🧇')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🧇</button>
+                                <button type="button" onclick="selecionarEmoji('🧀')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🧀</button>
+                                <button type="button" onclick="selecionarEmoji('🍽️')" class="w-8 h-8 rounded hover:bg-white hover:shadow-sm flex items-center justify-center transition">🍽️</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome da Categoria *</label>
+                    <input type="text" id="catNome" placeholder="Ex: Sopas & Caldos" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ordem</label>
+                    <input type="number" id="catOrdem" value="5" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t">
+                    <button type="button" onclick="fecharModal('modalCategoria')" class="px-4 py-2 border rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
+                    <button type="button" onclick="salvarCategoria()" class="px-5 py-2 bg-custom-primary text-white rounded-lg text-sm font-bold shadow hover:opacity-90 cursor-pointer">Gravar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var editandoCatId = null;
+
+function renderCategorias() {
+    var tbody = document.getElementById('tabelaCategorias');
+    if (!tbody) return;
+    var lista = window.RestauranteApp.categorias;
+    var html = '';
+
+    for (var i = 0; i < lista.length; i++) {
+        var c = lista[i];
+        var totalProds = window.RestauranteApp.produtos.filter(function(p) { return p.categoria_id === c.id; }).length;
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-gray-500">#' + c.ordem + '</td>';
+        html += '  <td class="p-4 text-2xl">' + c.emoji + '</td>';
+        html += '  <td class="p-4 font-mono text-xs font-semibold text-gray-500">' + c.codigo + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + c.nome + '</td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full border border-blue-200">' + totalProds + ' produtos ligados</span></td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        html += '    <button onclick="editarCategoria(\'' + c.id + '\')" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
+        html += '    <button onclick="removerCategoria(' + i + ')" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+function selecionarEmoji(emoji) {
+    var el = document.getElementById('catEmoji');
+    if (el) el.value = emoji;
+}
+
+function abrirModalCategoria() {
+    editandoCatId = null;
+    document.getElementById('modalCatTitulo').innerText = 'Nova Categoria';
+    document.getElementById('catEmoji').value = '🍲';
+    document.getElementById('catCodigo').value = 'CAT-0' + (window.RestauranteApp.categorias.length + 1);
+    document.getElementById('catNome').value = '';
+    document.getElementById('catOrdem').value = window.RestauranteApp.categorias.length + 1;
+    abrirModal('modalCategoria');
+}
+
+function editarCategoria(id) {
+    var c = window.RestauranteApp.categorias.find(function(item) { return item.id === id; });
+    if (!c) return;
+    editandoCatId = id;
+    document.getElementById('modalCatTitulo').innerText = 'Editar Categoria';
+    document.getElementById('catEmoji').value = c.emoji;
+    document.getElementById('catCodigo').value = c.codigo;
+    document.getElementById('catNome').value = c.nome;
+    document.getElementById('catOrdem').value = c.ordem;
+    abrirModal('modalCategoria');
+}
+
+function salvarCategoria() {
+    var nome = document.getElementById('catNome').value;
+    if (!nome) { alert('Informe o nome da categoria.'); return; }
+
+    var item = {
+        emoji: document.getElementById('catEmoji').value || '🍽️',
+        codigo: document.getElementById('catCodigo').value,
+        nome: nome,
+        ordem: Number(document.getElementById('catOrdem').value) || 1
+    };
+
+    if (editandoCatId) {
+        var idx = window.RestauranteApp.categorias.findIndex(function(x) { return x.id === editandoCatId; });
+        if (idx !== -1) {
+            item.id = editandoCatId;
+            window.RestauranteApp.categorias[idx] = item;
+        }
+    } else {
+        item.id = String(Date.now());
+        window.RestauranteApp.categorias.push(item);
+    }
+
+    if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+
+    fecharModal('modalCategoria');
+    renderCategorias();
+    alert('Categoria gravada com sucesso!');
+}
+
+function removerCategoria(idx) {
+    if (confirm('Deseja realmente remover esta categoria?')) {
+        window.RestauranteApp.categorias.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+        renderCategorias();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderCategorias();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1722 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    {% if not estabelecimento.tem_piscina %}
+    <!-- Alerta de Restaurante Sem Instalações de Piscina -->
+    <div class="p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-amber-900 uppercase">Instalações de Piscina Inactivas nesta Filial</h3>
+                <p class="text-xs text-amber-700 mt-0.5">O restaurante actual (<b>{{ estabelecimento.nome }}</b>) está configurado como <u>sem piscina</u>. Pode activar este módulo em Configurações do Estabelecimento.</p>
+            </div>
+        </div>
+        <a href="/estabelecimento" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition whitespace-nowrap">
+            <i class="fa-solid fa-sliders"></i> Activar nas Configurações
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Cabeçalho Principal -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl shadow-sm p-6 border-l-4 border-sky-500">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-person-swimming text-sky-600"></i> Gestão de Piscina & Resort
+            </h1>
+            <p class="text-gray-500 mt-1">Bilheteira integrada com Caixa, controlo de lotação em tempo real, gestão de espreguiçadeiras, pedidos de bar com baixa de stock e manutenção sanitária.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="abrirModalEmitirBilhete()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer transition">
+                <i class="fa-solid fa-ticket"></i> Vender / Emitir Bilhete
+            </button>
+            <button type="button" onclick="abrirModalNovoEspaco()" class="px-4 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition">
+                <i class="fa-solid fa-umbrella-beach"></i> Novo Espaço / Equipamento
+            </button>
+            <button type="button" onclick="abrirModalRegistoManutencao()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition">
+                <i class="fa-solid fa-droplet"></i> Análise de Água (pH/Cloro)
+            </button>
+        </div>
+    </div>
+
+    <!-- CARDS DE INDICADORES PRINCIPAIS (KPIs) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Ocupação / Lotação em Tempo Real -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Lotação em Tempo Real</p>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span id="kpiLotacaoAtual" class="text-2xl font-black text-sky-700">42</span>
+                    <span id="kpiCapacidadeMaxima" class="text-xs font-semibold text-gray-400">/ 100 Visitantes</span>
+                </div>
+                <div class="w-full bg-gray-100 h-2 rounded-full mt-2.5 overflow-hidden">
+                    <div id="kpiBarraLotacao" class="bg-sky-500 h-full rounded-full transition-all duration-500" style="width: 42%;"></div>
+                </div>
+            </div>
+            <div class="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+
+        <!-- Bilhetes Emitidos Hoje -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Bilhetes Vendidos Hoje</p>
+                <h3 id="kpiBilhetesHoje" class="text-2xl font-black text-gray-800 mt-1">0</h3>
+                <p class="text-[11px] text-gray-400 mt-1"><span id="kpiBilhetesPagasQtd">0</span> Pagos • <span id="kpiBilhetesCortesiaQtd">0</span> Cortesia</p>
+            </div>
+            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                <i class="fa-solid fa-receipt"></i>
+            </div>
+        </div>
+
+        <!-- Receita da Piscina -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Receita Piscina (Hoje)</p>
+                <h3 id="kpiReceitaPiscina" class="text-2xl font-black text-emerald-700 mt-1">0.00 {{ estabelecimento.moeda }}</h3>
+                <p class="text-[11px] text-emerald-600 font-semibold mt-1">Integrado ao Caixa</p>
+            </div>
+            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                <i class="fa-solid fa-coins"></i>
+            </div>
+        </div>
+
+        <!-- Espaços & Espreguiçadeiras -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Espaços & Equipamentos</p>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <span id="kpiEspacosLivres" class="text-2xl font-black text-emerald-600">0</span>
+                    <span class="text-xs font-semibold text-gray-400">Livres</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1"><span id="kpiEspacosOcupados">0</span> Ocupados • <span id="kpiEspacosReservados">0</span> Reservados</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                <i class="fa-solid fa-umbrella-beach"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVEGAÇÃO DE TABS DO MÓDULO PISCINA -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex flex-wrap gap-2">
+        <button type="button" onclick="trocarTabPiscina('visao-geral')" id="tabBtnPiscina-visao-geral" class="tab-piscina-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-sky-600 text-white cursor-pointer shadow-sm">
+            <i class="fa-solid fa-chart-pie"></i> Visão Geral & Piscinas
+        </button>
+        <button type="button" onclick="trocarTabPiscina('bilheteira')" id="tabBtnPiscina-bilheteira" class="tab-piscina-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-ticket"></i> Entradas & Bilheteira (<span id="badgeCountBilhetes">0</span>)
+        </button>
+        <button type="button" onclick="trocarTabPiscina('espacos')" id="tabBtnPiscina-espacos" class="tab-piscina-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-umbrella-beach"></i> Espaços & Equipamentos (<span id="badgeCountEspacos">0</span>)
+        </button>
+        <button type="button" onclick="trocarTabPiscina('bar-pedidos')" id="tabBtnPiscina-bar-pedidos" class="tab-piscina-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-martini-glass-citrus"></i> Bar & Restauração Integrado
+        </button>
+        <button type="button" onclick="trocarTabPiscina('manutencao')" id="tabBtnPiscina-manutencao" class="tab-piscina-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-shield-halved"></i> Manutenção & Qualidade da Água
+        </button>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: VISÃO GERAL & PISCINAS CADASTRADAS                             -->
+    <!-- ===================================================================== -->
+    <div id="painelPiscina-visao-geral" class="space-y-6">
+        <!-- Lista de Piscinas do Estabelecimento -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="gradePiscinasCard">
+            <!-- Preenchido via renderGradePiscinas() -->
+        </div>
+
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: ENTRADAS & BILHETEIRA                                          -->
+    <!-- ===================================================================== -->
+    <div id="painelPiscina-bilheteira" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-2 flex-1 max-w-md">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                <input type="text" id="filtroPesquisaBilhetes" oninput="renderTabelaBilhetes()" placeholder="Pesquisar por código, nome do visitante ou telemóvel..." class="w-full px-3 py-1.5 text-xs border rounded-lg bg-gray-50 outline-none focus:bg-white focus:border-sky-500">
+            </div>
+            <div class="flex items-center gap-2">
+                <select id="filtroTipoBilhete" onchange="renderTabelaBilhetes()" class="px-3 py-1.5 text-xs border rounded-lg bg-gray-50 outline-none font-semibold text-gray-700">
+                    <option value="todos">Todos os Ingressos</option>
+                    <option value="NA_PISCINA" selected>🏊 Clientes na Piscina (Activos)</option>
+                    <option value="PAGO">Pagos</option>
+                    <option value="GRATUITO">Gratuitos</option>
+                    <option value="AUTORIZADO">Autorizados / Cortesia</option>
+                </select>
+                <button type="button" onclick="filtrarApenasPresentesPiscina()" id="btnFiltroPresentesPiscina" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow" title="Ver lista de clientes actualmente na piscina">
+                    <i class="fa-solid fa-person-swimming"></i> Clientes na Piscina (<span id="countPresentesPiscina">0</span>)
+                </button>
+                <button type="button" onclick="abrirModalEmitirBilhete()" class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-plus"></i> Novo Bilhete
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabela de Bilhetes & Controlo de Acesso -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b bg-gray-50/70 flex items-center justify-between">
+                <h4 class="font-bold text-xs uppercase text-gray-700">Registo de Bilhetes Emitidos & Entradas</h4>
+                <span class="text-xs text-gray-500">Hoje: <span class="font-bold text-gray-800" id="dataHojePiscina"></span></span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b">
+                        <tr>
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Hora Emissão</th>
+                            <th class="p-3">Visitante / Cliente</th>
+                            <th class="p-3">Tipo & Categoria</th>
+                            <th class="p-3 text-center">Adultos</th>
+                            <th class="p-3 text-center">Crianças</th>
+                            <th class="p-3 text-right">Valor Total</th>
+                            <th class="p-3">Pagamento</th>
+                            <th class="p-3 text-center">Estado</th>
+                            <th class="p-3 text-right">Acções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaBilhetesCorpo" class="divide-y divide-gray-100">
+                        <!-- Preenchido via renderTabelaBilhetes() -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: GESTÃO DE ESPAÇOS & EQUIPAMENTOS                               -->
+    <!-- ===================================================================== -->
+    <div id="painelPiscina-espacos" class="space-y-6 hidden">
+        <!-- Barra de Filtros de Espaços -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-gray-700">Filtrar Estado:</span>
+                <button type="button" onclick="filtrarEspacosPorEstado('todos')" class="btn-filtro-espaco px-3 py-1 rounded-lg text-xs font-bold bg-sky-600 text-white">Todos</button>
+                <button type="button" onclick="filtrarEspacosPorEstado('LIVRE')" class="btn-filtro-espaco px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-800">Livre</button>
+                <button type="button" onclick="filtrarEspacosPorEstado('OCUPADO')" class="btn-filtro-espaco px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-700 hover:bg-rose-100 hover:text-rose-800">Ocupado</button>
+                <button type="button" onclick="filtrarEspacosPorEstado('RESERVADO')" class="btn-filtro-espaco px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-700 hover:bg-amber-100 hover:text-amber-800">Reservado</button>
+                <button type="button" onclick="filtrarEspacosPorEstado('MANUTENCAO')" class="btn-filtro-espaco px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-300">Manutenção</button>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="abrirModalNovaReservaEspaco()" class="px-3.5 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-calendar-check"></i> Nova Reserva de Espaço
+                </button>
+                <button type="button" onclick="abrirModalNovoAluguerEquipamento()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-vest-patches"></i> Alugar Equipamento
+                </button>
+            </div>
+        </div>
+
+        <!-- Grade Visual dos Espaços (Espreguiçadeiras, Mesas, Guarda-sóis) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="gradeEspacosCards">
+            <!-- Preenchido via renderGradeEspacos() -->
+        </div>
+
+        <!-- Tabela de Alugueres e Equipamentos em Uso -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex items-center justify-between">
+                <h4 class="font-bold text-xs uppercase text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-life-ring text-amber-500"></i> Alugueres de Equipamentos (Toalhas, Boias, Braçadeiras)
+                </h4>
+                <span class="text-xs text-gray-400">Controlo de Cauções e Devoluções</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b">
+                        <tr>
+                            <th class="p-3">Data / Hora</th>
+                            <th class="p-3">Visitante / Bilhete</th>
+                            <th class="p-3">Equipamento(s)</th>
+                            <th class="p-3 text-right">Valor Aluguer</th>
+                            <th class="p-3 text-right">Caução</th>
+                            <th class="p-3 text-center">Estado</th>
+                            <th class="p-3 text-right">Acções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaAlugueresCorpo" class="divide-y divide-gray-100">
+                        <!-- Preenchido via renderTabelaAlugueres() -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 4: BAR & RESTAURAÇÃO INTEGRADO (PEDIDOS ASSOCIADOS AO ESPAÇO)     -->
+    <!-- ===================================================================== -->
+    <div id="painelPiscina-bar-pedidos" class="space-y-6 hidden">
+        <div class="bg-gradient-to-r from-sky-900 to-indigo-900 text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider bg-sky-500/30 text-sky-200 px-2.5 py-1 rounded-full border border-sky-400/30">Integração Total com POS & Stock</span>
+                <h3 class="text-xl font-black mt-2">Bar & Apoio de Restauração da Piscina</h3>
+                <p class="text-xs text-sky-200 mt-1 max-w-xl">Lançamento de bebidas, sumos e petiscos associados diretamente ao bilhete do visitante ou à espreguiçadeira/mesa da piscina com abate automático no stock.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="abrirModalPedidoBarPiscina()" class="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 transition">
+                    <i class="fa-solid fa-glass-water"></i> Lançar Consumo para o Espaço
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista de Produtos mais consumidos na piscina (Bebidas, Cocktails, Snacks) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Coluna de Lançamento Rápido -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4 md:col-span-1">
+                <h4 class="font-bold text-xs uppercase text-gray-700 border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-amber-500"></i> Lançamento Directo
+                </h4>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Espaço / Mesa da Piscina *</label>
+                        <select id="barSelectEspaco" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-gray-800 outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Vincular Bilhete do Visitante (Opcional)</label>
+                        <select id="barSelectBilhete" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-mono text-gray-800 outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Produto do Cardápio *</label>
+                        <select id="barSelectProduto" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-gray-800 outline-none">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Quantidade</label>
+                            <input type="number" id="barInputQtd" value="1" min="1" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Método Pagamento</label>
+                            <select id="barSelectMetodo" class="w-full px-3 py-2 border rounded-xl text-xs bg-white outline-none">
+                                <option value="M-Pesa">M-Pesa</option>
+                                <option value="e-Mola">e-Mola</option>
+                                <option value="Cartão POS">Cartão POS</option>
+                                <option value="Numerário">Numerário</option>
+                                <option value="Conta da Cabana">Conta da Cabana</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" onclick="confirmarPedidoBarPiscina()" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-check"></i> Facturar & Abater Stock
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna de Pedidos do Bar Registados Hoje -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4 md:col-span-2">
+                <div class="flex items-center justify-between border-b pb-2">
+                    <h4 class="font-bold text-xs uppercase text-gray-700 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-sky-600"></i> Consumos Facturados na Piscina (Hoje)
+                    </h4>
+                    <span class="text-xs font-bold text-emerald-600" id="totalVendasBarPiscina">0.00 {{ estabelecimento.moeda }}</span>
+                </div>
+                <div class="overflow-y-auto max-h-[380px]">
+                    <table class="w-full text-left text-xs text-gray-600">
+                        <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b sticky top-0">
+                            <tr>
+                                <th class="p-2.5">Hora</th>
+                                <th class="p-2.5">Espaço</th>
+                                <th class="p-2.5">Item Consumido</th>
+                                <th class="p-2.5 text-center">Qtd</th>
+                                <th class="p-2.5 text-right">Total</th>
+                                <th class="p-2.5">Pagamento</th>
+                                <th class="p-2.5 text-center">Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaConsumosBarCorpo" class="divide-y divide-gray-100">
+                            <!-- Preenchido dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 5: MANUTENÇÃO, QUALIDADE DA ÁGUA & SEGURANÇA                     -->
+    <!-- ===================================================================== -->
+    <div id="painelPiscina-manutencao" class="space-y-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Card de Parâmetros Ideais de Referência -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
+                <h4 class="font-bold text-xs uppercase text-gray-700 border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-sky-600"></i> Parâmetros Oficiais de Segurança
+                </h4>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-sky-50">
+                        <span class="font-semibold text-gray-700">Nível de pH Recomendado:</span>
+                        <span class="font-bold text-sky-800">7.2 a 7.6</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-emerald-50">
+                        <span class="font-semibold text-gray-700">Cloro Livre Residual:</span>
+                        <span class="font-bold text-emerald-800">1.0 a 3.0 ppm</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-indigo-50">
+                        <span class="font-semibold text-gray-700">Temperatura Ideal:</span>
+                        <span class="font-bold text-indigo-800">25°C a 29°C</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-amber-50">
+                        <span class="font-semibold text-gray-700">Frequência de Limpeza:</span>
+                        <span class="font-bold text-amber-800">2x ao dia (Manhã/Fim de tarde)</span>
+                    </div>
+                </div>
+                <div class="pt-2">
+                    <button type="button" onclick="abrirModalRegistoManutencao()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-plus-circle"></i> Novo Boletim de Análise
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela de Histórico de Tratamentos & pH/Cloro -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4 md:col-span-2">
+                <div class="flex items-center justify-between border-b pb-2">
+                    <h4 class="font-bold text-xs uppercase text-gray-700 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-emerald-600"></i> Histórico de Registos Sanitários & Manutenção
+                    </h4>
+                    <span class="text-xs text-gray-400">Auditoria Técnica</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-gray-600">
+                        <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-[11px] border-b">
+                            <tr>
+                                <th class="p-3">Data / Hora</th>
+                                <th class="p-3">Piscina</th>
+                                <th class="p-3">Técnico</th>
+                                <th class="p-3 text-center">pH</th>
+                                <th class="p-3 text-center">Cloro (ppm)</th>
+                                <th class="p-3 text-center">Filtro / Fundo</th>
+                                <th class="p-3">Observações / Avarias</th>
+                                <th class="p-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaManutencaoCorpo" class="divide-y divide-gray-100">
+                            <!-- Preenchido dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: EMITIR / VENDER BILHETE DE PISCINA                                -->
+<!-- ========================================================================= -->
+<div id="modalEmitirBilhete" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-ticket text-sky-600 text-xl"></i>
+                <h3 class="text-lg font-bold text-gray-900">Emissão de Bilhete de Piscina</h3>
+            </div>
+            <button type="button" onclick="fecharModal('modalEmitirBilhete')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formEmitirBilhete" onsubmit="salvarBilhetePiscina(event)" class="flex-1 overflow-y-auto space-y-3.5 pr-1 text-xs">
+            <!-- Seleção de Piscina -->
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Piscina de Acesso *</label>
+                <select id="bilhetePiscinaId" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none focus:bg-white focus:border-sky-500" required>
+                    <!-- Preenchido dinamicamente -->
+                </select>
+            </div>
+
+            <!-- Dados do Cliente -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nome do Visitante / Titular *</label>
+                    <input type="text" id="bilheteNomeVisitante" placeholder="Ex: Rogério Cossa" class="w-full px-3 py-2 border rounded-xl outline-none focus:border-sky-500" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Telemóvel / WhatsApp</label>
+                    <input type="text" id="bilheteTelefone" placeholder="+258 84 000 0000" class="w-full px-3 py-2 border rounded-xl outline-none focus:border-sky-500">
+                </div>
+            </div>
+
+            <!-- Tipo de Acesso, Período / Tarifa e Tempo de Permanência -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Ingresso *</label>
+                    <select id="bilheteTipoIngresso" onchange="recalcularTotalBilhete()" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                        <option value="PAGO">Pago (Tarifário Padrão)</option>
+                        <option value="GRATUITO">Gratuito (Bebés / Cortesia)</option>
+                        <option value="AUTORIZADO">Autorizado / Hóspede Hotel</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tarifa Aplicada (Tabela) *</label>
+                    <select id="bilheteTarifaSelect" onchange="recalcularTotalBilhete()" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none text-sky-900">
+                        <option value="dia_inteiro">Dia Inteiro (Acesso Total)</option>
+                        <option value="meio_periodo">Meio Período (Tarde / Reduzido)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Permanência Estipulada *</label>
+                    <select id="bilheteTempoPermanencia" onchange="recalcularTotalBilhete()" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none">
+                        <option value="1">1 Hora (60 min)</option>
+                        <option value="2">2 Horas (120 min)</option>
+                        <option value="3">3 Horas (180 min)</option>
+                        <option value="4">4 Horas (240 min)</option>
+                        <option value="8" selected>Dia Inteiro (Livre)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Aviso da Política de Atraso e Tolerância -->
+            <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-2 text-[11px] text-amber-900">
+                <i class="fa-solid fa-clock text-amber-600 mt-0.5"></i>
+                <div>
+                    <span class="font-bold">Política de Permanência:</span> O preço base é fixado em função do tempo estipulado. A partir de <b>5 minutos após o tempo contratado</b>, a cada <b>30 minutos extras</b> o sistema calcula e soma o valor adicional correspondente no check-out.
+                </div>
+            </div>
+
+            <!-- Quantidades Adulto e Criança (Preços vindos da Tabela de Tarifas) -->
+            <div class="grid grid-cols-2 gap-3 p-3 bg-sky-50/70 border border-sky-100 rounded-xl">
+                <div>
+                    <label id="lblBilheteAdultos" class="block text-[10px] font-bold text-sky-900 uppercase mb-1">Qtd Adultos</label>
+                    <input type="number" id="bilheteQtdAdultos" value="1" min="0" oninput="recalcularTotalBilhete()" class="w-full px-3 py-2 border rounded-xl bg-white font-bold text-sky-900 outline-none">
+                </div>
+                <div>
+                    <label id="lblBilheteCriancas" class="block text-[10px] font-bold text-sky-900 uppercase mb-1">Qtd Crianças</label>
+                    <input type="number" id="bilheteQtdCriancas" value="0" min="0" oninput="recalcularTotalBilhete()" class="w-full px-3 py-2 border rounded-xl bg-white font-bold text-sky-900 outline-none">
+                </div>
+            </div>
+
+            <!-- Método de Pagamento -->
+            <div id="blocoMetodoPagamentoBilhete">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Método de Pagamento *</label>
+                <select id="bilheteMetodoPagamento" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-bold text-gray-800 outline-none">
+                    <option value="M-Pesa">M-Pesa (Móvel)</option>
+                    <option value="e-Mola">e-Mola</option>
+                    <option value="Cartão POS">Cartão POS (BIM, BCI, Standard Bank)</option>
+                    <option value="Numerário">Numerário / Dinheiro Físico</option>
+                </select>
+            </div>
+
+            <!-- Valor Total -->
+            <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] text-gray-500">Valor Total a Pagar:</span>
+                    <div id="bilheteValorTotalExibir" class="text-lg font-black text-emerald-700">500.00 {{ estabelecimento.moeda }}</div>
+                </div>
+                <div class="text-[11px] text-gray-400 text-right">
+                    Entrada imediata validada
+                </div>
+            </div>
+
+            <div class="pt-2 border-t flex flex-wrap justify-end gap-2">
+                <button type="button" onclick="fecharModal('modalEmitirBilhete')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition cursor-pointer">
+                    <i class="fa-solid fa-ticket"></i> Emitir & Imprimir Bilhete
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: REGISTAR NOVO ESPAÇO / EQUIPAMENTO                                 -->
+<!-- ========================================================================= -->
+<div id="modalNovoEspaco" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-umbrella-beach text-sky-600"></i> Registar Espaço ou Equipamento
+            </h3>
+            <button type="button" onclick="fecharModal('modalNovoEspaco')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formNovoEspaco" onsubmit="salvarNovoEspaco(event)" class="space-y-3.5 text-xs">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Código do Espaço *</label>
+                <input type="text" id="espacoCodigo" placeholder="Ex: ESP-05, MES-P04, CAB-VIP2" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Equipamento *</label>
+                <select id="espacoTipo" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none" required>
+                    <option value="Espreguiçadeira">Espreguiçadeira</option>
+                    <option value="Mesa com Guarda-Sol">Mesa com Guarda-Sol</option>
+                    <option value="Cabana / Cama Balinesa VIP">Cabana / Cama Balinesa VIP</option>
+                    <option value="Guarda-Sol Extra">Guarda-Sol Extra</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Localização no Resort *</label>
+                <input type="text" id="espacoLocalizacao" placeholder="Ex: Deck Poente, Jardim Relvado, Zona VIP" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Preço Aluguer ({{ estabelecimento.moeda }}) *</label>
+                <input type="number" id="espacoPreco" value="150" min="0" class="w-full px-3 py-2 border rounded-xl outline-none font-bold" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Estado Inicial *</label>
+                <select id="espacoEstado" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-bold outline-none">
+                    <option value="LIVRE">Livre</option>
+                    <option value="RESERVADO">Reservado</option>
+                    <option value="OCUPADO">Ocupado</option>
+                    <option value="MANUTENCAO">Manutenção</option>
+                </select>
+            </div>
+
+            <div class="pt-2 border-t flex justify-end space-x-2">
+                <button type="button" onclick="fecharModal('modalNovoEspaco')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold shadow transition">Gravar Espaço</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: REGISTO SANITÁRIO E ANÁLISE DE ÁGUA (pH/Cloro)                     -->
+<!-- ========================================================================= -->
+<div id="modalRegistoManutencao" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-droplet text-emerald-600"></i> Análise de Qualidade da Água & Manutenção
+            </h3>
+            <button type="button" onclick="fecharModal('modalRegistoManutencao')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formRegistoManutencao" onsubmit="salvarRegistoManutencao(event)" class="space-y-3.5 text-xs">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Piscina Monitorizada *</label>
+                <select id="manutPiscinaId" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-semibold outline-none" required>
+                    <!-- Preenchido dinamicamente -->
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Técnico / Responsável *</label>
+                <input type="text" id="manutTecnico" value="Técnico Amadeu" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nível de pH (Ideal: 7.2 - 7.6) *</label>
+                    <input type="number" id="manutPh" step="0.1" value="7.3" min="6.0" max="8.5" class="w-full px-3 py-2 border rounded-xl outline-none font-bold text-sky-800" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Cloro Residual (Ideal: 1.0 - 3.0 ppm) *</label>
+                    <input type="number" id="manutCloro" step="0.1" value="1.8" min="0.0" max="5.0" class="w-full px-3 py-2 border rounded-xl outline-none font-bold text-emerald-800" required>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Lavagem de Filtros?</label>
+                    <select id="manutFiltro" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none">
+                        <option value="SIM">SIM (Realizada)</option>
+                        <option value="NAO">NÃO</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Aspiração do Fundo?</label>
+                    <select id="manutAspiracao" class="w-full px-3 py-2 border rounded-xl bg-gray-50 outline-none">
+                        <option value="SIM">SIM (Realizada)</option>
+                        <option value="NAO">NÃO</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Observações / Registo de Avarias</label>
+                <textarea id="manutObs" rows="2" placeholder="Descreva qualquer ocorrência ou produto químico adicionado..." class="w-full px-3 py-2 border rounded-xl outline-none"></textarea>
+            </div>
+
+            <div class="pt-2 border-t flex justify-end space-x-2">
+                <button type="button" onclick="fecharModal('modalRegistoManutencao')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition">Registar Boletim</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: NOVA RESERVA DE ESPAÇO                                             -->
+<!-- ========================================================================= -->
+<div id="modalNovaReservaEspaco" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-calendar-check text-purple-700"></i> Reservar Espaço / Cabana
+            </h3>
+            <button type="button" onclick="fecharModal('modalNovaReservaEspaco')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formNovaReservaEspaco" onsubmit="salvarReservaEspaco(event)" class="space-y-3 text-xs">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Espaço Pretendido *</label>
+                <select id="reservaEspacoSelect" class="w-full px-3 py-2 border rounded-xl bg-gray-50 font-bold outline-none" required>
+                    <!-- Preenchido dinamicamente com espaços livres -->
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nome do Cliente *</label>
+                <input type="text" id="reservaNomeCliente" placeholder="Ex: Dra. Ana Paula" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Telemóvel *</label>
+                    <input type="text" id="reservaTelefone" placeholder="+258 84..." class="w-full px-3 py-2 border rounded-xl outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nº Pessoas</label>
+                    <input type="number" id="reservaNumPessoas" value="4" min="1" class="w-full px-3 py-2 border rounded-xl outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Hora Início</label>
+                    <input type="time" id="reservaHoraInicio" value="13:00" class="w-full px-3 py-2 border rounded-xl outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Sinal / Adiantamento</label>
+                    <input type="number" id="reservaSinal" value="300" min="0" class="w-full px-3 py-2 border rounded-xl outline-none font-bold text-purple-900">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Observações</label>
+                <textarea id="reservaObs" rows="2" placeholder="Notas sobre o evento ou pedido..." class="w-full px-3 py-2 border rounded-xl outline-none"></textarea>
+            </div>
+            <div class="pt-2 border-t flex justify-end space-x-2">
+                <button type="button" onclick="fecharModal('modalNovaReservaEspaco')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow transition">Confirmar Reserva</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: NOVO ALUGUER DE EQUIPAMENTO (TOALHAS, BOIAS)                       -->
+<!-- ========================================================================= -->
+<div id="modalNovoAluguerEquipamento" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-vest-patches text-amber-600"></i> Alugar Equipamento de Piscina
+            </h3>
+            <button type="button" onclick="fecharModal('modalNovoAluguerEquipamento')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+
+        <form id="formNovoAluguerEquipamento" onsubmit="salvarNovoAluguer(event)" class="space-y-3.5 text-xs">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Visitante ou Código Bilhete *</label>
+                <input type="text" id="aluguerCliente" placeholder="Ex: BIL-PSC-1001 (Carlos) ou Nome" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Item / Equipamento Alugado *</label>
+                <input type="text" id="aluguerItem" placeholder="Ex: 2x Toalhas de Praia + 1x Colete Salva-Vidas" class="w-full px-3 py-2 border rounded-xl outline-none" required>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Valor Aluguer (MZN) *</label>
+                    <input type="number" id="aluguerValor" value="150" min="0" class="w-full px-3 py-2 border rounded-xl outline-none font-bold text-amber-900" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Caução Retida (MZN)</label>
+                    <input type="number" id="aluguerCaucao" value="300" min="0" class="w-full px-3 py-2 border rounded-xl outline-none font-bold text-gray-700">
+                </div>
+            </div>
+            <div class="pt-2 border-t flex justify-end space-x-2">
+                <button type="button" onclick="fecharModal('modalNovoAluguerEquipamento')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">Cancelar</button>
+                <button type="submit" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow transition">Registar Aluguer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var moedaPiscina = "{{ estabelecimento.moeda }}";
+var estadoFiltroEspacoAtual = 'todos';
+
+function trocarTabPiscina(tabId) {
+    var tabs = ['visao-geral', 'bilheteira', 'espacos', 'bar-pedidos', 'manutencao'];
+    tabs.forEach(function(t) {
+        var painel = document.getElementById('painelPiscina-' + t);
+        var btn = document.getElementById('tabBtnPiscina-' + t);
+        if (painel) painel.classList.toggle('hidden', t !== tabId);
+        if (btn) {
+            if (t === tabId) {
+                btn.className = 'tab-piscina-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-sky-600 text-white cursor-pointer shadow-sm';
+            } else {
+                btn.className = 'tab-piscina-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer';
+            }
+        }
+    });
+}
+
+function inicializarDadosPiscina() {
+    if (!window.RestauranteApp.piscinas) window.RestauranteApp.piscinas = [];
+    if (!window.RestauranteApp.tarifas_piscina) window.RestauranteApp.tarifas_piscina = [];
+    if (!window.RestauranteApp.bilhetes_piscina) window.RestauranteApp.bilhetes_piscina = [];
+    if (!window.RestauranteApp.entradas_piscina) window.RestauranteApp.entradas_piscina = [];
+    if (!window.RestauranteApp.espacos_piscina) window.RestauranteApp.espacos_piscina = [];
+    if (!window.RestauranteApp.reservas_piscina) window.RestauranteApp.reservas_piscina = [];
+    if (!window.RestauranteApp.alugueres_piscina) window.RestauranteApp.alugueres_piscina = [];
+    if (!window.RestauranteApp.registos_manutencao_piscina) window.RestauranteApp.registos_manutencao_piscina = [];
+
+    atualizarIndicadoresKPI();
+    renderGradePiscinas();
+    renderGradeTarifas();
+    renderTabelaBilhetes();
+    renderGradeEspacos();
+    renderTabelaAlugueres();
+    popularSelectsPiscina();
+    renderTabelaManutencao();
+    renderTabelaConsumosBar();
+
+    var hoje = new Date().toLocaleDateString('pt-PT');
+    var dataEl = document.getElementById('dataHojePiscina');
+    if (dataEl) dataEl.innerText = hoje;
+}
+
+function atualizarIndicadoresKPI() {
+    var piscinas = window.RestauranteApp.piscinas || [];
+    var lotacaoTotal = 0;
+    var capacidadeTotal = 0;
+    piscinas.forEach(function(p) {
+        lotacaoTotal += Number(p.lotacao_atual || 0);
+        capacidadeTotal += Number(p.capacidade_maxima || 0);
+    });
+
+    document.getElementById('kpiLotacaoAtual').innerText = lotacaoTotal;
+    document.getElementById('kpiCapacidadeMaxima').innerText = '/ ' + capacidadeTotal + ' Visitantes';
+    var perc = capacidadeTotal > 0 ? Math.min(100, Math.round((lotacaoTotal / capacidadeTotal) * 100)) : 0;
+    var barra = document.getElementById('kpiBarraLotacao');
+    if (barra) barra.style.width = perc + '%';
+
+    var bilhetes = window.RestauranteApp.bilhetes_piscina || [];
+    var pagos = bilhetes.filter(function(b) { return b.tipo_ingresso === 'PAGO'; });
+    var cortesia = bilhetes.filter(function(b) { return b.tipo_ingresso !== 'PAGO'; });
+    var receitaTotal = 0;
+    pagos.forEach(function(b) { receitaTotal += Number(b.valor_total || 0); });
+
+    document.getElementById('kpiBilhetesHoje').innerText = bilhetes.length;
+    document.getElementById('kpiBilhetesPagasQtd').innerText = pagos.length;
+    document.getElementById('kpiBilhetesCortesiaQtd').innerText = cortesia.length;
+    document.getElementById('kpiReceitaPiscina').innerText = receitaTotal.toFixed(2) + ' ' + moedaPiscina;
+
+    var espacos = window.RestauranteApp.espacos_piscina || [];
+    var livres = espacos.filter(function(e) { return e.estado === 'LIVRE'; }).length;
+    var ocupados = espacos.filter(function(e) { return e.estado === 'OCUPADO'; }).length;
+    var reservados = espacos.filter(function(e) { return e.estado === 'RESERVADO'; }).length;
+
+    document.getElementById('kpiEspacosLivres').innerText = livres;
+    document.getElementById('kpiEspacosOcupados').innerText = ocupados;
+    document.getElementById('kpiEspacosReservados').innerText = reservados;
+
+    var badgeBilhetes = document.getElementById('badgeCountBilhetes');
+    if (badgeBilhetes) badgeBilhetes.innerText = bilhetes.length;
+    var badgeEspacos = document.getElementById('badgeCountEspacos');
+    if (badgeEspacos) badgeEspacos.innerText = espacos.length;
+}
+
+function renderGradePiscinas() {
+    var container = document.getElementById('gradePiscinasCard');
+    if (!container) return;
+    var piscinas = window.RestauranteApp.piscinas || [];
+    var html = '';
+
+    piscinas.forEach(function(p) {
+        var perc = p.capacidade_maxima > 0 ? Math.round((p.lotacao_atual / p.capacidade_maxima) * 100) : 0;
+        var statusCor = (p.estado === 'ABERTA') ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800';
+
+        html += '<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4 hover:shadow-md transition">';
+        html += '  <div class="flex items-start justify-between">';
+        html += '    <div>';
+        html += '      <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ' + statusCor + '">' + p.estado + '</span>';
+        html += '      <h3 class="text-base font-bold text-gray-900 mt-1">' + p.nome + '</h3>';
+        html += '      <p class="text-xs text-gray-500">' + p.tipo + '</p>';
+        html += '    </div>';
+        html += '    <div class="text-right">';
+        html += '      <span class="text-xs font-semibold text-gray-400">Temp. Água</span>';
+        html += '      <div class="text-sm font-black text-sky-700 flex items-center gap-1 justify-end"><i class="fa-solid fa-temperature-three-quarters text-sky-500"></i> ' + (p.temperatura || '26°C') + '</div>';
+        html += '    </div>';
+        html += '  </div>';
+
+        html += '  <div class="space-y-1.5 bg-gray-50 p-3 rounded-xl border border-gray-100">';
+        html += '    <div class="flex justify-between text-xs font-bold">';
+        html += '      <span class="text-gray-600">Ocupação Actual</span>';
+        html += '      <span class="text-sky-800">' + p.lotacao_atual + ' / ' + p.capacidade_maxima + ' (' + perc + '%)</span>';
+        html += '    </div>';
+        html += '    <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">';
+        html += '      <div class="bg-sky-500 h-full rounded-full" style="width: ' + perc + '%;"></div>';
+        html += '    </div>';
+        html += '  </div>';
+
+        html += '  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 pt-1">';
+        html += '    <div><i class="fa-regular fa-clock text-gray-400 mr-1"></i> <b>Horário:</b> ' + (p.horario_funcionamento || '08:00 - 19:00') + '</div>';
+        html += '    <div><i class="fa-solid fa-shield-cat text-gray-400 mr-1"></i> <b>Vigilância:</b> Activa</div>';
+        html += '  </div>';
+
+        html += '  <div class="text-[11px] text-gray-400 bg-sky-50/50 p-2.5 rounded-lg border border-sky-100 flex items-start gap-1.5">';
+        html += '    <i class="fa-solid fa-circle-exclamation text-sky-600 mt-0.5"></i>';
+        html += '    <span>' + (p.regras || 'Uso obrigatório de traje apropriado.') + '</span>';
+        html += '  </div>';
+
+        html += '  <div class="flex items-center justify-between pt-2 border-t border-gray-100">';
+        html += '    <button type="button" onclick="ajustarLotacaoPiscina(\'' + p.id + '\', 1)" class="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold rounded-lg text-xs flex items-center gap-1 transition"><i class="fa-solid fa-user-plus"></i> Entrada (+1)</button>';
+        html += '    <button type="button" onclick="ajustarLotacaoPiscina(\'' + p.id + '\', -1)" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs flex items-center gap-1 transition"><i class="fa-solid fa-user-minus"></i> Saída (-1)</button>';
+        html += '    <button type="button" onclick="abrirModalEmitirBilhete()" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg text-xs flex items-center gap-1 transition shadow-sm"><i class="fa-solid fa-ticket"></i> Bilhete</button>';
+        html += '  </div>';
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
+}
+
+function renderGradeTarifas() {
+    var container = document.getElementById('gradeTarifasCards');
+    if (!container) return;
+    var tarifas = window.RestauranteApp.tarifas_piscina || [];
+    var html = '';
+
+    tarifas.forEach(function(t) {
+        html += '<div class="p-3.5 rounded-xl border border-gray-200 bg-gray-50/60 hover:bg-white hover:border-sky-300 transition space-y-1.5">';
+        html += '  <div class="flex items-center justify-between">';
+        html += '    <span class="text-[11px] font-bold text-sky-900">' + t.categoria + '</span>';
+        html += '    <span class="text-xs font-black text-emerald-700">' + Number(t.preco).toFixed(2) + ' ' + moedaPiscina + '</span>';
+        html += '  </div>';
+        html += '  <p class="text-[10px] text-gray-500 leading-tight">' + t.descricao + '</p>';
+        html += '  <span class="inline-block text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-semibold">' + t.periodo + '</span>';
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
+}
+
+function renderTabelaBilhetes() {
+    var corpo = document.getElementById('tabelaBilhetesCorpo');
+    if (!corpo) return;
+    var bilhetes = window.RestauranteApp.bilhetes_piscina || [];
+    var termo = (document.getElementById('filtroPesquisaBilhetes') ? document.getElementById('filtroPesquisaBilhetes').value.toLowerCase() : '');
+    var tipoFiltro = (document.getElementById('filtroTipoBilhete') ? document.getElementById('filtroTipoBilhete').value : 'todos');
+
+    // Contagem de clientes activos na piscina (não saíram / UTILIZADO)
+    var presentesPiscina = bilhetes.filter(function(b) {
+        return b.estado !== 'UTILIZADO';
+    });
+    var elCount = document.getElementById('countPresentesPiscina');
+    if (elCount) elCount.innerText = presentesPiscina.length;
+
+    var filtrados = bilhetes.filter(function(b) {
+        if (tipoFiltro === 'NA_PISCINA') {
+            return b.estado !== 'UTILIZADO';
+        }
+        if (tipoFiltro !== 'todos' && b.tipo_ingresso !== tipoFiltro) return false;
+        if (termo) {
+            var matchCodigo = (b.codigo_bilhete || '').toLowerCase().indexOf(termo) >= 0;
+            var matchNome = (b.cliente_nome || '').toLowerCase().indexOf(termo) >= 0;
+            var matchTel = (b.cliente_telefone || '').toLowerCase().indexOf(termo) >= 0;
+            return matchCodigo || matchNome || matchTel;
+        }
+        return true;
+    });
+
+    if (filtrados.length === 0) {
+        corpo.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-gray-400">Nenhum visitante encontrado para os filtros selecionados.</td></tr>';
+        return;
+    }
+
+    var html = '';
+    filtrados.forEach(function(b) {
+        var badgeTipo = '';
+        if (b.tipo_ingresso === 'PAGO') badgeTipo = '<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Pago</span>';
+        else if (b.tipo_ingresso === 'GRATUITO') badgeTipo = '<span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">Gratuito</span>';
+        else badgeTipo = '<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold text-[10px]">Autorizado</span>';
+
+        // Verificação em tempo real de permanência para visitantes ainda na piscina
+        var infoTempoReal = '';
+        var acrescimoEstimado = 0;
+        var estaNaPiscina = (b.estado !== 'UTILIZADO');
+
+        if (estaNaPiscina && b.data_hora_entrada_timestamp) {
+            var agoraMs = Date.now();
+            var horasPermitidas = b.horas_permanencia || 8;
+            var limiteMs = b.data_hora_entrada_timestamp + (horasPermitidas * 60 * 60 * 1000);
+            var minutosExcedidos = Math.floor((agoraMs - limiteMs) / (60 * 1000));
+
+            if (minutosExcedidos >= 5) {
+                var blocos = Math.ceil(minutosExcedidos / 30);
+                var vBase = Number(b.valor_base || b.valor_total || 0);
+                acrescimoEstimado = blocos * (vBase * 0.50);
+                infoTempoReal = '<span class="text-[10px] text-red-600 font-bold block mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i> +' + minutosExcedidos + 'm extras (+' + acrescimoEstimado.toFixed(2) + ' MT)</span>';
+            } else if (minutosExcedidos >= 0) {
+                infoTempoReal = '<span class="text-[10px] text-amber-600 font-bold block mt-0.5"><i class="fa-solid fa-hourglass-half"></i> Tolerância (5m)</span>';
+            } else {
+                var minutosRestantes = Math.abs(minutosExcedidos);
+                infoTempoReal = '<span class="text-[10px] text-emerald-600 font-semibold block mt-0.5"><i class="fa-regular fa-clock"></i> ' + minutosRestantes + 'm restantes</span>';
+            }
+        }
+
+        var badgeEstado = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">' + b.estado + '</span>';
+        if (estaNaPiscina) {
+            badgeEstado = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 flex items-center gap-1 justify-center"><i class="fa-solid fa-person-swimming animate-pulse"></i> Na Piscina</span>';
+        }
+
+        html += '<tr class="hover:bg-gray-50 transition ' + (acrescimoEstimado > 0 ? 'bg-amber-50/40' : '') + '">';
+        html += '  <td class="p-3 font-mono font-bold text-sky-900">' + b.codigo_bilhete + '</td>';
+        html += '  <td class="p-3">' + b.hora_emissao + '</td>';
+        html += '  <td class="p-3 font-semibold text-gray-800">' + b.cliente_nome + '<br><span class="text-[10px] text-gray-400">' + (b.cliente_telefone || 'Sem contacto') + '</span></td>';
+        html += '  <td class="p-3">' + badgeTipo + '<br><span class="text-[10px] text-gray-500">' + b.categoria + ' • ' + b.periodo + '</span>' + infoTempoReal + '</td>';
+        html += '  <td class="p-3 text-center font-bold">' + (b.quantidade_adultos || 0) + '</td>';
+        html += '  <td class="p-3 text-center font-bold">' + (b.quantidade_criancas || 0) + '</td>';
+        html += '  <td class="p-3 text-right font-black text-emerald-700">' + Number(b.valor_total || 0).toFixed(2) + ' ' + moedaPiscina + '</td>';
+        html += '  <td class="p-3 font-semibold text-gray-700">' + b.metodo_pagamento + '</td>';
+        html += '  <td class="p-3 text-center">' + badgeEstado + '</td>';
+        html += '  <td class="p-3 text-right space-x-1">';
+        html += '    <button type="button" onclick="imprimirBilhetePiscina(\'' + b.id + '\')" title="Imprimir Bilhete com Código" class="p-1.5 text-gray-600 hover:text-sky-600 hover:bg-sky-50 rounded cursor-pointer"><i class="fa-solid fa-print"></i></button>';
+        if (estaNaPiscina) {
+            html += '    <button type="button" onclick="registarCheckoutBilhete(\'' + b.id + '\')" title="Registar Saída (Check-out) da Piscina" class="px-2 py-1 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-2xs inline-flex items-center gap-1 cursor-pointer"><i class="fa-solid fa-arrow-right-from-bracket"></i> Saída</button>';
+        } else {
+            html += '    <span class="text-[11px] text-gray-400 font-mono">Saída: ' + (b.checkout_hora || '---') + '</span>';
+        }
+        html += '  </td>';
+        html += '</tr>';
+    });
+
+    corpo.innerHTML = html;
+}
+
+function filtrarApenasPresentesPiscina() {
+    var sel = document.getElementById('filtroTipoBilhete');
+    if (sel) {
+        sel.value = 'NA_PISCINA';
+    }
+    renderTabelaBilhetes();
+}
+
+function renderGradeEspacos() {
+    var container = document.getElementById('gradeEspacosCards');
+    if (!container) return;
+    var espacos = window.RestauranteApp.espacos_piscina || [];
+    var html = '';
+
+    espacos.forEach(function(e) {
+        if (estadoFiltroEspacoAtual !== 'todos' && e.estado !== estadoFiltroEspacoAtual) return;
+
+        var estadoClasse = '';
+        var iconeEstado = '';
+        if (e.estado === 'LIVRE') {
+            estadoClasse = 'border-emerald-200 bg-emerald-50/40 text-emerald-800';
+            iconeEstado = '<span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">LIVRE</span>';
+        } else if (e.estado === 'OCUPADO') {
+            estadoClasse = 'border-rose-200 bg-rose-50/40 text-rose-800';
+            iconeEstado = '<span class="text-[10px] font-bold bg-rose-100 text-rose-800 px-2 py-0.5 rounded">OCUPADO</span>';
+        } else if (e.estado === 'RESERVADO') {
+            estadoClasse = 'border-amber-200 bg-amber-50/40 text-amber-800';
+            iconeEstado = '<span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">RESERVADO</span>';
+        } else {
+            estadoClasse = 'border-gray-300 bg-gray-50 text-gray-600';
+            iconeEstado = '<span class="text-[10px] font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded">MANUTENÇÃO</span>';
+        }
+
+        html += '<div class="border rounded-2xl p-4 bg-white shadow-sm hover:shadow transition flex flex-col justify-between ' + estadoClasse + '">';
+        html += '  <div>';
+        html += '    <div class="flex items-center justify-between mb-2">';
+        html += '      <span class="font-mono font-black text-sm text-gray-900">' + e.codigo + '</span>';
+        html +=        iconeEstado;
+        html += '    </div>';
+        html += '    <h4 class="font-bold text-xs text-gray-800">' + e.tipo + '</h4>';
+        html += '    <p class="text-[11px] text-gray-500 mb-2"><i class="fa-solid fa-location-dot text-gray-400 mr-1"></i> ' + e.localizacao + '</p>';
+        if (e.ocupante) {
+            html += '  <div class="text-[11px] p-2 bg-white/80 rounded-lg border border-gray-100 font-semibold mb-2"><b>Ocupante:</b> ' + e.ocupante + '</div>';
+        }
+        html += '  </div>';
+
+        html += '  <div class="pt-3 border-t border-gray-100 flex items-center justify-between">';
+        html += '    <span class="text-xs font-black text-gray-900">' + Number(e.preco_aluguer).toFixed(2) + ' ' + moedaPiscina + '</span>';
+        html += '    <div class="flex items-center gap-1">';
+        if (e.estado === 'LIVRE') {
+            html += '  <button type="button" onclick="alterarEstadoEspacoRapido(\'' + e.id + '\', \'OCUPADO\')" class="px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold hover:bg-emerald-700 cursor-pointer">Ocupar</button>';
+        } else if (e.estado === 'OCUPADO' || e.estado === 'RESERVADO') {
+            html += '  <button type="button" onclick="alterarEstadoEspacoRapido(\'' + e.id + '\', \'LIVRE\')" class="px-2 py-1 bg-gray-700 text-white rounded text-[10px] font-bold hover:bg-black cursor-pointer">Libertar</button>';
+        }
+        html += '      <button type="button" onclick="ciclarEstadoEspaco(\'' + e.id + '\')" title="Mudar Estado" class="p-1 text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-rotate"></i></button>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
+}
+
+function filtrarEspacosPorEstado(estado) {
+    estadoFiltroEspacoAtual = estado;
+    var botoes = document.querySelectorAll('.btn-filtro-espaco');
+    botoes.forEach(function(b) {
+        b.className = 'btn-filtro-espaco px-3 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-200';
+    });
+    if (event && event.target) {
+        event.target.className = 'btn-filtro-espaco px-3 py-1 rounded-lg text-xs font-bold bg-sky-600 text-white';
+    }
+    renderGradeEspacos();
+}
+
+function alterarEstadoEspacoRapido(id, novoEstado) {
+    var esp = (window.RestauranteApp.espacos_piscina || []).find(function(x) { return x.id === id; });
+    if (!esp) return;
+    esp.estado = novoEstado;
+    if (novoEstado === 'LIVRE') esp.ocupante = '';
+    else if (novoEstado === 'OCUPADO' && !esp.ocupante) esp.ocupante = 'Visitante Piscina';
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    renderGradeEspacos();
+    atualizarIndicadoresKPI();
+}
+
+function ciclarEstadoEspaco(id) {
+    var esp = (window.RestauranteApp.espacos_piscina || []).find(function(x) { return x.id === id; });
+    if (!esp) return;
+    var estados = ['LIVRE', 'OCUPADO', 'RESERVADO', 'MANUTENCAO'];
+    var idx = estados.indexOf(esp.estado);
+    esp.estado = estados[(idx + 1) % estados.length];
+    if (esp.estado === 'LIVRE') esp.ocupante = '';
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    renderGradeEspacos();
+    atualizarIndicadoresKPI();
+}
+
+function renderTabelaAlugueres() {
+    var corpo = document.getElementById('tabelaAlugueresCorpo');
+    if (!corpo) return;
+    var alugueres = window.RestauranteApp.alugueres_piscina || [];
+    var html = '';
+
+    alugueres.forEach(function(a) {
+        var statusBadge = (a.estado === 'EM_USO') 
+            ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">Em Uso</span>'
+            : '<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Devolvido</span>';
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-3">' + a.data_hora + '</td>';
+        html += '  <td class="p-3 font-semibold text-gray-800">' + a.bilhete_ou_cliente + '</td>';
+        html += '  <td class="p-3 font-medium">' + a.item_equipamento + '</td>';
+        html += '  <td class="p-3 text-right font-black text-amber-800">' + Number(a.valor_aluguer).toFixed(2) + ' ' + moedaPiscina + '</td>';
+        html += '  <td class="p-3 text-right font-mono text-gray-500">' + Number(a.caucao || 0).toFixed(2) + ' ' + moedaPiscina + '</td>';
+        html += '  <td class="p-3 text-center">' + statusBadge + '</td>';
+        html += '  <td class="p-3 text-right">';
+        if (a.estado === 'EM_USO') {
+            html += '  <button type="button" onclick="devolverAluguerPiscina(\'' + a.id + '\')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-sm transition">Devolver Caução</button>';
+        } else {
+            html += '  <span class="text-[10px] text-gray-400">Finalizado</span>';
+        }
+        html += '  </td>';
+        html += '</tr>';
+    });
+
+    corpo.innerHTML = html;
+}
+
+function devolverAluguerPiscina(id) {
+    var a = (window.RestauranteApp.alugueres_piscina || []).find(function(x) { return x.id === id; });
+    if (!a) return;
+    a.estado = 'DEVOLVIDO';
+    a.devolvido_hora = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    renderTabelaAlugueres();
+    alert('Equipamento devolvido com sucesso! Devolução da caução de ' + Number(a.caucao).toFixed(2) + ' ' + moedaPiscina + ' autorizada.');
+}
+
+function renderTabelaManutencao() {
+    var corpo = document.getElementById('tabelaManutencaoCorpo');
+    if (!corpo) return;
+    var registros = window.RestauranteApp.registos_manutencao_piscina || [];
+    var html = '';
+
+    registros.forEach(function(r) {
+        var statusCor = (r.status === 'CONFORME') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-3">' + r.data + ' <span class="text-gray-400 font-mono">' + r.hora + '</span></td>';
+        html += '  <td class="p-3 font-semibold text-gray-800">' + r.piscina_nome + '</td>';
+        html += '  <td class="p-3">' + r.tecnico_responsavel + '</td>';
+        html += '  <td class="p-3 text-center font-bold text-sky-800">' + r.nivel_ph + '</td>';
+        html += '  <td class="p-3 text-center font-bold text-emerald-800">' + r.nivel_cloro + '</td>';
+        html += '  <td class="p-3 text-center text-[10px]">Filtro: ' + r.limpeza_filtro + ' | Fundo: ' + r.aspiracao_fundo + '</td>';
+        html += '  <td class="p-3 text-[11px] text-gray-500">' + (r.observacao_ocorrencia || 'Sem ocorrências') + '</td>';
+        html += '  <td class="p-3 text-center"><span class="px-2 py-0.5 rounded font-bold text-[10px] ' + statusCor + '">' + r.status + '</span></td>';
+        html += '</tr>';
+    });
+
+    corpo.innerHTML = html;
+}
+
+function popularSelectsPiscina() {
+    var piscinas = window.RestauranteApp.piscinas || [];
+    var selBilhete = document.getElementById('bilhetePiscinaId');
+    var selManut = document.getElementById('manutPiscinaId');
+    var selEspacoBar = document.getElementById('barSelectEspaco');
+    var selProdutoBar = document.getElementById('barSelectProduto');
+    var selReservaEspaco = document.getElementById('reservaEspacoSelect');
+
+    var pOpt = '';
+    piscinas.forEach(function(p) {
+        pOpt += '<option value="' + p.id + '">' + p.nome + '</option>';
+    });
+
+    if (selBilhete) selBilhete.innerHTML = pOpt;
+    if (selManut) selManut.innerHTML = pOpt;
+
+    // Espaços para Bar
+    var espacos = window.RestauranteApp.espacos_piscina || [];
+    var espOpt = '';
+    var espLivresOpt = '';
+    espacos.forEach(function(e) {
+        espOpt += '<option value="' + e.codigo + '">' + e.codigo + ' - ' + e.tipo + ' (' + (e.ocupante || e.estado) + ')</option>';
+        if (e.estado === 'LIVRE') {
+            espLivresOpt += '<option value="' + e.id + '">' + e.codigo + ' - ' + e.tipo + ' (' + e.localizacao + ')</option>';
+        }
+    });
+    if (selEspacoBar) selEspacoBar.innerHTML = espOpt;
+    if (selReservaEspaco) selReservaEspaco.innerHTML = (espLivresOpt || '<option value="">Sem espaços livres de momento</option>');
+
+    // Bilhetes de Piscina para associar no Bar
+    var selBilheteBar = document.getElementById('barSelectBilhete');
+    if (selBilheteBar) {
+        var bilhetesValidos = (window.RestauranteApp.bilhetes_piscina || []).filter(function(b) {
+            return b.estado === 'VALIDADO' || b.estado === 'EMITIDO';
+        });
+        var bilOpt = '<option value="">Sem bilhete vinculado (Avulso)</option>';
+        bilhetesValidos.forEach(function(b) {
+            bilOpt += '<option value="' + b.codigo_bilhete + '">' + b.codigo_bilhete + ' - ' + b.cliente_nome + '</option>';
+        });
+        selBilheteBar.innerHTML = bilOpt;
+    }
+
+    // Produtos do Cardápio para o Bar da Piscina (Bebidas, Petiscos, Sobremesas)
+    var produtos = window.RestauranteApp.produtos || [];
+    var prodOpt = '';
+    produtos.forEach(function(pr) {
+        prodOpt += '<option value="' + pr.id + '">' + pr.nome + ' - ' + pr.preco + ' ' + moedaPiscina + ' (' + (pr.posto_nome || 'Cozinha/Bar') + ')</option>';
+    });
+    if (selProdutoBar) selProdutoBar.innerHTML = prodOpt;
+}
+
+function obterPrecosTarifaPiscina(tipoTarifa) {
+    var tarifas = window.RestauranteApp.tarifas_piscina || [];
+    var precoAdulto = 500.00;
+    var precoCrianca = 250.00;
+
+    var isTarde = (tipoTarifa === 'meio_periodo');
+
+    var tarAdulto = tarifas.find(function(t) {
+        var cat = (t.categoria || '').toLowerCase();
+        var per = (t.periodo || '').toLowerCase();
+        return cat.indexOf('adulto') >= 0 && (isTarde ? (per.indexOf('tarde') >= 0 || per.indexOf('meio') >= 0) : (per.indexOf('dia inteiro') >= 0 || per.indexOf('completo') >= 0));
+    });
+    if (tarAdulto && tarAdulto.preco != null) precoAdulto = Number(tarAdulto.preco);
+
+    var tarCrianca = tarifas.find(function(t) {
+        var cat = (t.categoria || '').toLowerCase();
+        var per = (t.periodo || '').toLowerCase();
+        return (cat.indexOf('criança') >= 0 || cat.indexOf('crianca') >= 0 || cat.indexOf('infantil') >= 0) && (isTarde ? (per.indexOf('tarde') >= 0 || per.indexOf('meio') >= 0) : (per.indexOf('dia inteiro') >= 0 || per.indexOf('completo') >= 0));
+    });
+    if (tarCrianca && tarCrianca.preco != null) precoCrianca = Number(tarCrianca.preco);
+
+    return { precoAdulto: precoAdulto, precoCrianca: precoCrianca };
+}
+
+function recalcularTotalBilhete() {
+    var tipoIngresso = document.getElementById('bilheteTipoIngresso').value;
+    var blocoMetodo = document.getElementById('blocoMetodoPagamentoBilhete');
+    var qtdAdultos = parseInt(document.getElementById('bilheteQtdAdultos').value || 0);
+    var qtdCriancas = parseInt(document.getElementById('bilheteQtdCriancas').value || 0);
+    var tarifaSelect = document.getElementById('bilheteTarifaSelect');
+    var tipoTarifa = tarifaSelect ? tarifaSelect.value : 'dia_inteiro';
+
+    var precos = obterPrecosTarifaPiscina(tipoTarifa);
+
+    var lblA = document.getElementById('lblBilheteAdultos');
+    var lblC = document.getElementById('lblBilheteCriancas');
+    if (lblA) lblA.innerText = 'Qtd Adultos (' + precos.precoAdulto.toFixed(2) + ' ' + moedaPiscina + ')';
+    if (lblC) lblC.innerText = 'Qtd Crianças (' + precos.precoCrianca.toFixed(2) + ' ' + moedaPiscina + ')';
+
+    if (tipoIngresso !== 'PAGO') {
+        if (blocoMetodo) blocoMetodo.classList.add('hidden');
+        document.getElementById('bilheteValorTotalExibir').innerText = '0.00 ' + moedaPiscina + ' (Isento)';
+        return;
+    }
+
+    if (blocoMetodo) blocoMetodo.classList.remove('hidden');
+
+    var total = (qtdAdultos * precos.precoAdulto) + (qtdCriancas * precos.precoCrianca);
+    document.getElementById('bilheteValorTotalExibir').innerText = total.toFixed(2) + ' ' + moedaPiscina;
+}
+
+function salvarBilhetePiscina(e) {
+    e.preventDefault();
+    var pId = document.getElementById('bilhetePiscinaId').value;
+    var nome = document.getElementById('bilheteNomeVisitante').value;
+    var telefone = document.getElementById('bilheteTelefone').value;
+    var tipoIngresso = document.getElementById('bilheteTipoIngresso').value;
+    var horasPermanencia = parseInt(document.getElementById('bilheteTempoPermanencia').value || 8);
+    var tarifaSelect = document.getElementById('bilheteTarifaSelect');
+    var tipoTarifa = tarifaSelect ? tarifaSelect.value : 'dia_inteiro';
+    var periodoDesc = (tipoTarifa === 'meio_periodo') ? 'Meio Período (Tarde)' : 'Dia Inteiro';
+    if (horasPermanencia < 8) periodoDesc += ' (' + horasPermanencia + 'h)';
+
+    var qtdA = parseInt(document.getElementById('bilheteQtdAdultos').value || 0);
+    var qtdC = parseInt(document.getElementById('bilheteQtdCriancas').value || 0);
+    var metodo = (tipoIngresso === 'PAGO') ? document.getElementById('bilheteMetodoPagamento').value : 'Autorizado / Cortesia';
+
+    var precos = obterPrecosTarifaPiscina(tipoTarifa);
+    var total = (tipoIngresso === 'PAGO') ? ((qtdA * precos.precoAdulto) + (qtdC * precos.precoCrianca)) : 0.00;
+
+    var agora = new Date();
+    var numBilhete = 'BIL-PSC-' + Math.floor(1000 + Math.random() * 9000);
+    var novoBilhete = {
+        id: String(Date.now()),
+        codigo_bilhete: numBilhete,
+        data: agora.toLocaleDateString('pt-PT'),
+        hora_emissao: agora.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        cliente_nome: nome,
+        cliente_telefone: telefone,
+        tipo_ingresso: tipoIngresso,
+        categoria: (qtdC > 0 ? 'Adultos & Crianças' : 'Adulto'),
+        periodo: periodoDesc,
+        horas_permanencia: horasPermanencia,
+        data_hora_entrada_timestamp: agora.getTime(),
+        quantidade_adultos: qtdA,
+        quantidade_criancas: qtdC,
+        valor_base: total,
+        valor_total: total,
+        valor_acrescimo_atraso: 0,
+        metodo_pagamento: metodo,
+        estado: 'EMITIDO',
+        checkin_hora: agora.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        checkout_hora: ''
+    };
+
+    window.RestauranteApp.bilhetes_piscina.unshift(novoBilhete);
+
+    // Ajusta lotação da piscina
+    var piscina = (window.RestauranteApp.piscinas || []).find(function(p) { return p.id === pId; });
+    var totalPessoas = (qtdA + qtdC) || 1;
+    if (piscina) {
+        piscina.lotacao_atual = Math.min(piscina.capacidade_maxima, (piscina.lotacao_atual || 0) + totalPessoas);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalEmitirBilhete');
+    atualizarIndicadoresKPI();
+    renderGradePiscinas();
+    renderTabelaBilhetes();
+
+    imprimirBilhetePiscina(novoBilhete.id);
+}
+
+function imprimirBilhetePiscina(id) {
+    var b = (window.RestauranteApp.bilhetes_piscina || []).find(function(x) { return x.id === id; });
+    if (!b) return;
+
+    var iframe = document.getElementById('iframeImpressaoBilhetePiscina');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframeImpressaoBilhetePiscina';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var conteudoHtml = [
+        '<html><head><title>Bilhete de Piscina ' + b.codigo_bilhete + '</title>',
+        '<style>',
+        '  body { font-family: monospace; font-size: 12px; margin: 0; padding: 12px; width: 280px; color: #000; }',
+        '  .text-center { text-align: center; }',
+        '  hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }',
+        '  .qrcode { font-weight: bold; border: 2px solid #000; padding: 6px; margin: 8px 0; text-align: center; font-size: 13px; }',
+        '  .flex { display: flex; justify-content: space-between; }',
+        '  .politica-box { border: 1px solid #333; padding: 5px; font-size: 9.5px; margin-top: 6px; line-height: 1.25; background: #fafafa; }',
+        '</style>',
+        '</head><body>',
+        '<div class="text-center">',
+        '  <h3 style="margin:0;font-size:15px;">REDE RESTAURANTE & RESORT</h3>',
+        '  <p style="margin:2px 0;font-size:11px;">BILHETE DE ACESSO À PISCINA</p>',
+        '  <p style="margin:2px 0;font-weight:bold;">' + b.codigo_bilhete + '</p>',
+        '</div>',
+        '<div class="qrcode">[' + b.codigo_bilhete + ']</div>',
+        '<hr>',
+        '<div><b>Visitante:</b> ' + b.cliente_nome + '</div>',
+        '<div><b>Data / Entrada:</b> ' + b.data + ' às ' + b.hora_emissao + '</div>',
+        '<div><b>Permanência Contratada:</b> ' + (b.periodo || (b.horas_permanencia ? b.horas_permanencia + ' Hora(s)' : 'Dia Inteiro')) + '</div>',
+        '<div><b>Adultos:</b> ' + (b.quantidade_adultos || 0) + ' | <b>Crianças:</b> ' + (b.quantidade_criancas || 0) + '</div>',
+        '<hr>',
+        '<div class="flex"><span>Tipo de Entrada:</span><span><b>' + b.tipo_ingresso + '</b></span></div>',
+        '<div class="flex"><span>Método Pagamento:</span><span>' + b.metodo_pagamento + '</span></div>',
+        '<div class="flex" style="font-size:14px;font-weight:bold;margin-top:4px;"><span>VALOR TOTAL:</span><span>' + Number(b.valor_total).toFixed(2) + ' ' + moedaPiscina + '</span></div>',
+        '<hr>',
+        '<div class="politica-box">',
+        '  <b>POLÍTICA DE PERMANÊNCIA E HORÁRIOS:</b><br>',
+        '  O preço do bilhete é fixado em função do tempo de permanência contratado. A partir de <b>5 minutos após o horário estipulado</b>, a cada <b>30 minutos extras</b> o sistema calcula e cobra o acréscimo de +50% no momento da validação de saída (check-out).',
+        '</div>',
+        '<hr>',
+        '<div class="text-center" style="font-size:10px;">Apresente esta comanda na receção e bar da piscina.<br>Tenha um excelente mergulho!</div>',
+        '</body></html>'
+    ].join('\n');
+
+    var doc = iframe.contentWindow || iframe.contentDocument;
+    if (doc.document) doc = doc.document;
+    doc.open();
+    doc.write(conteudoHtml);
+    doc.close();
+
+    setTimeout(function() {
+        if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        }
+    }, 250);
+}
+
+function registarCheckoutBilhete(id) {
+    var b = (window.RestauranteApp.bilhetes_piscina || []).find(function(x) { return x.id === id; });
+    if (!b) return;
+    if (b.estado === 'UTILIZADO') {
+        alert('Este bilhete já registou a saída da piscina.');
+        return;
+    }
+
+    var agora = new Date();
+    var agoraHoraStr = agora.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    b.checkout_hora = agoraHoraStr;
+    b.estado = 'UTILIZADO';
+
+    // Cálculo do tempo de permanência e taxa de atraso (+50% a cada 30 minutos extras)
+    var horasContratadas = b.horas_permanencia || 8;
+    var duracaoPermitidaMs = horasContratadas * 60 * 60 * 1000;
+    var entradaMs = b.data_hora_entrada_timestamp;
+
+    // Se não tiver timestamp exato gravado (ex: dados legados), tenta parsear a hora_emissao
+    if (!entradaMs && b.hora_emissao) {
+        var partes = b.hora_emissao.split(':');
+        var dEntrada = new Date();
+        dEntrada.setHours(parseInt(partes[0]), parseInt(partes[1]), 0, 0);
+        entradaMs = dEntrada.getTime();
+    }
+
+    var mensagemExcedente = '';
+    if (entradaMs && b.tipo_ingresso === 'PAGO' && Number(b.valor_base || b.valor_total) > 0) {
+        var decorridoMs = agora.getTime() - entradaMs;
+        var minutosExtras = Math.floor((decorridoMs - duracaoPermitidaMs) / (60 * 1000));
+
+        // Tolerância de 5 minutos: Apenas calcula e aplica taxa a partir de 5 minutos após o tempo estipulado
+        if (minutosExtras >= 5) {
+            // A cada 30 minutos extras após o tempo contratado, calcula a fracção correspondente (50% do valor base por cada 30 min)
+            var blocos30Min = Math.ceil(minutosExtras / 30);
+            var valorBase = Number(b.valor_base || b.valor_total);
+            var acrescimo = blocos30Min * (valorBase * 0.50);
+
+            b.valor_acrescimo_atraso = acrescimo;
+            b.valor_total = valorBase + acrescimo;
+
+            mensagemExcedente = '\n\n⚠️ TEMPO EXCEDIDO: Ultrapassou ' + minutosExtras + ' min do tempo estipulado (tolerância de 5 min excedida).\nFoi calculado acréscimo para ' + blocos30Min + ' bloco(s) de 30 minutos: +' + acrescimo.toFixed(2) + ' ' + moedaPiscina + '.\nValor Final do Bilhete: ' + b.valor_total.toFixed(2) + ' ' + moedaPiscina + '.';
+        }
+    }
+
+    // Decrementa lotação
+    var piscina = (window.RestauranteApp.piscinas || [])[0];
+    var qtdTotal = (b.quantidade_adultos || 0) + (b.quantidade_criancas || 0) || 1;
+    if (piscina) {
+        piscina.lotacao_atual = Math.max(0, (piscina.lotacao_atual || 0) - qtdTotal);
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    atualizarIndicadoresKPI();
+    renderGradePiscinas();
+    renderTabelaBilhetes();
+
+    alert('Saída registada com sucesso às ' + agoraHoraStr + ' para o bilhete ' + b.codigo_bilhete + ' (' + b.cliente_nome + ').' + mensagemExcedente);
+}
+
+function ajustarLotacaoPiscina(id, delta) {
+    var p = (window.RestauranteApp.piscinas || []).find(function(x) { return x.id === id; });
+    if (!p) return;
+    p.lotacao_atual = Math.max(0, Math.min(p.capacidade_maxima, (p.lotacao_atual || 0) + delta));
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    renderGradePiscinas();
+    atualizarIndicadoresKPI();
+}
+
+function salvarNovoEspaco(e) {
+    e.preventDefault();
+    var novo = {
+        id: String(Date.now()),
+        codigo: document.getElementById('espacoCodigo').value.toUpperCase(),
+        tipo: document.getElementById('espacoTipo').value,
+        localizacao: document.getElementById('espacoLocalizacao').value,
+        preco_aluguer: parseFloat(document.getElementById('espacoPreco').value || 0),
+        estado: document.getElementById('espacoEstado').value,
+        ocupante: ''
+    };
+
+    window.RestauranteApp.espacos_piscina.push(novo);
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    fecharModal('modalNovoEspaco');
+    renderGradeEspacos();
+    popularSelectsPiscina();
+    atualizarIndicadoresKPI();
+    alert('Espaço ' + novo.codigo + ' cadastrado com sucesso!');
+}
+
+function salvarRegistoManutencao(e) {
+    e.preventDefault();
+    var pId = document.getElementById('manutPiscinaId').value;
+    var piscina = (window.RestauranteApp.piscinas || []).find(function(p) { return p.id === pId; });
+    var ph = parseFloat(document.getElementById('manutPh').value || 7.2);
+    var cloro = parseFloat(document.getElementById('manutCloro').value || 1.5);
+
+    var conforme = (ph >= 7.0 && ph <= 7.8 && cloro >= 0.8 && cloro <= 3.5);
+
+    var reg = {
+        id: String(Date.now()),
+        data: new Date().toLocaleDateString('pt-PT'),
+        hora: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        piscina_id: pId,
+        piscina_nome: (piscina ? piscina.nome : 'Piscina Principal'),
+        tecnico_responsavel: document.getElementById('manutTecnico').value,
+        nivel_ph: ph,
+        nivel_cloro: cloro,
+        limpeza_filtro: document.getElementById('manutFiltro').value,
+        aspiracao_fundo: document.getElementById('manutAspiracao').value,
+        observacao_ocorrencia: document.getElementById('manutObs').value,
+        status: (conforme ? 'CONFORME' : 'ATENÇÃO')
+    };
+
+    window.RestauranteApp.registos_manutencao_piscina.unshift(reg);
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    fecharModal('modalRegistoManutencao');
+    renderTabelaManutencao();
+    alert('Boletim de análise da água gravado com sucesso! Status: ' + reg.status);
+}
+
+function salvarReservaEspaco(e) {
+    e.preventDefault();
+    var espId = document.getElementById('reservaEspacoSelect').value;
+    var espaco = (window.RestauranteApp.espacos_piscina || []).find(function(x) { return x.id === espId; });
+
+    var novaReserva = {
+        id: String(Date.now()),
+        codigo_reserva: 'RES-PSC-' + Math.floor(100 + Math.random() * 900),
+        data_reserva: new Date().toLocaleDateString('pt-PT'),
+        hora_inicio: document.getElementById('reservaHoraInicio').value,
+        hora_fim: '18:00',
+        cliente_nome: document.getElementById('reservaNomeCliente').value,
+        cliente_telefone: document.getElementById('reservaTelefone').value,
+        espaco_id: espId,
+        espaco_codigo: (espaco ? espaco.codigo : 'Espaço'),
+        num_pessoas: parseInt(document.getElementById('reservaNumPessoas').value || 2),
+        valor: (espaco ? espaco.preco_aluguer : 300),
+        sinal_pago: parseFloat(document.getElementById('reservaSinal').value || 0),
+        estado: 'CONFIRMADA',
+        observacoes: document.getElementById('reservaObs').value
+    };
+
+    window.RestauranteApp.reservas_piscina.unshift(novaReserva);
+    if (espaco) {
+        espaco.estado = 'RESERVADO';
+        espaco.ocupante = novaReserva.cliente_nome + ' (' + novaReserva.hora_inicio + ')';
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    fecharModal('modalNovaReservaEspaco');
+    renderGradeEspacos();
+    atualizarIndicadoresKPI();
+    alert('Reserva ' + novaReserva.codigo_reserva + ' para ' + novaReserva.cliente_nome + ' confirmada!');
+}
+
+function salvarNovoAluguer(e) {
+    e.preventDefault();
+    var novoAlug = {
+        id: String(Date.now()),
+        data_hora: new Date().toLocaleDateString('pt-PT') + ' ' + new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        bilhete_ou_cliente: document.getElementById('aluguerCliente').value,
+        item_equipamento: document.getElementById('aluguerItem').value,
+        valor_aluguer: parseFloat(document.getElementById('aluguerValor').value || 0),
+        caucao: parseFloat(document.getElementById('aluguerCaucao').value || 0),
+        estado: 'EM_USO',
+        devolvido_hora: ''
+    };
+
+    window.RestauranteApp.alugueres_piscina.unshift(novoAlug);
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    fecharModal('modalNovoAluguerEquipamento');
+    renderTabelaAlugueres();
+    alert('Aluguer de equipamento registado com sucesso!');
+}
+
+// =========================================================================
+// BAR & RESTAURAÇÃO INTEGRADO: BAIXA AUTOMÁTICA DE STOCK
+// =========================================================================
+function confirmarPedidoBarPiscina() {
+    var espaco = document.getElementById('barSelectEspaco').value;
+    var bilheteCod = document.getElementById('barSelectBilhete') ? document.getElementById('barSelectBilhete').value : '';
+    var prodId = document.getElementById('barSelectProduto').value;
+    var qtd = parseInt(document.getElementById('barInputQtd').value || 1);
+    var metodo = document.getElementById('barSelectMetodo').value;
+
+    var prod = (window.RestauranteApp.produtos || []).find(function(p) { return p.id === prodId; });
+    if (!prod) return;
+
+    var preco = prod.tem_promocao ? prod.preco_promocional : prod.preco;
+    var total = preco * qtd;
+    var numDoc = 'VND-BAR-PSC-' + Math.floor(1000 + Math.random() * 9000);
+
+    var localizacaoPiscina = 'Piscina - ' + espaco + (bilheteCod ? ' [' + bilheteCod + ']' : '');
+
+    // 1. Registar no Financeiro / Vendas
+    if (!window.RestauranteApp.vendas) window.RestauranteApp.vendas = [];
+    window.RestauranteApp.vendas.unshift({
+        id: String(Date.now()),
+        numero: numDoc,
+        data_hora: new Date().toLocaleString('pt-PT'),
+        tipo_pedido: 'Bar Piscina (' + espaco + ')',
+        mesa_local: localizacaoPiscina,
+        metodo_pagamento: metodo,
+        total: total,
+        base_tributavel: Math.round((total / 1.16) * 100) / 100,
+        taxa_iva: 16.0,
+        valor_iva: Math.round((total - (total / 1.16)) * 100) / 100,
+        itens: [
+            { id: prod.id, nome: prod.nome, qtd: qtd, preco: preco, posto: prod.posto_nome || 'Bar' }
+        ],
+        estado: 'PAGO'
+    });
+
+    // 2. Se for prato ou item que exige confecção na Cozinha, despachar para a Cozinha KDS
+    var postoLower = (prod.posto_nome || '').toLowerCase();
+    if (postoLower.indexOf('cozinha') >= 0 || postoLower.indexOf('fogão') >= 0 || postoLower.indexOf('pastelaria') >= 0 || prod.tipo === 'comida') {
+        if (!window.RestauranteApp.pedidos_cozinha) window.RestauranteApp.pedidos_cozinha = [];
+        window.RestauranteApp.pedidos_cozinha.unshift({
+            id: String(Date.now() + 1),
+            numero: 'CZ-PSC-' + Math.floor(100 + Math.random() * 900),
+            origem: 'Bar & Lazer Piscina',
+            tipo: 'Piscina / Espaço Resort',
+            localizacao: localizacaoPiscina,
+            hora: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+            estado: 'PENDENTE',
+            itens: [
+                { id: prod.id, nome: prod.nome, qtd: qtd, preco: preco, posto: prod.posto_nome || 'Cozinha' }
+            ]
+        });
+    }
+
+    // 2. Abate Automático no Stock
+    if (!window.RestauranteApp.movimentos_stock) window.RestauranteApp.movimentos_stock = [];
+    var abateuFicha = false;
+    var itensAbatidosDesc = [];
+
+    if (prod.ficha_tecnica && prod.ficha_tecnica.length > 0) {
+        prod.ficha_tecnica.forEach(function(insumo) {
+            var stItem = (window.RestauranteApp.stock || []).find(function(s) { 
+                return s.id === insumo.stock_id || (s.nome && insumo.stock_nome && s.nome.toLowerCase() === insumo.stock_nome.toLowerCase()) || (s.item && insumo.stock_nome && s.item.toLowerCase() === insumo.stock_nome.toLowerCase()); 
+            });
+            if (stItem) {
+                var qtdBaixar = (Number(insumo.quantidade) || 0) * qtd;
+                stItem.qtd = Math.max(0, Math.round((Number(stItem.qtd || 0) - qtdBaixar) * 100) / 100);
+                abateuFicha = true;
+                var nomeInsumo = stItem.nome || stItem.item || insumo.stock_nome || 'Insumo';
+                itensAbatidosDesc.push(nomeInsumo + ' (-' + qtdBaixar + ')');
+
+                window.RestauranteApp.movimentos_stock.unshift({
+                    id: String(Date.now() + Math.random()),
+                    data_hora: new Date().toLocaleString('pt-PT'),
+                    tipo: 'SAIDA_FICHA_TECNICA',
+                    item_nome: nomeInsumo + ' (Insumo de ' + prod.nome + ')',
+                    quantidade: qtdBaixar,
+                    motivo: 'Consumo Piscina/Bar ' + numDoc + ' (' + espaco + ')',
+                    responsavel: 'Barman / Piscina'
+                });
+            }
+        });
+    }
+
+    if (!abateuFicha) {
+        var stDirect = (window.RestauranteApp.stock || []).find(function(s) { 
+            var sNome = (s.nome || s.item || '').toLowerCase();
+            var pNome = (prod.nome || '').toLowerCase();
+            return sNome === pNome || sNome.indexOf(pNome) >= 0 || pNome.indexOf(sNome) >= 0; 
+        });
+        if (stDirect) {
+            stDirect.qtd = Math.max(0, Math.round((Number(stDirect.qtd || 0) - qtd) * 100) / 100);
+            var itemNomeDirect = stDirect.nome || stDirect.item || prod.nome;
+            itensAbatidosDesc.push(itemNomeDirect + ' (-' + qtd + ')');
+
+            window.RestauranteApp.movimentos_stock.unshift({
+                id: String(Date.now() + Math.random()),
+                data_hora: new Date().toLocaleString('pt-PT'),
+                tipo: 'SAIDA_PISCINA',
+                item_nome: itemNomeDirect,
+                quantidade: qtd,
+                motivo: 'Consumo Bar Piscina ' + numDoc + ' (' + espaco + ')',
+                responsavel: 'Barman / Piscina'
+            });
+        }
+    }
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    renderTabelaConsumosBar();
+    var msgStock = itensAbatidosDesc.length > 0 
+        ? '\nStock abatido com sucesso: ' + itensAbatidosDesc.join(', ') 
+        : '\nStock atualizado.';
+    alert('Pedido registado com sucesso (' + numDoc + ')!\nTotal: ' + total.toFixed(2) + ' ' + moedaPiscina + msgStock);
+}
+
+function renderTabelaConsumosBar() {
+    var corpo = document.getElementById('tabelaConsumosBarCorpo');
+    if (!corpo) return;
+    var vendas = (window.RestauranteApp.vendas || []).filter(function(v) {
+        return (v.tipo_pedido || '').indexOf('Bar Piscina') >= 0 || (v.mesa_local || '').indexOf('Piscina') >= 0;
+    });
+
+    var totalValor = 0;
+    var html = '';
+
+    vendas.forEach(function(v) {
+        totalValor += Number(v.total || 0);
+        var itemNome = (v.itens && v.itens[0]) ? v.itens[0].nome : 'Consumo Geral';
+        var itemQtd = (v.itens && v.itens[0]) ? v.itens[0].qtd : 1;
+
+        html += '<tr class="hover:bg-gray-50 transition">';
+        html += '  <td class="p-2.5 font-mono text-[11px]">' + (v.data_hora ? v.data_hora.split(' ')[1] : '') + '</td>';
+        html += '  <td class="p-2.5 font-bold text-sky-900">' + (v.mesa_local || 'Piscina') + '</td>';
+        html += '  <td class="p-2.5 font-semibold text-gray-800">' + itemNome + '</td>';
+        html += '  <td class="p-2.5 text-center font-bold">' + itemQtd + '</td>';
+        html += '  <td class="p-2.5 text-right font-black text-emerald-700">' + Number(v.total).toFixed(2) + ' ' + moedaPiscina + '</td>';
+        html += '  <td class="p-2.5">' + v.metodo_pagamento + '</td>';
+        html += '  <td class="p-2.5 text-center"><span class="px-1.5 py-0.5 rounded bg-green-100 text-green-800 text-[9px] font-bold">Abatido</span></td>';
+        html += '</tr>';
+    });
+
+    if (vendas.length === 0) {
+        html = '<tr><td colspan="7" class="p-4 text-center text-gray-400 text-xs">Nenhum consumo registado hoje no bar da piscina.</td></tr>';
+    }
+
+    corpo.innerHTML = html;
+    var totalEl = document.getElementById('totalVendasBarPiscina');
+    if (totalEl) totalEl.innerText = totalValor.toFixed(2) + ' ' + moedaPiscina;
+}
+
+// Abertura e fecho de modais
+function abrirModalEmitirBilhete() { abrirModal('modalEmitirBilhete'); recalcularTotalBilhete(); }
+function abrirModalNovoEspaco() { abrirModal('modalNovoEspaco'); }
+function abrirModalRegistoManutencao() { abrirModal('modalRegistoManutencao'); }
+function abrirModalNovaReservaEspaco() { abrirModal('modalNovaReservaEspaco'); }
+function abrirModalNovoAluguerEquipamento() { abrirModal('modalNovoAluguerEquipamento'); }
+function abrirModalPedidoBarPiscina() { trocarTabPiscina('bar-pedidos'); }
+
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarDadosPiscina();
+});
+</script>
+{% endblock %}

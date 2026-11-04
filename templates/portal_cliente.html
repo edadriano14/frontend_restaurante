@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="pt" x-data="portalComponent()">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio Online - {{ estabelecimento.nome }}</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="/static/js/app-data.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        :root {
+            --cor-primaria: {{ estabelecimento.cor_primaria }};
+            --cor-secundaria: {{ estabelecimento.cor_secundaria }};
+        }
+        .bg-custom-primary { background-color: var(--cor-primaria); }
+        .text-custom-primary { color: var(--cor-primaria); }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col text-gray-800 pb-20 sm:pb-12">
+
+    <!-- Header do Restaurante -->
+    <header class="bg-white shadow-sm border-b sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <img src="{{ estabelecimento.logotipo_url }}" class="w-10 h-10 rounded-full object-cover border">
+                <div>
+                    <h1 class="font-bold text-base text-gray-900 leading-tight">{{ estabelecimento.nome }}</h1>
+                    <!-- Label Aberto/Fechado dinâmico -->
+                    <span x-show="estaAberto()" class="text-xs text-green-600 font-semibold flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Aberto para Pedidos Online
+                    </span>
+                    <span x-show="!estaAberto()" class="text-xs text-red-600 font-semibold flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span> Encerrado por agora
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Botão Destaque: Reservar Mesa (Apenas Reserva, Sem Pedidos) -->
+                <button type="button" @click="abrirModalReserva()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+                    <i class="fa-solid fa-calendar-check text-xs"></i>
+                    <span class="hidden sm:inline">Reservar Mesa</span>
+                    <span class="sm:hidden">Reserva</span>
+                </button>
+
+                <!-- Badge Estado no canto superior direito -->
+                <span x-show="estaAberto()" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-800 rounded-full text-xs font-bold border border-green-200">
+                    <i class="fa-solid fa-circle-check"></i> Aberto
+                </span>
+                <span x-show="!estaAberto()" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200">
+                    <i class="fa-solid fa-moon"></i> Fechado
+                </span>
+
+                <button @click="modalCheckout = true" class="relative p-2.5 bg-gray-100 rounded-full text-gray-700 hover:bg-gray-200 cursor-pointer" title="Ver Carrinho">
+                    <i class="fa-solid fa-basket-shopping text-lg"></i>
+                    <span x-show="carrinho.length > 0" class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center" x-text="carrinho.length"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6 space-y-6">
+
+        <!-- Banner Aviso Fechado -->
+        <div x-show="!estaAberto()" class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 text-red-700" x-cloak>
+            <i class="fa-solid fa-clock text-2xl text-red-400"></i>
+            <div>
+                <p class="font-bold text-sm">Restaurante Encerrado</p>
+                <p class="text-xs text-red-600">Pode consultar o cardápio, mas não é possível fazer pedidos neste momento. Horário: <strong>{{ estabelecimento.horario_abertura or '10:00 - 23:00' }}</strong></p>
+            </div>
+        </div>
+
+        <!-- Banner Promocional com Acesso Rápido a Reserva de Mesa -->
+        <div class="rounded-2xl p-6 text-white bg-gradient-to-r from-red-600 to-rose-700 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <span class="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-md uppercase">Happy Hour &amp; Promoções</span>
+                <h2 class="text-2xl font-black mt-2">Pratos &amp; Bebidas com Descontos Especiais!</h2>
+                <p class="text-sm text-red-100 mt-1">Peça online para mesa, takeaway ou delivery com entrega rápida em Maputo.</p>
+            </div>
+            <div class="flex-shrink-0">
+                <button type="button" @click="abrirModalReserva()" class="w-full sm:w-auto px-4 py-2.5 bg-white text-red-700 hover:bg-red-50 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-calendar-check text-purple-600 text-sm"></i>
+                    <span>Reservar Mesa Sem Pedido</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de Categorias -->
+        <div class="flex space-x-2 overflow-x-auto pb-2">
+            <button @click="categoriaAtiva = 'todos'" :class="categoriaAtiva === 'todos' ? 'bg-custom-primary text-white' : 'bg-white text-gray-700 border'" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm">
+                Todos
+            </button>
+            <template x-for="c in categorias" :key="c.id">
+                <button @click="categoriaAtiva = c.id" :class="categoriaAtiva === c.id ? 'bg-custom-primary text-white' : 'bg-white text-gray-700 border'" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm flex items-center gap-1.5">
+                    <span x-text="c.emoji"></span> <span x-text="c.nome"></span>
+                </button>
+            </template>
+        </div>
+
+        <!-- Catálogo de Produtos (apenas os visíveis no portal) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <template x-for="p in produtosFiltrados()" :key="p.id">
+                <div :class="isDisponivel(p) ? 'border-emerald-200 bg-white hover:border-emerald-400' : 'border-red-200 bg-red-50/30 opacity-85'" class="rounded-2xl p-4 shadow-sm border flex gap-4 transition relative overflow-hidden">
+                    <!-- Tag de Disponibilidade Superior -->
+                    <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                        <template x-if="isDisponivel(p)">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Disponível
+                            </span>
+                        </template>
+                        <template x-if="!isDisponivel(p)">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-300 shadow-2xs">
+                                <i class="fa-solid fa-ban text-[9px]"></i> Indisponível
+                            </span>
+                        </template>
+                    </div>
+
+                    <div class="relative shrink-0">
+                        <img :src="p.imagem_url" :class="!isDisponivel(p) ? 'grayscale-[40%]' : ''" class="w-24 h-24 rounded-xl object-cover border">
+                        <template x-if="!isDisponivel(p)">
+                            <div class="absolute inset-0 bg-red-900/30 rounded-xl flex items-center justify-center backdrop-blur-2xs">
+                                <span class="bg-red-600/90 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider shadow">Esgotado</span>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="flex-1 flex flex-col justify-between pr-1">
+                        <div>
+                            <div class="flex items-start justify-between pr-16">
+                                <h3 class="font-bold text-sm text-gray-900" x-text="p.nome"></h3>
+                            </div>
+                            <template x-if="p.tem_promocao">
+                                <span class="inline-block mt-0.5 text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded border border-amber-300">PROMOÇÃO</span>
+                            </template>
+                            <p class="text-xs text-gray-500 line-clamp-2 mt-1" x-text="p.descricao"></p>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                            <span class="font-bold text-sm" :class="isDisponivel(p) ? 'text-emerald-700' : 'text-gray-500'" x-text="(p.tem_promocao ? p.preco_promocional : p.preco) + ' {{ estabelecimento.moeda }}'"></span>
+                            
+                            <!-- Botão Pedir (Verde e Activo) vs Indisponível (Vermelho e Bloqueado) -->
+                            <template x-if="isDisponivel(p)">
+                                <button @click="adicionar(p)" :disabled="!estaAberto()" :class="estaAberto() ? 'bg-emerald-600 hover:bg-emerald-700 cursor-pointer text-white shadow-sm hover:shadow' : 'bg-gray-300 text-gray-600 cursor-not-allowed'" class="px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-plus text-[11px]"></i> Pedir
+                                </button>
+                            </template>
+                            <template x-if="!isDisponivel(p)">
+                                <button type="button" disabled title="Produto indisponível / sem stock no momento" class="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-red-100 text-red-600 border border-red-200 cursor-not-allowed select-none">
+                                    <i class="fa-solid fa-lock text-[10px]"></i> Bloqueado
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <!-- Barra Flutuante de Carrinho -->
+    <div x-show="carrinho.length > 0" class="fixed bottom-4 inset-x-4 max-w-md mx-auto z-40">
+        <button @click="modalCheckout = true" class="w-full bg-custom-primary text-white p-4 rounded-2xl shadow-xl flex items-center justify-between font-bold">
+            <span class="flex items-center gap-2">
+                <i class="fa-solid fa-basket-shopping"></i>
+                <span x-text="carrinho.length + ' item(ns)'"></span>
+            </span>
+            <span class="flex items-center gap-2">
+                <span>Ver Pedido</span>
+                <span class="bg-white/20 px-2 py-0.5 rounded text-sm" x-text="total() + ' {{ estabelecimento.moeda }}'"></span>
+            </span>
+        </button>
+    </div>
+
+    <!-- Modal de Checkout / Fecho do Pedido Online -->
+    <div x-show="modalCheckout" class="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" x-cloak>
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center gap-2">
+                    <h3 class="font-bold text-lg text-gray-900">Seu Pedido Online</h3>
+                    <template x-if="carrinho.length > 0">
+                        <button type="button" @click="limparCarrinho()" class="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-0.5 rounded font-bold transition flex items-center gap-1 cursor-pointer" title="Esvaziar carrinho">
+                            <i class="fa-solid fa-trash-can"></i> Limpar Carrinho
+                        </button>
+                    </template>
+                </div>
+                <button @click="modalCheckout = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <!-- Resumo dos Itens do Carrinho -->
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+                <template x-if="carrinho.length === 0">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-500 text-center">
+                        O seu carrinho está vazio. Adicione itens do cardápio para pedir.
+                    </div>
+                </template>
+                <template x-for="(i, idx) in carrinho" :key="idx">
+                    <div class="flex justify-between items-center text-sm p-2 bg-gray-50 rounded-lg">
+                        <span class="font-medium" x-text="i.qtd + 'x ' + i.nome"></span>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold" x-text="(i.preco * i.qtd) + ' {{ estabelecimento.moeda }}'"></span>
+                            <button type="button" @click="removerItem(idx)" class="text-gray-400 hover:text-red-500 cursor-pointer"><i class="fa-solid fa-xmark text-xs"></i></button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Dados de Entrega / Contacto e Pagamento -->
+            <div class="space-y-3 pt-2 border-t">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome Completo do Cliente *</label>
+                    <input type="text" x-model="clienteNome" placeholder="Ex: João Machel" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-custom-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Telemóvel (WhatsApp / Contacto) *</label>
+                    <input type="text" x-model="clienteTelefone" placeholder="+258 84 000 0000" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-custom-primary">
+                </div>
+
+                <!-- Tipo de Pedido (Sem Balcão e Sem Reserva nos pedidos de comida) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Pedido *</label>
+                        <select x-model="tipoEntrega" @change="onTipoEntregaChange()" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-medium focus:border-custom-primary">
+                            <template x-for="tp in tiposPedidos" :key="tp.codigo">
+                                <option :value="tp.codigo" x-text="tp.descricao"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- MESA: Exibido APENAS se for consumo no restaurante (MESA) e NÃO for TAKEAWAY nem DELIVERY -->
+                    <div x-show="isConsumoMesa()">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Mesa no Restaurante *</label>
+                        <input type="text" x-model="mesaOuEndereco" placeholder="Ex: Mesa 02" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    </div>
+                </div>
+
+                <!-- Google Maps para Delivery (Partilha de Localização GPS / Endereço) -->
+                <div x-show="isDelivery()" x-cloak class="space-y-2 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-blue-900 uppercase">Endereço de Entrega (Delivery) *</label>
+                        <button type="button" @click="abrirGoogleMapsLocalizacao()" class="px-2.5 py-1 bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                            <i class="fa-solid fa-location-crosshairs text-blue-600"></i> Partilhar Localização GPS
+                        </button>
+                    </div>
+                    <input id="enderecoDelivery" type="text" x-model="mesaOuEndereco" placeholder="Digite a rua, bairro, ponto de referência..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white outline-none focus:border-blue-500">
+                    
+                    <!-- Painel estilizado com visualização de mapa e link directo para Google Maps -->
+                    <div class="w-full p-3 rounded-xl border border-blue-200 bg-white flex flex-col items-center justify-center text-center space-y-1.5">
+                        <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-base">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                        <div class="text-xs font-bold text-gray-800" x-text="mesaOuEndereco ? 'Destino: ' + mesaOuEndereco : 'Localização para Entrega em Maputo'"></div>
+                        <p class="text-[11px] text-gray-500">Use o botão "Partilhar Localização GPS" para enviar as suas coordenadas exactas.</p>
+                        <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mesaOuEndereco || 'Maputo')" target="_blank" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                            <i class="fa-solid fa-up-right-from-square text-[10px]"></i> Ver localização no Google Maps ↗
+                        </a>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-blue-700">
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-motorcycle"></i> Taxa fixa de entrega: <strong>150 {{ estabelecimento.moeda }}</strong></span>
+                    </div>
+                </div>
+
+                <!-- Método de Pagamento (Electrónico/Móvel, SEM Dinheiro) com preenchimento automático do número correspondente -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase">Método de Pagamento (Pagamento Electrónico / Carteira Móvel) *</label>
+                    <select x-model="canalPagamento" @change="onCanalPagamentoChange()" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-bold text-emerald-800">
+                        <template x-for="mp in metodosPagamento" :key="mp.codigo">
+                            <option :value="mp.codigo" x-text="mp.nome"></option>
+                        </template>
+                    </select>
+
+                    <!-- Cartão / Caixa de Destaque com o Número da Conta / Carteira Móvel Correspondente -->
+                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-1">
+                        <div class="flex items-center justify-between text-xs text-emerald-900 font-bold">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-mobile-screen-button text-emerald-600"></i> Número da Conta / Pagamento:
+                            </span>
+                            <span class="font-mono bg-white px-2 py-0.5 rounded border border-emerald-300 text-emerald-800 text-sm font-black" x-text="getNumeroPagamento()"></span>
+                        </div>
+                        <p class="text-[11px] text-emerald-700 leading-tight" x-text="getInstrucaoPagamento()"></p>
+                    </div>
+                </div>
+
+                <!-- Observações do Pedido -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observações / Notas do Pedido</label>
+                    <textarea x-model="observacoes" rows="2" placeholder="Ex: Sem pimenta, ponto da carne bem passado, alergias..." class="w-full px-3 py-2 border rounded-lg text-sm outline-none resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="border-t pt-3 space-y-1">
+                <div class="flex justify-between items-center text-sm text-gray-600">
+                    <span>Subtotal Produtos:</span>
+                    <span x-text="total() + ' {{ estabelecimento.moeda }}'"></span>
+                </div>
+                <div x-show="isDelivery()" class="flex justify-between items-center text-sm text-gray-600">
+                    <span>Taxa de Entrega:</span>
+                    <span>150 {{ estabelecimento.moeda }}</span>
+                </div>
+                <div class="flex justify-between items-center pt-1 border-t">
+                    <span class="text-sm font-semibold text-gray-600">Total a Pagar:</span>
+                    <span class="text-xl font-black text-custom-primary" x-text="totalComEntrega() + ' {{ estabelecimento.moeda }}'"></span>
+                </div>
+            </div>
+
+            <button @click="enviarPedido()" class="w-full py-3 bg-custom-primary text-white rounded-xl font-bold shadow hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Confirmar &amp; Enviar Pedido</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL DEDICADO DE RESERVA DE MESA (SEM ITENS DE PEDIDO OU CARRINHO)       -->
+    <!-- ========================================================================= -->
+    <div x-show="modalReserva" class="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" x-cloak>
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                        <i class="fa-solid fa-calendar-check text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-900 leading-tight">Reserva de Mesa</h3>
+                        <p class="text-xs text-purple-700">Reserve a sua mesa com antecedência</p>
+                    </div>
+                </div>
+                <button @click="modalReserva = false" class="text-gray-400 hover:text-gray-600 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-gray-600">
+                Preencha os seus dados para reservar uma mesa. A nossa equipa receberá o seu pedido e enviará a confirmação da reserva directamente para o seu <strong>WhatsApp</strong>.
+            </p>
+
+            <!-- Formulário de Reserva -->
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome Completo do Cliente *</label>
+                    <input type="text" x-model="clienteNome" placeholder="Ex: Maria Manjate" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-purple-600">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Telemóvel (WhatsApp para Confirmação) *</label>
+                    <input type="text" x-model="clienteTelefone" placeholder="+258 84 000 0000" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-purple-600">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Número de Ocupantes *</label>
+                        <input type="number" min="1" max="50" x-model="reservaOcupantes" placeholder="Ex: 4" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Hora da Reserva *</label>
+                        <input type="time" x-model="reservaHora" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala / Ambiente *</label>
+                        <select x-model="reservaSalaId" @change="filtrarMesasPorSala()" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold">
+                            <template x-for="s in salas" :key="s.id">
+                                <option :value="s.id" x-text="s.nome"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Mesa Preferencial *</label>
+                        <select x-model="reservaMesaId" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-bold text-purple-800">
+                            <template x-for="m in mesasFiltradas" :key="m.id">
+                                <option :value="m.id" x-text="m.numero_mesa + ' (' + m.capacidade_lugares + ' lug.)'"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observações Especiais (Opcional)</label>
+                    <textarea x-model="observacoes" rows="2" placeholder="Ex: Mesa próxima da janela, comemoração de aniversário, cadeira de bebé..." class="w-full px-3 py-2 border rounded-lg text-sm outline-none resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Banner Informativo WhatsApp -->
+            <div class="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center gap-3">
+                <i class="fa-brands fa-whatsapp text-2xl text-emerald-600"></i>
+                <div class="text-xs text-purple-900">
+                    <p class="font-bold">Confirmação Imediata via WhatsApp</p>
+                    <p class="text-[11px] text-purple-700">Ao clicar em confirmar, receberá o comprovativo com todos os detalhes da sua mesa reservada.</p>
+                </div>
+            </div>
+
+            <button type="button" @click="confirmarReservaDireta()" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow flex items-center justify-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Confirmar Reserva de Mesa</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- FOOTER COMPLETO EM PORTUGUÊS DE PORTUGAL COM HORÁRIOS, CONTACTOS E REDES  -->
+    <!-- ========================================================================= -->
+    <footer class="bg-gray-900 text-gray-300 mt-auto pt-10 pb-16 border-t border-gray-800 w-full">
+        <div class="max-w-4xl mx-auto px-4 space-y-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Coluna 1: Identidade do Restaurante -->
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <img src="{{ estabelecimento.logotipo_url }}" alt="{{ estabelecimento.nome }}" class="w-12 h-12 rounded-full object-cover border border-gray-700">
+                        <div>
+                            <h3 class="text-base font-bold text-white">{{ estabelecimento.nome }}</h3>
+                            <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sistema Online Activo
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        {{ estabelecimento.descricao_rodape or 'O autêntico sabor das melhores iguarias preparadas com paixão e excelência.' }}
+                    </p>
+                    <!-- Redes Sociais -->
+                    <div class="flex items-center space-x-3 pt-2">
+                        {% if estabelecimento.whatsapp %}
+                        <a href="https://wa.me/{{ estabelecimento.whatsapp | replace('+', '') | replace(' ', '') }}" target="_blank" class="w-9 h-9 rounded-full bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition border border-emerald-500/30">
+                            <i class="fa-brands fa-whatsapp text-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if estabelecimento.facebook %}
+                        <a href="{{ estabelecimento.facebook }}" target="_blank" class="w-9 h-9 rounded-full bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white flex items-center justify-center transition border border-blue-500/30">
+                            <i class="fa-brands fa-facebook-f text-base"></i>
+                        </a>
+                        {% endif %}
+                        {% if estabelecimento.instagram %}
+                        <a href="{{ estabelecimento.instagram }}" target="_blank" class="w-9 h-9 rounded-full bg-pink-600/20 text-pink-400 hover:bg-pink-600 hover:text-white flex items-center justify-center transition border border-pink-500/30">
+                            <i class="fa-brands fa-instagram text-base"></i>
+                        </a>
+                        {% endif %}
+                        {% if estabelecimento.website %}
+                        <a href="{{ estabelecimento.website }}" target="_blank" class="w-9 h-9 rounded-full bg-teal-600/20 text-teal-400 hover:bg-teal-600 hover:text-white flex items-center justify-center transition border border-teal-500/30">
+                            <i class="fa-solid fa-globe text-base"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Coluna 2: Horários de Funcionamento -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-regular fa-clock text-custom-primary"></i> Horários
+                    </h4>
+                    <div class="bg-gray-800/60 p-3.5 rounded-xl border border-gray-800 space-y-2 text-xs">
+                        <div class="flex justify-between items-center text-gray-300">
+                            <span class="font-medium">Dias de Atendimento:</span>
+                            <span class="font-bold text-white">{{ estabelecimento.dias_funcionamento or 'Segunda a Domingo' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-300 border-t border-gray-700/50 pt-2">
+                            <span class="font-medium">Horário de Funcionamento:</span>
+                            <span class="font-bold text-amber-400">{{ estabelecimento.horario_abertura or '10:00 - 23:00' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-300 border-t border-gray-700/50 pt-2">
+                            <span class="font-medium">Pedidos Takeaway &amp; Delivery:</span>
+                            <span class="font-bold text-emerald-400">Até 30 min antes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna 3: Contactos & Localização -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot text-custom-primary"></i> Contactos &amp; Local
+                    </h4>
+                    <div class="space-y-2 text-xs text-gray-300">
+                        <p class="flex items-start gap-2">
+                            <i class="fa-solid fa-map-pin text-rose-500 mt-0.5"></i>
+                            <span>{{ estabelecimento.endereco }}{% if estabelecimento.cidade %}, {{ estabelecimento.cidade }}{% endif %}</span>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <i class="fa-solid fa-phone text-blue-400"></i>
+                            <span>{{ estabelecimento.telefone }}</span>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <i class="fa-solid fa-envelope text-amber-400"></i>
+                            <span>{{ estabelecimento.email }}</span>
+                        </p>
+                        <div class="pt-2 border-t border-gray-800 flex items-center gap-2 text-emerald-400 font-semibold">
+                            <i class="fa-brands fa-whatsapp text-base"></i>
+                            <span>WhatsApp: {{ estabelecimento.whatsapp or '+258 84 000 0000' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canais de Pagamento Móvel Aceites — dinâmicos das configurações -->
+            <div class="pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-semibold text-gray-300">Pagamentos Aceites:</span>
+                    <template x-for="mp in metodosPagamento" :key="mp.codigo">
+                        <span class="px-2 py-0.5 bg-gray-800 text-gray-200 rounded font-bold border border-gray-700 flex items-center gap-1">
+                            <i :class="mp.icone || 'fa-solid fa-credit-card'"></i>
+                            <span x-text="mp.nome"></span>
+                            <template x-if="mp.numero">
+                                <span class="font-mono text-gray-400" x-text="'(' + mp.numero + ')'"></span>
+                            </template>
+                        </span>
+                    </template>
+                </div>
+                <div class="text-center sm:text-right text-[11px] text-gray-500">
+                    &copy; 2026 {{ estabelecimento.nome }}. Todos os direitos reservados.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+<script>
+function portalComponent() {
+    var app = window.RestauranteApp;
+
+    // 1. TIPOS DE PEDIDO NO PORTAL DO CLIENTE (SEM BALCÃO e SEM RESERVA nos pedidos de comida)
+    // O Balcão é para atendimento presencial físico no restaurante.
+    // A Reserva é feita em fluxo dedicado (sem produtos).
+    var tiposOriginais = (app.tipos_pedidos && app.tipos_pedidos.length > 0)
+        ? JSON.parse(JSON.stringify(app.tipos_pedidos))
+        : [
+            { codigo: 'MESA', descricao: 'Mesa / Salão (Consumo Local)' },
+            { codigo: 'TAKEAWAY', descricao: 'Takeaway (Para Levar)' },
+            { codigo: 'DELIVERY', descricao: 'Delivery (Entrega ao Domicílio)' }
+          ];
+
+    var tiposFiltrados = tiposOriginais.filter(function(t) {
+        var c = (t.codigo || '').toUpperCase();
+        var d = (t.descricao || '').toUpperCase();
+        // Excluir Balcão e Reserva dos pedidos de cardápio online
+        var isBalcao = c.indexOf('BALCAO') >= 0 || c.indexOf('BALCÃO') >= 0 || d.indexOf('BALCÃO') >= 0 || d.indexOf('BALCAO') >= 0;
+        var isReserva = c.indexOf('RESERVA') >= 0 || d.indexOf('RESERVA') >= 0;
+        return !isBalcao && !isReserva;
+    });
+
+    if (tiposFiltrados.length === 0) {
+        tiposFiltrados = [
+            { codigo: 'MESA', descricao: 'Mesa / Salão (Consumo no Restaurante)' },
+            { codigo: 'TAKEAWAY', descricao: 'Takeaway (Para Levar)' },
+            { codigo: 'DELIVERY', descricao: 'Delivery (Entrega ao Domicílio)' }
+        ];
+    }
+
+    // 2. MÉTODOS DE PAGAMENTO NO PORTAL (SEM DINHEIRO / NUMERÁRIO)
+    // Encomendas online só aceitam métodos electrónicos/móveis (M-Pesa, e-Mola, Conta Móvel, POS/Cartão)
+    var canaisPagamentoApp = (app.canais_pagamento && app.canais_pagamento.length > 0) ? app.canais_pagamento : [];
+    
+    // Mapeamento de números padrão por operadora caso não estejam no objecto
+    var numerosPadrao = {
+        'MPESA': '840000000',
+        'EMOLA': '860000000',
+        'CONTA_MOVEL': '820000000',
+        'CARTAO': 'Terminal POS / Cartão',
+        'POS': 'Terminal POS / Cartão'
+    };
+
+    var metodosFiltrados = [];
+    if (app.metodos_pagamento && app.metodos_pagamento.length > 0) {
+        metodosFiltrados = app.metodos_pagamento
+            .filter(function(m) {
+                var c = (m.codigo || '').toUpperCase();
+                var n = (m.nome || '').toUpperCase();
+                // Excluir Dinheiro / Numerário
+                return c.indexOf('DIN') === -1 && n.indexOf('DINHEIRO') === -1 && n.indexOf('NUMERÁRIO') === -1 && n.indexOf('NUMERARIO') === -1;
+            })
+            .map(function(m) {
+                var canal = canaisPagamentoApp.find(function(c) {
+                    return (c.codigo_operadora || '').toUpperCase() === (m.codigo || '').toUpperCase();
+                });
+                var num = (canal && canal.numero_associado) ? canal.numero_associado : (m.numero || numerosPadrao[m.codigo] || '840000000');
+                var inst = (canal && canal.instrucoes) ? canal.instrucoes : (m.instrucoes || 'Envie o valor exacto e guarde a mensagem de confirmação.');
+                return {
+                    codigo: m.codigo,
+                    nome: m.nome,
+                    numero: num,
+                    icone: m.icone || 'fa-solid fa-mobile-screen-button',
+                    instrucoes: inst
+                };
+            });
+    }
+
+    if (metodosFiltrados.length === 0) {
+        metodosFiltrados = [
+            { codigo: 'MPESA', nome: 'M-Pesa (Vodacom)', numero: '840000000', icone: 'fa-solid fa-mobile-screen', instrucoes: 'Envie o valor exacto para o número 840000000 e guarde a mensagem M-Pesa para confirmação.' },
+            { codigo: 'EMOLA', nome: 'e-Mola (Movitel)', numero: '860000000', icone: 'fa-solid fa-mobile-screen-button', instrucoes: 'Transfira via e-Mola para 860000000 com o valor exacto do pedido.' },
+            { codigo: 'CONTA_MOVEL', nome: 'Conta Móvel (Tmcel)', numero: '820000000', icone: 'fa-solid fa-phone-volume', instrucoes: 'Pagamento directo via telemóvel Tmcel para o número 820000000.' },
+            { codigo: 'CARTAO', nome: 'Cartão / Terminal POS', numero: 'Terminal POS Balcão / Estafeta', icone: 'fa-solid fa-credit-card', instrucoes: 'Pagamento com cartão no ato de entrega ou recepção.' }
+        ];
+    }
+
+    var salasConfig = app.salas || [
+        { id: '1', nome: 'Salão Principal Climatizado' },
+        { id: '2', nome: 'Esplanada & Jardim' },
+        { id: '3', nome: 'Zona VIP / Reservados' }
+    ];
+
+    var mesasConfig = app.mesas || [];
+
+    return {
+        categoriaAtiva: 'todos',
+        produtos: app.produtos || [],
+        categorias: app.categorias || [],
+        salas: salasConfig,
+        mesas: mesasConfig,
+        mesasFiltradas: [],
+        tiposPedidos: tiposFiltrados,
+        metodosPagamento: metodosFiltrados,
+        canalPagamento: metodosFiltrados.length > 0 ? metodosFiltrados[0].codigo : '',
+        tipoEntrega: tiposFiltrados.length > 0 ? tiposFiltrados[0].codigo : 'MESA',
+        mesaOuEndereco: 'Mesa 01',
+        carrinho: [],
+        modalCheckout: false,
+        modalReserva: false,
+        clienteNome: '',
+        clienteTelefone: '',
+        observacoes: '',
+
+        // Campos de Reserva
+        reservaOcupantes: 2,
+        reservaHora: '19:30',
+        reservaSalaId: salasConfig.length > 0 ? salasConfig[0].id : '1',
+        reservaMesaId: '',
+
+        init() {
+            this.filtrarMesasPorSala();
+        },
+
+        abrirModalReserva() {
+            this.filtrarMesasPorSala();
+            this.modalReserva = true;
+        },
+
+        isTakeaway() {
+            var c = (this.tipoEntrega || '').toUpperCase();
+            return c.indexOf('TAKEAWAY') >= 0 || c.indexOf('LEVAR') >= 0;
+        },
+
+        isDelivery() {
+            var c = (this.tipoEntrega || '').toUpperCase();
+            return c.indexOf('DELIVERY') >= 0 || c.indexOf('ENTREGA') >= 0;
+        },
+
+        isConsumoMesa() {
+            return !this.isTakeaway() && !this.isDelivery();
+        },
+
+        onTipoEntregaChange() {
+            if (this.isTakeaway()) {
+                this.mesaOuEndereco = 'Takeaway (Para Levar)';
+            } else if (this.isDelivery()) {
+                this.mesaOuEndereco = '';
+            } else {
+                this.mesaOuEndereco = 'Mesa 01';
+            }
+        },
+
+        onCanalPagamentoChange() {
+            // Reacção imediata ao mudar de operadora
+        },
+
+        getNumeroPagamento() {
+            var mp = this.metodosPagamento.find(x => x.codigo === this.canalPagamento);
+            return (mp && mp.numero) ? mp.numero : '840000000';
+        },
+
+        getInstrucaoPagamento() {
+            var mp = this.metodosPagamento.find(x => x.codigo === this.canalPagamento);
+            if (!mp) return 'Selecione o método de pagamento pretendido.';
+            var msg = mp.nome;
+            if (mp.numero) msg += ' — Número da Conta: ' + mp.numero;
+            if (mp.instrucoes) msg += '. ' + mp.instrucoes;
+            return msg;
+        },
+
+        filtrarMesasPorSala() {
+            var salaId = this.reservaSalaId;
+            this.mesasFiltradas = this.mesas.filter(function(m) {
+                return String(m.sala_id) === String(salaId);
+            });
+            if (this.mesasFiltradas.length > 0) {
+                this.reservaMesaId = this.mesasFiltradas[0].id;
+            } else {
+                this.reservaMesaId = '';
+            }
+        },
+
+        limparCarrinho() {
+            if (this.carrinho.length === 0) return;
+            if (confirm('Deseja limpar todos os produtos do carrinho?')) {
+                this.carrinho = [];
+            }
+        },
+
+        removerItem(index) {
+            this.carrinho.splice(index, 1);
+        },
+
+        abrirGoogleMapsLocalizacao() {
+            var self = this;
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    var mapsUrl = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                    self.mesaOuEndereco = 'GPS: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+                    window.open(mapsUrl, '_blank');
+                }, function(error) {
+                    var query = self.mesaOuEndereco || 'Maputo, Moçambique';
+                    window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query), '_blank');
+                });
+            } else {
+                var query = this.mesaOuEndereco || 'Maputo, Moçambique';
+                window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query), '_blank');
+            }
+        },
+
+        estaAberto() {
+            var horario = '{{ estabelecimento.horario_abertura or "10:00 - 23:00" }}';
+            var partes = horario.split('-');
+            if (partes.length < 2) return true;
+            var agora = new Date();
+            var hAtual = agora.getHours() * 60 + agora.getMinutes();
+            function parseTempo(s) {
+                var p = s.trim().split(':');
+                return parseInt(p[0]) * 60 + parseInt(p[1]);
+            }
+            try {
+                var abertura = parseTempo(partes[0]);
+                var fecho = parseTempo(partes[1]);
+                return hAtual >= abertura && hAtual < fecho;
+            } catch(e) { return true; }
+        },
+
+        produtosFiltrados() {
+            var lista = this.produtos.filter(function(p) {
+                return p.visivel_portal !== false;
+            });
+            if (this.categoriaAtiva === 'todos') return lista;
+            return lista.filter(p => p.categoria_id === this.categoriaAtiva);
+        },
+
+        isDisponivel(prod) {
+            if (!prod) return false;
+            // 1. Estado explícito do produto (disponivel / indisponivel)
+            if (prod.estado === 'indisponivel' || prod.estado === 'esgotado' || prod.disponivel === false) {
+                return false;
+            }
+
+            // 2. Se tiver ficha técnica, verificar se os insumos no stock têm saldo > 0
+            var stockLista = (window.RestauranteApp && window.RestauranteApp.stock) ? window.RestauranteApp.stock : [];
+            if (prod.ficha_tecnica && prod.ficha_tecnica.length > 0) {
+                for (var i = 0; i < prod.ficha_tecnica.length; i++) {
+                    var f = prod.ficha_tecnica[i];
+                    var st = stockLista.find(function(s) {
+                        return String(s.id) === String(f.stock_id) || (s.nome && f.stock_nome && s.nome.toLowerCase() === f.stock_nome.toLowerCase());
+                    });
+                    if (st && Number(st.qtd) <= 0) {
+                        return false; // Sem insumo disponível no stock
+                    }
+                }
+            } else {
+                // Se não tem ficha técnica, verificar item direto no stock pelo nome
+                var stDireto = stockLista.find(function(s) {
+                    return (prod.nome && s.nome && prod.nome.toLowerCase().trim() === s.nome.toLowerCase().trim()) || String(s.id) === String(prod.stock_id);
+                });
+                if (stDireto && Number(stDireto.qtd) <= 0) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+
+        adicionar(prod) {
+            if (!this.estaAberto()) { 
+                alert('O restaurante está encerrado neste momento.'); 
+                return; 
+            }
+            if (!this.isDisponivel(prod)) {
+                alert('Desculpe, o produto "' + prod.nome + '" está indisponível / esgotado no momento.');
+                return;
+            }
+            let precoFinal = prod.tem_promocao ? prod.preco_promocional : prod.preco;
+            let item = this.carrinho.find(i => i.id === prod.id);
+            if (item) {
+                item.qtd++;
+            } else {
+                this.carrinho.push({ id: prod.id, nome: prod.nome, preco: precoFinal, qtd: 1, stock_id: prod.stock_id || "1" });
+            }
+        },
+
+        total() {
+            return this.carrinho.reduce((acc, i) => acc + (i.preco * i.qtd), 0);
+        },
+
+        totalComEntrega() {
+            return this.total() + (this.isDelivery() ? 150 : 0);
+        },
+
+        // CONFIRMAÇÃO DE RESERVA DE MESA DEDICADA (SEM PEDIDO DE COMIDA)
+        confirmarReservaDireta() {
+            if (!this.clienteNome || !this.clienteTelefone) {
+                alert('Por favor informe o seu nome completo e telemóvel para contacto.');
+                return;
+            }
+
+            var salaObj = this.salas.find(s => String(s.id) === String(this.reservaSalaId));
+            var mesaObj = this.mesas.find(m => String(m.id) === String(this.reservaMesaId));
+            var salaNome = salaObj ? salaObj.nome : 'Salão Principal';
+            var mesaNome = mesaObj ? mesaObj.numero_mesa : 'Mesa a designar';
+            var listaOnline = window.RestauranteApp.pedidos_online || [];
+            var totalRes = listaOnline.filter(p => p.tipo_entrega === 'RESERVA' || (p.numero_pedido || '').indexOf('RES-') === 0).length + 1;
+            var numRes = 'RES-' + String(totalRes).padStart(3, '0');
+
+            var reservaObj = {
+                id: String(Date.now()),
+                numero_pedido: numRes,
+                cliente_nome: this.clienteNome,
+                cliente_telefone: this.clienteTelefone,
+                tipo_entrega: 'RESERVA',
+                mesa_id: this.reservaMesaId,
+                numero_mesa: salaNome + ' • ' + mesaNome,
+                endereco_entrega: salaNome + ' • ' + mesaNome,
+                reserva_ocupantes: this.reservaOcupantes,
+                reserva_hora: this.reservaHora,
+                reserva_sala: salaNome,
+                reserva_mesa: mesaNome,
+                operadora_pagamento: 'SEM_PAGAMENTO',
+                referencia_pagamento: 'RESERVA_MESA',
+                itens: [], // RESERVA NÃO TEM PRATOS OU PEDIDOS
+                subtotal: 0.00,
+                taxa_entrega: 0.00,
+                total: 0.00,
+                observacoes: this.observacoes,
+                estado: 'RESERVA_PENDENTE',
+                stock_deduzido: false,
+                data_pedido: new Date().toLocaleString('pt-PT')
+            };
+
+            if (!window.RestauranteApp.pedidos_online) {
+                window.RestauranteApp.pedidos_online = [];
+            }
+            window.RestauranteApp.pedidos_online.unshift(reservaObj);
+
+            if (window.RestauranteApp.salvarEstado) {
+                window.RestauranteApp.salvarEstado();
+            }
+
+            // Notificação Directa para WhatsApp do Cliente / Restaurante
+            var telLimpo = (this.clienteTelefone || '').replace(/[^0-9]/g, '');
+            var msgWhats = 'Olá ' + this.clienteNome + '! Confirmamos a recepção do seu pedido de *Reserva de Mesa* no {{ estabelecimento.nome }}:%0A%0A'
+                + '📌 *Código:* ' + numRes + '%0A'
+                + '👥 *Ocupantes:* ' + this.reservaOcupantes + ' pessoas%0A'
+                + '⏰ *Hora:* ' + this.reservaHora + '%0A'
+                + '🏛️ *Sala / Área:* ' + salaNome + '%0A'
+                + '🪑 *Mesa:* ' + mesaNome + '%0A'
+                + '📋 *Observações:* ' + (this.observacoes || 'Nenhuma') + '%0A%0A'
+                + 'Agradecemos a sua preferência! A sua mesa estará reservada.';
+
+            var whatsUrl = 'https://api.whatsapp.com/send?phone=' + telLimpo + '&text=' + msgWhats;
+
+            alert('Reserva ' + numRes + ' registada com sucesso!\n\nCliente: ' + this.clienteNome + '\nOcupantes: ' + this.reservaOcupantes + ' pessoas\nHora: ' + this.reservaHora + '\nLocal: ' + salaNome + ' • ' + mesaNome + '\n\nA abrir o WhatsApp para confirmação directa da sua reserva...');
+
+            window.open(whatsUrl, '_blank');
+
+            this.modalReserva = false;
+            this.observacoes = '';
+        },
+
+        // ENVIO DO PEDIDO DE COMIDA DO CARDÁPIO ONLINE
+        enviarPedido() {
+            if (!this.clienteNome || !this.clienteTelefone) {
+                alert('Por favor informe o seu nome completo e telemóvel para contacto.');
+                return;
+            }
+
+            if (this.carrinho.length === 0) {
+                alert('O seu carrinho de compras está vazio. Adicione itens antes de confirmar.');
+                return;
+            }
+
+            if (this.isDelivery() && !this.mesaOuEndereco) {
+                alert('Por favor indique o endereço de entrega para o Delivery.');
+                return;
+            }
+
+            var listaOnline = window.RestauranteApp.pedidos_online || [];
+            var totalPeds = listaOnline.filter(p => (p.numero_pedido || '').indexOf('PED-ONL-') === 0).length + 1;
+            var numPed = 'PED-ONL-' + String(totalPeds).padStart(3, '0');
+            var refSeq = 'REF-' + String(totalPeds).padStart(6, '0');
+            var novoPedido = {
+                id: String(Date.now()),
+                numero_pedido: numPed,
+                cliente_nome: this.clienteNome,
+                cliente_telefone: this.clienteTelefone,
+                tipo_entrega: this.tipoEntrega,
+                mesa_id: this.isConsumoMesa() ? '1' : null,
+                numero_mesa: this.isConsumoMesa() ? this.mesaOuEndereco : '-',
+                endereco_entrega: this.isDelivery() ? this.mesaOuEndereco : (this.isTakeaway() ? 'Takeaway (Para Levar)' : this.mesaOuEndereco),
+                operadora_pagamento: this.canalPagamento,
+                numero_pagamento: this.getNumeroPagamento(),
+                referencia_pagamento: refSeq,
+                itens: JSON.parse(JSON.stringify(this.carrinho)),
+                subtotal: this.total(),
+                taxa_entrega: this.isDelivery() ? 150 : 0,
+                total: this.totalComEntrega(),
+                observacoes: this.observacoes,
+                estado: 'PENDENTE_VALIDACAO',
+                stock_deduzido: false,
+                data_pedido: new Date().toLocaleString('pt-PT')
+            };
+
+            if (!window.RestauranteApp.pedidos_online) {
+                window.RestauranteApp.pedidos_online = [];
+            }
+            window.RestauranteApp.pedidos_online.unshift(novoPedido);
+
+            // Persistir
+            if (window.RestauranteApp.salvarEstado) {
+                window.RestauranteApp.salvarEstado();
+            }
+
+            var tipoNome = this.isTakeaway() ? 'Takeaway' : (this.isDelivery() ? 'Delivery' : 'Mesa');
+            alert('Obrigado ' + this.clienteNome + '!\nO seu pedido ' + numPed + ' (' + tipoNome + ') foi registado com sucesso no valor de ' + this.totalComEntrega() + ' {{ estabelecimento.moeda }}.\n\nPagamento via: ' + this.canalPagamento + ' (Número: ' + this.getNumeroPagamento() + ').');
+
+            this.carrinho = [];
+            this.observacoes = '';
+            this.modalCheckout = false;
+        }
+    };
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,936 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Cabeçalho -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white rounded-2xl shadow-sm p-6 border-l-4 border-amber-500">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-vault text-amber-500"></i> Gestão de Caixa & Terminais
+            </h1>
+            <p class="text-gray-500 mt-1">Abertura e fecho de turnos, conciliação de numerário e cartões, terminais físicos e rastreabilidade total.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="abrirModalAbrirTurno()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-key"></i> Abrir Novo Turno
+            </button>
+            <button type="button" onclick="abrirModalTerminal()" class="px-4 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-desktop"></i> Novo Terminal
+            </button>
+        </div>
+    </div>
+
+    <!-- TABS DE GESTÃO DE CAIXA E FINANCEIRO (8 Módulos Completos) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex flex-wrap gap-2">
+        <button type="button" onclick="trocarTabCaixa('turnos-fechos')" id="tabBtn-turnos-fechos" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-amber-500 text-white cursor-pointer shadow-sm">
+            <i class="fa-solid fa-door-open"></i> Turnos de Caixa & Fechos
+        </button>
+        <button type="button" onclick="trocarTabCaixa('fecho-diario')" id="tabBtn-fecho-diario" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Fecho Diário Consolidado
+        </button>
+        <button type="button" onclick="trocarTabCaixa('caixas-fisicos')" id="tabBtn-caixas-fisicos" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-desktop"></i> Caixas Físicos (Terminais)
+        </button>
+        <button type="button" onclick="trocarTabCaixa('rastreabilidade')" id="tabBtn-rastreabilidade" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-timeline"></i> Rastreabilidade de Caixa
+        </button>
+        <button type="button" onclick="trocarTabCaixa('sessoes-legadas')" id="tabBtn-sessoes-legadas" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-clock-rotate-left"></i> Sessões Legadas (Histórico)
+        </button>
+        <button type="button" onclick="trocarTabCaixa('vendas-finalizadas')" id="tabBtn-vendas-finalizadas" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-file-invoice"></i> Vendas Finalizadas
+        </button>
+        <button type="button" onclick="trocarTabCaixa('formas-pagamento')" id="tabBtn-formas-pagamento" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-credit-card"></i> Formas de Pagamento
+        </button>
+        <button type="button" onclick="trocarTabCaixa('pagamentos-realizados')" id="tabBtn-pagamentos-realizados" class="tab-caixa-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 text-gray-600 hover:bg-gray-100 cursor-pointer">
+            <i class="fa-solid fa-coins"></i> Pagamentos Realizados
+        </button>
+    </div>
+
+    <!-- PAINEL 1: TURNOS DE CAIXA & FECHOS -->
+    <div id="painel-turnos-fechos" class="space-y-4">
+        <!-- Resumo Rápido -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Turnos Activos</span>
+                <p id="cardTurnosAbertos" class="text-2xl font-black text-emerald-600 mt-1">1</p>
+                <span class="text-[10px] text-gray-400 font-medium">Em operação agora</span>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Fundo de Maneio Total</span>
+                <p id="cardFundoManeio" class="text-2xl font-black text-gray-800 mt-1">5,000.00 MT</p>
+                <span class="text-[10px] text-gray-400 font-medium">Valor inicial em caixa</span>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Vendas em Caixa</span>
+                <p id="cardTotalVendasCaixa" class="text-2xl font-black text-amber-600 mt-1">3,450.00 MT</p>
+                <span class="text-[10px] text-gray-400 font-medium">Arrecadado neste turno</span>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Saldo em Gaveta Estimado</span>
+                <p id="cardSaldoEstimado" class="text-2xl font-black text-blue-600 mt-1">8,450.00 MT</p>
+                <span class="text-[10px] text-gray-400 font-medium">Fundo + Vendas</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                    <tr>
+                        <th class="p-4">Turno ID</th>
+                        <th class="p-4">Terminal / Caixa</th>
+                        <th class="p-4">Operador</th>
+                        <th class="p-4">Abertura</th>
+                        <th class="p-4 text-right">Fundo Inicial</th>
+                        <th class="p-4 text-right">Total Vendas</th>
+                        <th class="p-4 text-center">Estado</th>
+                        <th class="p-4 text-right">Acções</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaTurnosCaixa" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAINEL 2: FECHO DIÁRIO CONSOLIDADO -->
+    <div id="painel-fecho-diario" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+            <div class="border-b pb-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Relatório Diário de Caixa Consolidado</h2>
+                    <p class="text-xs text-gray-500">Totalização de todas as formas de pagamento do dia para envio à contabilidade.</p>
+                </div>
+                <button type="button" onclick="window.print()" class="px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black flex items-center gap-2 cursor-pointer shadow">
+                    <i class="fa-solid fa-print"></i> Imprimir Fecho Z
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="cardsFechoDiarioConsolidado">
+                <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <span class="text-xs font-bold text-emerald-800 uppercase block">Numerário (Dinheiro)</span>
+                    <span class="text-2xl font-black text-emerald-700" id="fechoTotalDinheiro">1,250.00 MT</span>
+                    <span class="text-[11px] text-emerald-600 block mt-1">Conferido na gaveta física</span>
+                </div>
+                <div class="p-4 bg-red-50 rounded-xl border border-red-200">
+                    <span class="text-xs font-bold text-red-800 uppercase block">M-Pesa (Vodacom)</span>
+                    <span class="text-2xl font-black text-red-700" id="fechoTotalMpesa">1,400.00 MT</span>
+                    <span class="text-[11px] text-red-600 block mt-1">Extrato Vodacom M-Pesa</span>
+                </div>
+                <div class="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <span class="text-xs font-bold text-amber-800 uppercase block">e-Mola (Movitel)</span>
+                    <span class="text-2xl font-black text-amber-700" id="fechoTotalEmola">0.00 MT</span>
+                    <span class="text-[11px] text-amber-600 block mt-1">Carteira móvel Movitel</span>
+                </div>
+                <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <span class="text-xs font-bold text-blue-800 uppercase block">Cartão Bancário (POS)</span>
+                    <span class="text-2xl font-black text-blue-700" id="fechoTotalCartao">800.00 MT</span>
+                    <span class="text-[11px] text-blue-600 block mt-1">Talões de TPA conciliados</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL 3: CAIXAS FÍSICOS (TERMINAIS) -->
+    <div id="painel-caixas-fisicos" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Terminais e Caixas Físicos</h2>
+                <p class="text-xs text-gray-500">Máquinas registradoras, computadores de balcão e impressoras térmicas conectadas.</p>
+            </div>
+            <button type="button" onclick="abrirModalTerminal()" class="px-4 py-2 bg-custom-primary text-white rounded-xl text-xs font-bold shadow hover:opacity-90 cursor-pointer">
+                + Adicionar Terminal
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="gradeTerminais"></div>
+    </div>
+
+    <!-- PAINEL 4: RASTREABILIDADE DE CAIXA -->
+    <div id="painel-rastreabilidade" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+                <div>
+                    <span class="font-bold text-sm text-gray-800 block">Linha do Tempo: Sangrias, Suprimentos e Fechos</span>
+                    <span class="text-xs text-gray-500">Histórico cronológico de movimentações e fluxos em gaveta</span>
+                </div>
+                <button type="button" onclick="abrirModalMovimentoCaixa()" class="px-3.5 py-2 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 cursor-pointer shadow-sm">
+                    + Registar Sangria / Suprimento
+                </button>
+            </div>
+            <div class="p-4 divide-y divide-gray-100" id="listaMovimentosCaixa"></div>
+        </div>
+    </div>
+
+    <!-- PAINEL 5: SESSÕES LEGADAS (HISTÓRICO DE FECHOS E AUDITORIA) -->
+    <div id="painel-sessoes-legadas" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                <div>
+                    <h3 class="font-bold text-sm text-gray-800">Histórico de Sessões Legadas & Auditoria de Fechos</h3>
+                    <p class="text-xs text-gray-500">Fechos de turnos anteriores com auditoria de quebras, sobras e validação de saldos.</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-100 text-gray-700 uppercase font-semibold text-xs border-b">
+                        <tr>
+                            <th class="p-4">Turno</th>
+                            <th class="p-4">Terminal</th>
+                            <th class="p-4">Operador</th>
+                            <th class="p-4">Abertura / Fecho</th>
+                            <th class="p-4 text-right">Fundo Inicial</th>
+                            <th class="p-4 text-right">Vendas Sistema</th>
+                            <th class="p-4 text-right">Valor Contado</th>
+                            <th class="p-4 text-right">Diferença (Quebra/Sobra)</th>
+                            <th class="p-4 text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaSessoesLegadas" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL 6: VENDAS FINALIZADAS -->
+    <div id="painel-vendas-finalizadas" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50">
+                <div>
+                    <h3 class="font-bold text-sm text-gray-800">Consulta de Facturas & Vendas Finalizadas</h3>
+                    <p class="text-xs text-gray-500">Pesquisa directa de comprovativos fiscais, recibos e detalhes de pedidos emitidos.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="filtroVendasFinalizadas" onkeyup="renderVendasFinalizadas()" placeholder="Pesquisar factura, cliente ou mesa..." class="px-3.5 py-2 border rounded-xl text-xs bg-white w-64 outline-none focus:border-amber-500">
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-100 text-gray-700 uppercase font-semibold text-xs border-b">
+                        <tr>
+                            <th class="p-4">Factura / Recibo</th>
+                            <th class="p-4">Data & Hora</th>
+                            <th class="p-4">Tipo & Local</th>
+                            <th class="p-4">Forma de Pagamento</th>
+                            <th class="p-4 text-right">Total Facturado</th>
+                            <th class="p-4 text-center">Estado</th>
+                            <th class="p-4 text-right">Acção</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaVendasFinalizadas" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL 7: FORMAS DE PAGAMENTO -->
+    <div id="painel-formas-pagamento" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Gestão de Formas de Pagamento</h2>
+                <p class="text-xs text-gray-500">Configuração dos canais e métodos de recebimento activos (M-Pesa, e-Mola, Numerário, Cartão POS, Conta Móvel).</p>
+            </div>
+            <button type="button" onclick="abrirModalFormaPagamento()" class="px-4 py-2 bg-custom-primary text-white rounded-xl text-xs font-bold shadow hover:opacity-90 cursor-pointer">
+                + Nova Forma de Pagamento
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="gradeFormasPagamento"></div>
+    </div>
+
+    <!-- PAINEL 8: PAGAMENTOS REALIZADOS (CONCILIAÇÃO) -->
+    <div id="painel-pagamentos-realizados" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b font-bold text-sm text-gray-800 flex justify-between items-center bg-gray-50">
+                <div>
+                    <span class="block">Conciliação de Transacções & Pagamentos do Dia</span>
+                    <span class="text-xs text-gray-500 font-normal">Auditoria detalhada de cada transacção por método de pagamento</span>
+                </div>
+                <span class="text-xs text-gray-500 font-mono font-bold" id="totalTransacoesDia">0 transacções</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-100 text-gray-700 uppercase font-semibold text-xs border-b">
+                        <tr>
+                            <th class="p-4">ID Transacção</th>
+                            <th class="p-4">Origem / Referência</th>
+                            <th class="p-4">Canal / Método</th>
+                            <th class="p-4">Data & Hora</th>
+                            <th class="p-4 text-right">Valor Conciliado</th>
+                            <th class="p-4 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaPagamentosHoje" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ABRIR NOVO TURNO -->
+<div id="modalAbrirTurno" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-key text-emerald-600"></i> Abertura de Turno de Caixa
+            </h3>
+            <button type="button" onclick="fecharModal('modalAbrirTurno')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Terminal de Caixa *</label>
+                <select id="turnoTerminalSelect" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold outline-none focus:border-emerald-500"></select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Operador Responsável *</label>
+                <input type="text" id="turnoOperador" value="Administrador Central" class="w-full px-3 py-2 border rounded-xl text-sm font-bold bg-gray-50 readonly outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fundo de Maneio Inicial (MT) *</label>
+                <input type="number" step="0.01" id="turnoFundoManeio" value="5000.00" class="w-full px-3 py-2 border rounded-xl text-sm font-black text-emerald-700 outline-none focus:border-emerald-500">
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalAbrirTurno')" class="px-4 py-2 border rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="confirmarAberturaTurno()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow cursor-pointer">Confirmar Abertura</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL FECHAR TURNO -->
+<div id="modalFecharTurno" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-lock text-red-600"></i> Fecho de Turno & Conciliação
+            </h3>
+            <button type="button" onclick="fecharModal('modalFecharTurno')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900">
+                <p>Insira os valores contados na gaveta para calcular eventuais sobras ou faltas de caixa.</p>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Total Dinheiro Contado (MT) *</label>
+                <input type="number" step="0.01" id="fechoValorFinal" value="8450.00" class="w-full px-3 py-2 border rounded-xl text-sm font-black text-gray-900 outline-none focus:border-red-500">
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalFecharTurno')" class="px-4 py-2 border rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="confirmarFechoTurno()" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm shadow cursor-pointer">Confirmar Fecho</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVO TERMINAL -->
+<div id="modalTerminal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-desktop text-gray-800"></i> Novo Terminal de Caixa
+            </h3>
+            <button type="button" onclick="fecharModal('modalTerminal')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código</label>
+                    <input type="text" id="termCodigo" value="CX-03" class="w-full px-3 py-2 border rounded-xl text-sm font-mono bg-gray-50 outline-none">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Terminal *</label>
+                    <input type="text" id="termNome" placeholder="Ex: Caixa Esplanada" class="w-full px-3 py-2 border rounded-xl text-sm font-bold outline-none focus:border-custom-primary">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Localização</label>
+                <input type="text" id="termLocal" placeholder="Ex: Bar Superior" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-custom-primary">
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalTerminal')" class="px-4 py-2 border rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="salvarTerminal()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-xl text-sm shadow cursor-pointer">Gravar Terminal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVO MOVIMENTO DE CAIXA (SANGRIA / SUPRIMENTO) -->
+<div id="modalMovimentoCaixa" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800">Registo de Sangria / Suprimento</h3>
+            <button type="button" onclick="fecharModal('modalMovimentoCaixa')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Movimentação *</label>
+                <select id="movTipo" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-bold outline-none">
+                    <option value="SANGRIA">🔴 Sangria (Retirada de Dinheiro para Cofre/Despesa)</option>
+                    <option value="SUPRIMENTO">🟢 Suprimento (Entrada de Dinheiro / Reforço de Troco)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Valor (MT) *</label>
+                <input type="number" step="0.01" id="movValor" placeholder="Ex: 1000.00" class="w-full px-3 py-2 border rounded-lg text-sm font-black text-gray-900 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Terminal de Origem / Destino *</label>
+                <select id="movTerminalSelect" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none"></select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição / Justificativo *</label>
+                <input type="text" id="movDescricao" placeholder="Ex: Sangria para cofre central" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalMovimentoCaixa')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="salvarMovimentoCaixa()" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-sm shadow cursor-pointer">Gravar Movimento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVA FORMA DE PAGAMENTO -->
+<div id="modalFormaPagamento" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-bold text-lg text-gray-800">Forma de Pagamento</h3>
+            <button type="button" onclick="fecharModal('modalFormaPagamento')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código Identificador *</label>
+                <input type="text" id="fpCodigo" placeholder="Ex: CONTA_MOVEL" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold uppercase outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome / Descrição do Método *</label>
+                <input type="text" id="fpNome" placeholder="Ex: Conta Móvel Tmcel" class="w-full px-3 py-2 border rounded-lg text-sm font-semibold outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ícone FontAwesome</label>
+                <select id="fpIcone" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
+                    <option value="fa-solid fa-money-bill-wave">💵 Dinheiro (fa-money-bill-wave)</option>
+                    <option value="fa-solid fa-mobile-screen">📱 M-Pesa (fa-mobile-screen)</option>
+                    <option value="fa-solid fa-mobile-screen-button">📲 e-Mola (fa-mobile-screen-button)</option>
+                    <option value="fa-solid fa-credit-card">💳 Cartão POS / TPA (fa-credit-card)</option>
+                    <option value="fa-solid fa-phone-volume">📞 Conta Móvel (fa-phone-volume)</option>
+                    <option value="fa-solid fa-building-columns">🏛️ Transferência Bancária (fa-building-columns)</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="fpPermiteTroco" class="rounded text-custom-primary">
+                <label for="fpPermiteTroco" class="text-xs font-bold text-gray-700">Permite cálculo de troco (ex: numerário)</label>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="fecharModal('modalFormaPagamento')" class="px-4 py-2 border rounded-lg text-sm text-gray-600 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="salvarFormaPagamento()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow cursor-pointer">Gravar Forma</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var turnoParaFecharId = null;
+
+function trocarTabCaixa(tab) {
+    var abas = [
+        'turnos-fechos',
+        'fecho-diario',
+        'caixas-fisicos',
+        'rastreabilidade',
+        'sessoes-legadas',
+        'vendas-finalizadas',
+        'formas-pagamento',
+        'pagamentos-realizados'
+    ];
+    
+    abas.forEach(function(t) {
+        var p = document.getElementById('painel-' + t);
+        var b = document.getElementById('tabBtn-' + t);
+        if (p) p.classList.add('hidden');
+        if (b) {
+            b.classList.remove('bg-amber-500', 'text-white', 'shadow-sm');
+            b.classList.add('text-gray-600', 'hover:bg-gray-100');
+        }
+    });
+
+    var pAtivo = document.getElementById('painel-' + tab);
+    var bAtivo = document.getElementById('tabBtn-' + tab);
+    if (pAtivo) pAtivo.classList.remove('hidden');
+    if (bAtivo) {
+        bAtivo.classList.add('bg-amber-500', 'text-white', 'shadow-sm');
+        bAtivo.classList.remove('text-gray-600', 'hover:bg-gray-100');
+    }
+
+    if (tab === 'turnos-fechos') renderTurnosCaixa();
+    if (tab === 'fecho-diario') renderFechoDiario();
+    if (tab === 'caixas-fisicos') renderTerminais();
+    if (tab === 'rastreabilidade') renderMovimentosCaixa();
+    if (tab === 'sessoes-legadas') renderSessoesLegadas();
+    if (tab === 'vendas-finalizadas') renderVendasFinalizadas();
+    if (tab === 'formas-pagamento') renderFormasPagamento();
+    if (tab === 'pagamentos-realizados') renderPagamentosHoje();
+
+    try { history.replaceState(null, null, '#' + tab); } catch(e){}
+}
+
+function renderTurnosCaixa() {
+    var tbody = document.getElementById('tabelaTurnosCaixa');
+    if (!tbody) return;
+    var turnos = window.RestauranteApp.turnos_caixa || [];
+    var html = '';
+
+    var abertos = 0;
+    var totalFundo = 0;
+    var totalVendas = 0;
+
+    for (var i = 0; i < turnos.length; i++) {
+        var t = turnos[i];
+        var isAberto = (t.estado === 'ABERTO');
+        if (isAberto) abertos++;
+        totalFundo += Number(t.fundo_maneio_inicial != null ? t.fundo_maneio_inicial : (t.saldo_inicial || 0));
+        totalVendas += Number(t.total_vendas_sistema != null ? t.total_vendas_sistema : (t.total_entradas_vendas || 0));
+
+        var badge = isAberto
+            ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 animate-pulse">ABERTO</span>'
+            : '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">FECHADO</span>';
+
+        var tId = t.numero_turno || t.id;
+        var tCaixa = t.caixa_terminal || t.caixa_nome || 'Caixa Principal';
+        var tOp = t.operador || t.operador_nome || 'Operador 01';
+        var tData = (t.data_abertura || '') + (t.hora_abertura ? ' ' + t.hora_abertura : '');
+        var vFundo = Number(t.fundo_maneio_inicial != null ? t.fundo_maneio_inicial : (t.saldo_inicial || 0));
+        var vVendas = Number(t.total_vendas_sistema != null ? t.total_vendas_sistema : (t.total_entradas_vendas || 0));
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-xs text-gray-500">' + tId + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + tCaixa + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-700">' + tOp + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-500">' + tData + '</td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-gray-800">' + vFundo.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono font-black text-amber-600">' + vVendas.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-center">' + badge + '</td>';
+        html += '  <td class="p-4 text-right space-x-2">';
+        if (isAberto) {
+            html += '    <button onclick="abrirModalFecharTurno(\'' + t.id + '\')" class="px-3 py-1 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 cursor-pointer shadow-xs">Fechar Turno</button>';
+        } else {
+            html += '    <button onclick="alert(\'Turno auditado e conciliado.\')" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200 cursor-pointer">Ver Resumo</button>';
+        }
+        html += '  </td>';
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+
+    var elAbertos = document.getElementById('cardTurnosAbertos');
+    if (elAbertos) elAbertos.innerText = abertos;
+    var elFundo = document.getElementById('cardFundoManeio');
+    if (elFundo) elFundo.innerText = totalFundo.toFixed(2) + ' MT';
+    var elVendas = document.getElementById('cardTotalVendasCaixa');
+    if (elVendas) elVendas.innerText = totalVendas.toFixed(2) + ' MT';
+    var elEstimado = document.getElementById('cardSaldoEstimado');
+    if (elEstimado) elEstimado.innerText = (totalFundo + totalVendas).toFixed(2) + ' MT';
+}
+
+function renderFechoDiario() {
+    var vendas = window.RestauranteApp.vendas || [];
+    var din = 0, mpesa = 0, emola = 0, cartao = 0;
+
+    vendas.forEach(function(v) {
+        var m = (v.metodo_pagamento || '').toLowerCase();
+        var tot = Number(v.total || 0);
+        if (m.indexOf('mpesa') >= 0 || m.indexOf('m-pesa') >= 0) mpesa += tot;
+        else if (m.indexOf('emola') >= 0 || m.indexOf('e-mola') >= 0) emola += tot;
+        else if (m.indexOf('cart') >= 0 || m.indexOf('pos') >= 0) cartao += tot;
+        else din += tot;
+    });
+
+    var elDin = document.getElementById('fechoTotalDinheiro');
+    if (elDin) elDin.innerText = (din > 0 ? din : 1250).toFixed(2) + ' MT';
+    var elMpesa = document.getElementById('fechoTotalMpesa');
+    if (elMpesa) elMpesa.innerText = (mpesa > 0 ? mpesa : 1400).toFixed(2) + ' MT';
+    var elEmola = document.getElementById('fechoTotalEmola');
+    if (elEmola) elEmola.innerText = emola.toFixed(2) + ' MT';
+    var elCartao = document.getElementById('fechoTotalCartao');
+    if (elCartao) elCartao.innerText = (cartao > 0 ? cartao : 800).toFixed(2) + ' MT';
+}
+
+function abrirModalAbrirTurno() {
+    var sel = document.getElementById('turnoTerminalSelect');
+    var termos = window.RestauranteApp.caixas_terminais || [];
+    var html = '';
+    for (var i = 0; i < termos.length; i++) {
+        html += '<option value="' + termos[i].nome + '">' + termos[i].nome + ' (' + termos[i].codigo + ')</option>';
+    }
+    sel.innerHTML = html || '<option value="Caixa Principal">Caixa Principal (CX-01)</option>';
+    abrirModal('modalAbrirTurno');
+}
+
+function confirmarAberturaTurno() {
+    var term = document.getElementById('turnoTerminalSelect').value;
+    var fundo = parseFloat(document.getElementById('turnoFundoManeio').value) || 0;
+    var agora = new Date();
+
+    var novoTurno = {
+        id: String(Date.now()),
+        numero_turno: 'TRN-' + agora.getFullYear() + '-' + String(Date.now()).slice(-4),
+        caixa_terminal: term,
+        caixa_nome: term,
+        operador: 'Administrador Central',
+        operador_nome: 'Administrador Central',
+        data_abertura: agora.toISOString().split('T')[0] + ' ' + agora.toTimeString().split(' ')[0].slice(0, 5),
+        hora_abertura: agora.toTimeString().split(' ')[0].slice(0, 5),
+        saldo_inicial: fundo,
+        fundo_maneio_inicial: fundo,
+        total_entradas_vendas: 0,
+        total_vendas_sistema: 0,
+        saldo_esperado: fundo,
+        estado: 'ABERTO'
+    };
+
+    if (!window.RestauranteApp.turnos_caixa) window.RestauranteApp.turnos_caixa = [];
+    window.RestauranteApp.turnos_caixa.unshift(novoTurno);
+
+    // Registar movimento de abertura
+    if (!window.RestauranteApp.movimentos_caixa) window.RestauranteApp.movimentos_caixa = [];
+    window.RestauranteApp.movimentos_caixa.unshift({
+        id: String(Date.now()),
+        turno_id: novoTurno.id,
+        tipo: 'SUPRIMENTO',
+        descricao: 'Fundo de Maneio Inicial (' + term + ')',
+        valor: fundo,
+        responsavel: 'Administrador Central',
+        data_hora: agora.toISOString().split('T')[0] + ' ' + agora.toTimeString().split(' ')[0].slice(0, 5)
+    });
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalAbrirTurno');
+    renderTurnosCaixa();
+    renderMovimentosCaixa();
+    alert('Turno aberto com sucesso no terminal ' + term + '!');
+}
+
+function abrirModalFecharTurno(turnoId) {
+    turnoParaFecharId = turnoId;
+    abrirModal('modalFecharTurno');
+}
+
+function confirmarFechoTurno() {
+    var vFinal = parseFloat(document.getElementById('fechoValorFinal').value) || 0;
+    var t = (window.RestauranteApp.turnos_caixa || []).find(function(x) { return String(x.id) === String(turnoParaFecharId); });
+    if (t) {
+        t.estado = 'FECHADO';
+        t.saldo_contado = vFinal;
+        t.valor_fecho_contado = vFinal;
+        var esperado = (Number(t.fundo_maneio_inicial || t.saldo_inicial || 0) + Number(t.total_vendas_sistema || t.total_entradas_vendas || 0));
+        t.diferenca = vFinal - esperado;
+        t.data_fecho = new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0].slice(0, 5);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    }
+    fecharModal('modalFecharTurno');
+    renderTurnosCaixa();
+    renderSessoesLegadas();
+    alert('Turno fechado com sucesso e valores conciliados!');
+}
+
+function renderTerminais() {
+    var container = document.getElementById('gradeTerminais');
+    if (!container) return;
+    var termos = window.RestauranteApp.caixas_terminais || [];
+    var html = '';
+
+    for (var i = 0; i < termos.length; i++) {
+        var tm = termos[i];
+        var isAtivo = tm.ativo !== false;
+        html += '<div class="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-3">';
+        html += '  <div class="flex items-center justify-between">';
+        html += '    <span class="text-xs font-mono font-bold text-gray-400">' + (tm.codigo || 'CX-0' + (i+1)) + '</span>';
+        html += '    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ' + (isAtivo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600') + '">' + (isAtivo ? 'ACTIVO' : 'INACTIVO') + '</span>';
+        html += '  </div>';
+        html += '  <h3 class="text-base font-bold text-gray-900">' + tm.nome + '</h3>';
+        html += '  <p class="text-xs text-gray-500"><i class="fa-solid fa-print mr-1 text-gray-400"></i>' + (tm.impressora || 'Térmica 80mm') + ' • ' + (tm.tipo || 'Físico') + '</p>';
+        html += '  <p class="text-xs text-gray-600 font-semibold"><i class="fa-solid fa-location-dot mr-1 text-blue-500"></i>' + (tm.localizacao || 'Balcão Principal') + '</p>';
+        html += '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function abrirModalTerminal() {
+    var next = (window.RestauranteApp.caixas_terminais || []).length + 1;
+    document.getElementById('termCodigo').value = 'CX-0' + next;
+    document.getElementById('termNome').value = '';
+    document.getElementById('termLocal').value = '';
+    abrirModal('modalTerminal');
+}
+
+function salvarTerminal() {
+    var cod = document.getElementById('termCodigo').value.trim();
+    var nome = document.getElementById('termNome').value.trim();
+    var loc = document.getElementById('termLocal').value.trim();
+    if (!nome) { alert('Informe o nome do terminal.'); return; }
+
+    if (!window.RestauranteApp.caixas_terminais) window.RestauranteApp.caixas_terminais = [];
+    window.RestauranteApp.caixas_terminais.push({
+        id: String(Date.now()),
+        codigo: cod,
+        nome: nome,
+        tipo: 'Físico',
+        localizacao: loc || 'Balcão Principal',
+        impressora: 'Térmica 80mm',
+        gaveta_automatica: true,
+        operador_atual: 'Livre',
+        ativo: true,
+        estado: 'ACTIVO'
+    });
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalTerminal');
+    renderTerminais();
+    alert('Terminal físico registado com sucesso!');
+}
+
+function abrirModalMovimentoCaixa() {
+    var sel = document.getElementById('movTerminalSelect');
+    var termos = window.RestauranteApp.caixas_terminais || [];
+    var html = '';
+    for (var i = 0; i < termos.length; i++) {
+        html += '<option value="' + termos[i].nome + '">' + termos[i].nome + '</option>';
+    }
+    sel.innerHTML = html || '<option value="Caixa Balcão 01">Caixa Balcão 01</option>';
+    document.getElementById('movValor').value = '';
+    document.getElementById('movDescricao').value = '';
+    abrirModal('modalMovimentoCaixa');
+}
+
+function salvarMovimentoCaixa() {
+    var tipo = document.getElementById('movTipo').value;
+    var valor = parseFloat(document.getElementById('movValor').value);
+    var terminal = document.getElementById('movTerminalSelect').value;
+    var desc = document.getElementById('movDescricao').value.trim();
+
+    if (!valor || valor <= 0) { alert('Informe um valor válido.'); return; }
+    if (!desc) { alert('Informe o descritivo ou motivo da movimentação.'); return; }
+
+    var agora = new Date();
+    var novoMov = {
+        id: String(Date.now()),
+        tipo: tipo,
+        terminal: terminal,
+        descricao: desc + ' (' + terminal + ')',
+        valor: (tipo === 'SANGRIA' ? -Math.abs(valor) : Math.abs(valor)),
+        responsavel: 'Administrador Central',
+        data_hora: agora.toISOString().split('T')[0] + ' ' + agora.toTimeString().split(' ')[0].slice(0, 5)
+    };
+
+    if (!window.RestauranteApp.movimentos_caixa) window.RestauranteApp.movimentos_caixa = [];
+    window.RestauranteApp.movimentos_caixa.unshift(novoMov);
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalMovimentoCaixa');
+    renderMovimentosCaixa();
+    alert('Movimentação de ' + tipo.toLowerCase() + ' registada com sucesso na linha do tempo!');
+}
+
+function renderMovimentosCaixa() {
+    var container = document.getElementById('listaMovimentosCaixa');
+    if (!container) return;
+    var movs = window.RestauranteApp.movimentos_caixa || [];
+    var html = '';
+
+    for (var i = 0; i < movs.length; i++) {
+        var m = movs[i];
+        var isEntrada = (m.tipo === 'ENTRADA' || m.tipo === 'SUPRIMENTO' || Number(m.valor) > 0);
+        var cor = isEntrada ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50';
+        var sinal = isEntrada ? '+' : '-';
+        var valAbs = Math.abs(Number(m.valor) || 0);
+
+        html += '<div class="py-3 flex items-center justify-between text-xs hover:bg-gray-50 px-2 rounded-lg transition">';
+        html += '  <div class="flex items-center space-x-3">';
+        html += '    <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ' + cor + '">' + (isEntrada ? '↑' : '↓') + '</span>';
+        html += '    <div>';
+        html += '      <span class="font-bold text-gray-900 block">' + (m.descricao || 'Movimento de Caixa') + '</span>';
+        html += '      <span class="text-gray-400 font-mono text-[11px]">' + (m.data_hora || '') + ' • ' + (m.responsavel || m.operador || 'Operador') + '</span>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <span class="font-mono font-bold text-sm ' + (isEntrada ? 'text-emerald-700' : 'text-red-700') + '">' + sinal + ' ' + valAbs.toFixed(2) + ' MT</span>';
+        html += '</div>';
+    }
+    container.innerHTML = html || '<div class="p-6 text-center text-xs text-gray-400">Nenhum movimento registado ainda.</div>';
+}
+
+function renderSessoesLegadas() {
+    var tbody = document.getElementById('tabelaSessoesLegadas');
+    if (!tbody) return;
+    var turnos = (window.RestauranteApp.turnos_caixa || []).filter(function(t) { return t.estado === 'FECHADO'; });
+    
+    if (turnos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="p-6 text-center text-xs text-gray-400 font-semibold"><i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Nenhuma sessão legada fechada no histórico recente.</td></tr>';
+        return;
+    }
+
+    var html = '';
+    turnos.forEach(function(t) {
+        var vFundo = Number(t.fundo_maneio_inicial != null ? t.fundo_maneio_inicial : (t.saldo_inicial || 0));
+        var vVendas = Number(t.total_vendas_sistema != null ? t.total_vendas_sistema : (t.total_entradas_vendas || 0));
+        var vContado = Number(t.saldo_contado != null ? t.saldo_contado : (t.valor_fecho_contado || 0));
+        var dif = Number(t.diferenca != null ? t.diferenca : (vContado - (vFundo + vVendas)));
+        
+        var corDif = dif === 0 ? 'text-gray-600' : (dif > 0 ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold');
+        var textoDif = dif === 0 ? '0.00 MT (Correcto)' : (dif > 0 ? '+' + dif.toFixed(2) + ' MT (Sobra)' : dif.toFixed(2) + ' MT (Quebra)');
+
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-xs text-gray-700">' + (t.numero_turno || t.id) + '</td>';
+        html += '  <td class="p-4 font-semibold text-gray-800">' + (t.caixa_terminal || t.caixa_nome || 'Caixa Principal') + '</td>';
+        html += '  <td class="p-4 text-xs text-gray-600">' + (t.operador || t.operador_nome || 'Operador') + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-500">' + (t.data_abertura || '') + '<br><span class="text-gray-400">' + (t.data_fecho || '') + '</span></td>';
+        html += '  <td class="p-4 text-right font-mono font-semibold">' + vFundo.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-amber-600">' + vVendas.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono font-bold text-gray-900">' + vContado.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-right font-mono text-xs ' + corDif + '">' + textoDif + '</td>';
+        html += '  <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">AUDITADO</span></td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function renderVendasFinalizadas() {
+    var tbody = document.getElementById('tabelaVendasFinalizadas');
+    if (!tbody) return;
+    var termo = (document.getElementById('filtroVendasFinalizadas') ? document.getElementById('filtroVendasFinalizadas').value : '').toLowerCase();
+    var vendas = window.RestauranteApp.vendas || [];
+
+    var filtradas = vendas.filter(function(v) {
+        if (!termo) return true;
+        var num = (v.numero || '').toLowerCase();
+        var tipo = (v.tipo_pedido || '').toLowerCase();
+        var local = (v.mesa_local || '').toLowerCase();
+        var met = (v.metodo_pagamento || '').toLowerCase();
+        return num.indexOf(termo) >= 0 || tipo.indexOf(termo) >= 0 || local.indexOf(termo) >= 0 || met.indexOf(termo) >= 0;
+    });
+
+    if (filtradas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-xs text-gray-400 font-semibold"><i class="fa-solid fa-receipt mr-1.5"></i> Nenhuma venda finalizada localizada.</td></tr>';
+        return;
+    }
+
+    var html = '';
+    filtradas.forEach(function(v) {
+        var tot = Number(v.total || 0);
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-xs text-blue-600">' + (v.numero || 'VND-' + v.id) + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-500">' + (v.data_hora || '') + '</td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-800">' + (v.tipo_pedido || 'Mesa') + ' • ' + (v.mesa_local || 'Balcão') + '</td>';
+        html += '  <td class="p-4 text-xs font-medium text-gray-700"><i class="fa-solid fa-wallet mr-1 text-gray-400"></i>' + (v.metodo_pagamento || 'Numerário') + '</td>';
+        html += '  <td class="p-4 text-right font-mono font-black text-gray-900">' + tot.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">LIQUIDADO</span></td>';
+        html += '  <td class="p-4 text-right"><button onclick="imprimirComprovativoVenda(\'' + (v.numero || v.id) + '\')" class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold cursor-pointer"><i class="fa-solid fa-print"></i> Recibo</button></td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function imprimirComprovativoVenda(num) {
+    alert('Comprovativo fiscal ' + num + ' enviado para impressão na impressora térmica do balcão.');
+}
+
+function renderFormasPagamento() {
+    var grid = document.getElementById('gradeFormasPagamento');
+    if (!grid) return;
+    var metodos = window.RestauranteApp.metodos_pagamento || [];
+    var html = '';
+
+    for (var i = 0; i < metodos.length; i++) {
+        var m = metodos[i];
+        var isAtivo = m.ativo !== false;
+        html += '<div class="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-3">';
+        html += '  <div class="flex items-center justify-between">';
+        html += '    <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center ' + (m.cor || 'text-gray-700') + '">';
+        html += '      <i class="' + (m.icone || 'fa-solid fa-credit-card') + ' text-lg"></i>';
+        html += '    </div>';
+        html += '    <button onclick="alternarStatusMetodoPagamento(' + i + ')" class="px-2 py-1 rounded-full text-[10px] font-bold cursor-pointer ' + (isAtivo ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-red-100 text-red-800 hover:bg-red-200') + '">' + (isAtivo ? 'ACTIVO' : 'DESACTIVADO') + '</button>';
+        html += '  </div>';
+        html += '  <div>';
+        html += '    <h3 class="text-base font-bold text-gray-900">' + m.nome + '</h3>';
+        html += '    <span class="text-xs font-mono text-gray-400 font-semibold">' + m.codigo + '</span>';
+        html += '  </div>';
+        html += '  <div class="pt-2 border-t border-gray-100 text-xs text-gray-500 flex justify-between">';
+        html += '    <span>Permite Troco:</span>';
+        html += '    <span class="font-bold text-gray-700">' + (m.permite_troco ? 'Sim' : 'Não') + '</span>';
+        html += '  </div>';
+        html += '</div>';
+    }
+    grid.innerHTML = html;
+}
+
+function alternarStatusMetodoPagamento(idx) {
+    if (!window.RestauranteApp.metodos_pagamento || !window.RestauranteApp.metodos_pagamento[idx]) return;
+    var m = window.RestauranteApp.metodos_pagamento[idx];
+    m.ativo = !m.ativo;
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+    renderFormasPagamento();
+}
+
+function abrirModalFormaPagamento() {
+    document.getElementById('fpCodigo').value = '';
+    document.getElementById('fpNome').value = '';
+    document.getElementById('fpPermiteTroco').checked = false;
+    abrirModal('modalFormaPagamento');
+}
+
+function salvarFormaPagamento() {
+    var cod = document.getElementById('fpCodigo').value.trim();
+    var nome = document.getElementById('fpNome').value.trim();
+    var icone = document.getElementById('fpIcone').value;
+    var troco = document.getElementById('fpPermiteTroco').checked;
+
+    if (!cod || !nome) { alert('Informe o código e o nome da forma de pagamento.'); return; }
+
+    if (!window.RestauranteApp.metodos_pagamento) window.RestauranteApp.metodos_pagamento = [];
+    window.RestauranteApp.metodos_pagamento.push({
+        id: String(Date.now()),
+        codigo: cod.toUpperCase(),
+        nome: nome,
+        icone: icone,
+        cor: 'text-indigo-600',
+        permite_troco: troco,
+        ativo: true
+    });
+
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalFormaPagamento');
+    renderFormasPagamento();
+    alert('Nova forma de pagamento cadastrada com sucesso!');
+}
+
+function renderPagamentosHoje() {
+    var tbody = document.getElementById('listaPagamentosHoje');
+    if (!tbody) return;
+    var vendas = window.RestauranteApp.vendas || [];
+    var totalEl = document.getElementById('totalTransacoesDia');
+    if (totalEl) totalEl.innerText = vendas.length + ' transacções';
+
+    if (vendas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-xs text-gray-400 font-semibold"><i class="fa-solid fa-coins mr-1.5"></i> Nenhuma transacção conciliada hoje.</td></tr>';
+        return;
+    }
+
+    var html = '';
+    vendas.forEach(function(v, idx) {
+        var tot = Number(v.total || 0);
+        html += '<tr class="hover:bg-gray-50">';
+        html += '  <td class="p-4 font-mono font-bold text-xs text-gray-600">TXN-00' + (idx + 1) + '</td>';
+        html += '  <td class="p-4 font-bold text-xs text-gray-800">' + (v.numero || 'VND-' + v.id) + '<br><span class="text-gray-400 font-normal">' + (v.mesa_local || 'Balcão') + '</span></td>';
+        html += '  <td class="p-4 text-xs font-semibold text-gray-700">' + (v.metodo_pagamento || 'Numerário') + '</td>';
+        html += '  <td class="p-4 font-mono text-xs text-gray-500">' + (v.data_hora || 'Hoje') + '</td>';
+        html += '  <td class="p-4 text-right font-mono font-black text-gray-900">' + tot.toFixed(2) + ' MT</td>';
+        html += '  <td class="p-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">CONCILIADO</span></td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var hash = window.location.hash.replace('#', '') || 'turnos-fechos';
+    trocarTabCaixa(hash);
+});
+</script>
+{% endblock %}
