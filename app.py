@@ -6,15 +6,17 @@ from fastapi.templating import Jinja2Templates
 
 app = FastAPI(title="Rede de Restaurantes - PWA")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    favicon_path = os.path.join(os.path.dirname(__file__), "static", "favicon.ico")
+    favicon_path = os.path.join(BASE_DIR, "static", "favicon.ico")
     if os.path.exists(favicon_path):
         return FileResponse(favicon_path, media_type="image/x-icon")
     return HTMLResponse(status_code=204)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 ESTABELECIMENTOS_DB = [
     {
