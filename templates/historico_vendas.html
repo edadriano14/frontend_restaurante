@@ -72,27 +72,71 @@
         </div>
     </div>
 
-    <!-- Filtros Rápidos -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex flex-wrap items-center gap-2">
-            <button onclick="filtrarVendas('TODOS')" id="btnFiltro-TODOS" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white shadow-sm cursor-pointer">
-                Todas as Vendas
-            </button>
-            <button onclick="filtrarVendas('Mesa')" id="btnFiltro-Mesa" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
-                Mesa
-            </button>
-            <button onclick="filtrarVendas('Takeaway')" id="btnFiltro-Takeaway" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
-                Takeaway
-            </button>
-            <button onclick="filtrarVendas('Delivery')" id="btnFiltro-Delivery" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
-                Delivery
-            </button>
-            <button onclick="filtrarVendas('Piscina')" id="btnFiltro-Piscina" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
-                Piscina
-            </button>
+    <!-- Filtros de Período (Data Actual por Defeito + Busca de Vendas Anteriores) e Tipo de Pedido -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-bold text-gray-500 uppercase mr-1 flex items-center gap-1">
+                    <i class="fa-regular fa-calendar-days text-purple-600"></i> Período:
+                </span>
+                <button type="button" onclick="mudarPeriodoHistorico('hoje')" id="btnPeriodo-hoje" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-calendar-day"></i> Hoje (Data Actual)
+                </button>
+                <button type="button" onclick="mudarPeriodoHistorico('ontem')" id="btnPeriodo-ontem" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                    Ontem
+                </button>
+                <button type="button" onclick="mudarPeriodoHistorico('7dias')" id="btnPeriodo-7dias" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                    Últimos 7 Dias
+                </button>
+                <button type="button" onclick="mudarPeriodoHistorico('mes')" id="btnPeriodo-mes" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                    Este Mês
+                </button>
+                <button type="button" onclick="mudarPeriodoHistorico('todas')" id="btnPeriodo-todas" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                    Todas Anteriores
+                </button>
+            </div>
+
+            <!-- Busca de Vendas Anteriores por Intervalo de Datas ou Pesquisa -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
+                    <label class="text-[11px] font-bold text-gray-500">De:</label>
+                    <input type="date" id="dataInicioHistorico" onchange="aplicarFiltroDatasPersonalizado()" class="text-xs font-mono bg-transparent outline-none text-gray-700 cursor-pointer">
+                    <label class="text-[11px] font-bold text-gray-500 ml-1">Até:</label>
+                    <input type="date" id="dataFimHistorico" onchange="aplicarFiltroDatasPersonalizado()" class="text-xs font-mono bg-transparent outline-none text-gray-700 cursor-pointer">
+                </div>
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-2.5 top-2.5"></i>
+                    <input type="text" id="pesquisaTextoHistorico" oninput="renderHistoricoVendas()" placeholder="Buscar recibo, mesa, item..." class="pl-7 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-purple-500 w-48">
+                </div>
+            </div>
         </div>
-        <div class="text-xs text-gray-500 font-semibold" id="contadorVendas">
-            0 vendas encontradas
+
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="filtrarVendas('TODOS')" id="btnFiltro-TODOS" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white shadow-sm cursor-pointer">
+                    Todas as Vendas
+                </button>
+                <button onclick="filtrarVendas('Mesa')" id="btnFiltro-Mesa" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                    Mesa
+                </button>
+                <button onclick="filtrarVendas('Takeaway')" id="btnFiltro-Takeaway" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                    Takeaway
+                </button>
+                <button onclick="filtrarVendas('Delivery')" id="btnFiltro-Delivery" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                    Delivery
+                </button>
+                <button onclick="filtrarVendas('Piscina')" id="btnFiltro-Piscina" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
+                    Piscina
+                </button>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-bold" id="labelPeriodoAtivo">
+                    Exibindo: Hoje (Data Actual)
+                </span>
+                <div class="text-xs text-gray-500 font-semibold" id="contadorVendas">
+                    0 vendas encontradas
+                </div>
+            </div>
         </div>
     </div>
 
@@ -141,6 +185,107 @@
 
 <script>
 var filtroAtual = 'TODOS';
+var periodoHistoricoAtual = 'hoje';
+
+function parseDataHoraVenda(str) {
+    if (!str) return null;
+    var s = String(str).trim();
+    // Formato DD/MM/YYYY HH:mm ou DD/MM/YYYY, HH:mm:ss
+    var mPt = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+    if (mPt) {
+        return new Date(
+            parseInt(mPt[3], 10),
+            parseInt(mPt[2], 10) - 1,
+            parseInt(mPt[1], 10),
+            mPt[4] ? parseInt(mPt[4], 10) : 12,
+            mPt[5] ? parseInt(mPt[5], 10) : 0,
+            mPt[6] ? parseInt(mPt[6], 10) : 0
+        );
+    }
+    // Formato YYYY-MM-DD
+    var mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+    if (mIso) {
+        return new Date(
+            parseInt(mIso[1], 10),
+            parseInt(mIso[2], 10) - 1,
+            parseInt(mIso[3], 10),
+            mIso[4] ? parseInt(mIso[4], 10) : 12,
+            mIso[5] ? parseInt(mIso[5], 10) : 0,
+            mIso[6] ? parseInt(mIso[6], 10) : 0
+        );
+    }
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function mudarPeriodoHistorico(periodo) {
+    periodoHistoricoAtual = periodo;
+    var botoes = document.querySelectorAll('.periodo-venda-btn');
+    botoes.forEach(function(b) {
+        b.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
+        b.classList.add('text-gray-600', 'bg-gray-100', 'hover:bg-gray-200');
+    });
+    var btnAtivo = document.getElementById('btnPeriodo-' + periodo);
+    if (btnAtivo) {
+        btnAtivo.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+        btnAtivo.classList.remove('text-gray-600', 'bg-gray-100', 'hover:bg-gray-200');
+    }
+
+    var hoje = new Date();
+    var yyyy = hoje.getFullYear();
+    var mm = String(hoje.getMonth() + 1).padStart(2, '0');
+    var dd = String(hoje.getDate()).padStart(2, '0');
+    var strHoje = yyyy + '-' + mm + '-' + dd;
+
+    var inpIni = document.getElementById('dataInicioHistorico');
+    var inpFim = document.getElementById('dataFimHistorico');
+    var lblPeriodo = document.getElementById('labelPeriodoAtivo');
+
+    if (periodo === 'hoje') {
+        if (inpIni) inpIni.value = strHoje;
+        if (inpFim) inpFim.value = strHoje;
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Hoje (' + dd + '/' + mm + '/' + yyyy + ')';
+    } else if (periodo === 'ontem') {
+        var ontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
+        var sOntem = ontem.getFullYear() + '-' + String(ontem.getMonth() + 1).padStart(2, '0') + '-' + String(ontem.getDate()).padStart(2, '0');
+        if (inpIni) inpIni.value = sOntem;
+        if (inpFim) inpFim.value = sOntem;
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Ontem';
+    } else if (periodo === '7dias') {
+        var d7 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 6);
+        var s7 = d7.getFullYear() + '-' + String(d7.getMonth() + 1).padStart(2, '0') + '-' + String(d7.getDate()).padStart(2, '0');
+        if (inpIni) inpIni.value = s7;
+        if (inpFim) inpFim.value = strHoje;
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Últimos 7 Dias';
+    } else if (periodo === 'mes') {
+        var sMes = yyyy + '-' + mm + '-01';
+        if (inpIni) inpIni.value = sMes;
+        if (inpFim) inpFim.value = strHoje;
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Este Mês';
+    } else if (periodo === 'todas') {
+        if (inpIni) inpIni.value = '';
+        if (inpFim) inpFim.value = '';
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Todas as Vendas (Histórico Completo)';
+    }
+
+    renderHistoricoVendas();
+}
+
+function aplicarFiltroDatasPersonalizado() {
+    periodoHistoricoAtual = 'personalizado';
+    var botoes = document.querySelectorAll('.periodo-venda-btn');
+    botoes.forEach(function(b) {
+        b.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
+        b.classList.add('text-gray-600', 'bg-gray-100', 'hover:bg-gray-200');
+    });
+    var inpIni = document.getElementById('dataInicioHistorico') ? document.getElementById('dataInicioHistorico').value : '';
+    var inpFim = document.getElementById('dataFimHistorico') ? document.getElementById('dataFimHistorico').value : '';
+    var lblPeriodo = document.getElementById('labelPeriodoAtivo');
+    if (lblPeriodo) {
+        lblPeriodo.innerText = 'Período: ' + (inpIni || 'Início') + ' até ' + (inpFim || 'Hoje');
+    }
+    renderHistoricoVendas();
+}
 
 function renderHistoricoVendas() {
     var tbody = document.getElementById('tabelaVendas');
@@ -148,10 +293,50 @@ function renderHistoricoVendas() {
     var totalSpan = document.getElementById('totalVendasFaturadas');
     if (!tbody) return;
 
-    var lista = window.RestauranteApp.vendas || [];
+    var lista = (window.RestauranteApp.vendas || []).slice();
+
+    // 1. Filtrar por data (Data Actual por defeito ou intervalo seleccionado para buscar vendas anteriores)
+    var agora = new Date();
+    var inicioDiaHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 0, 0, 0, 0);
+    var fimDiaHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59, 999);
+
+    var inpIni = document.getElementById('dataInicioHistorico') ? document.getElementById('dataInicioHistorico').value : '';
+    var inpFim = document.getElementById('dataFimHistorico') ? document.getElementById('dataFimHistorico').value : '';
+
+    if (periodoHistoricoAtual === 'hoje') {
+        lista = lista.filter(function(v) {
+            var dt = parseDataHoraVenda(v.data_hora || v.data);
+            return dt && dt >= inicioDiaHoje && dt <= fimDiaHoje;
+        });
+    } else if (periodoHistoricoAtual !== 'todas') {
+        var dtIni = inpIni ? new Date(inpIni + 'T00:00:00') : null;
+        var dtFim = inpFim ? new Date(inpFim + 'T23:59:59.999') : null;
+        lista = lista.filter(function(v) {
+            var dt = parseDataHoraVenda(v.data_hora || v.data);
+            if (!dt) return false;
+            if (dtIni && dt < dtIni) return false;
+            if (dtFim && dt > dtFim) return false;
+            return true;
+        });
+    }
+
+    // 2. Filtrar por tipo de pedido
     if (filtroAtual !== 'TODOS') {
         lista = lista.filter(function(v) {
             return (v.tipo_pedido || '').toLowerCase().indexOf(filtroAtual.toLowerCase()) >= 0;
+        });
+    }
+
+    // 3. Filtrar por pesquisa textual (nº venda, recibo, mesa, cliente, produto)
+    var termo = document.getElementById('pesquisaTextoHistorico') ? document.getElementById('pesquisaTextoHistorico').value.trim().toLowerCase() : '';
+    if (termo) {
+        lista = lista.filter(function(v) {
+            var numVnd = (v.numero_venda || v.numero || '').toLowerCase();
+            var numRec = (v.numero_recibo || ('REC-' + numVnd.replace('vnd-', ''))).toLowerCase();
+            var local = (v.mesa_local || '').toLowerCase();
+            var pag = (v.metodo_pagamento || '').toLowerCase();
+            var itensStr = (v.itens || []).map(function(i) { return (i.nome || '').toLowerCase(); }).join(' ');
+            return numVnd.indexOf(termo) >= 0 || numRec.indexOf(termo) >= 0 || local.indexOf(termo) >= 0 || pag.indexOf(termo) >= 0 || itensStr.indexOf(termo) >= 0;
         });
     }
 
@@ -213,7 +398,7 @@ function renderHistoricoVendas() {
         html += '</tr>';
     }
 
-    tbody.innerHTML = html || '<tr><td colspan="10" class="p-8 text-center text-gray-400 text-xs">Nenhuma venda registada com este filtro.</td></tr>';
+    tbody.innerHTML = html || '<tr><td colspan="10" class="p-8 text-center text-gray-400 text-xs">Nenhuma venda registada na data seleccionada. Utilize os botões acima (<b>Ontem</b>, <b>Últimos 7 Dias</b>, <b>Todas Anteriores</b> ou o filtro de datas <b>De / Até</b>) para consultar vendas anteriores.</td></tr>';
     if (contador) contador.innerText = lista.length + ' vendas encontradas';
     if (totalSpan) totalSpan.innerText = 'Total Facturado: ' + totalGeral.toFixed(2) + ' {{ estabelecimento.moeda }}';
     if (document.getElementById('totalSegregadoCozinha')) {
@@ -384,7 +569,7 @@ function imprimirReciboDetalheAtual() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    renderHistoricoVendas();
+    mudarPeriodoHistorico('hoje');
 });
 </script>
 {% endblock %}

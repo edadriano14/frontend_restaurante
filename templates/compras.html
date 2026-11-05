@@ -242,6 +242,18 @@
                     <span class="font-bold text-purple-900">Total Estimado da Requisição:</span>
                     <span id="reqTotalEstimado" class="text-base font-black font-mono text-purple-700">0.00 MT</span>
                 </div>
+
+                <!-- Dados de Assinaturas para o PDF da Requisição -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Requisitante / Solicitante (Assinatura):</label>
+                        <input type="text" id="reqAssinaturaSolicitante" value="Responsável de Armazém / Produção" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white font-semibold text-gray-800 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Autorização / Direcção (Assinatura):</label>
+                        <input type="text" id="reqAssinaturaAprovador" value="Administrador Central" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white font-semibold text-gray-800 outline-none">
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end items-center gap-2 pt-3 border-t">
@@ -345,6 +357,22 @@
                     </div>
                     <div id="guiaModalTotalValor" class="text-base font-black font-mono text-teal-800">
                         0.00 MT
+                    </div>
+                </div>
+
+                <!-- Dados das Assinaturas Obrigatórias na Guia de Entrada -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Entregue por (Fornecedor):</label>
+                        <input type="text" id="guiaAssinaturaEntregador" value="Representante do Fornecedor" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white font-semibold text-gray-800 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Conferido & Recebido (Armazém):</label>
+                        <input type="text" id="guiaAssinaturaFiel" value="Fiel de Armazém" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white font-semibold text-gray-800 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Visto da Direcção / Gerência:</label>
+                        <input type="text" id="guiaAssinaturaGerencia" value="Administrador Central" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white font-semibold text-gray-800 outline-none">
                     </div>
                 </div>
             </div>
@@ -930,7 +958,12 @@ function gerarPdfFaturaCompra(compra) {
         '<div class="total-box">',
         '  <span>Total Facturado: </span><b>' + Number(compra.total).toFixed(2) + ' {{ estabelecimento.moeda }}</b>',
         '</div>',
-        '<div class="footer">Documento processado digitalmente por computador pelo Sistema Restaurante & Bar • Guardar para efeitos fiscais e contabilidade</div>',
+        '<div style="display: flex; justify-content: space-between; margin-top: 50px; padding-top: 10px; font-size: 11px; text-align: center;">',
+        '  <div style="width: 30%;"><div style="border-top: 1.5px solid #0f172a; padding-top: 6px; font-weight: bold;">O Requisitante / Compras</div><div style="color: #64748b; font-size: 10px;">Assinatura & Data</div></div>',
+        '  <div style="width: 30%;"><div style="border-top: 1.5px solid #0f172a; padding-top: 6px; font-weight: bold;">O Fornecedor (' + (compra.fornecedor || '') + ')</div><div style="color: #64748b; font-size: 10px;">Assinatura & Carimbo</div></div>',
+        '  <div style="width: 30%;"><div style="border-top: 1.5px solid #0f172a; padding-top: 6px; font-weight: bold;">A Direcção / Autorização</div><div style="color: #64748b; font-size: 10px;">Administrador Central</div></div>',
+        '</div>',
+        '<div class="footer">Documento processado digitalmente por computador pelo Sistema Restaurante & Bar • Guardar em PDF Assinado para efeitos fiscais e contabilidade</div>',
         '</body></html>'
     ].join('\n');
 
@@ -1041,6 +1074,11 @@ function renderRequisicoesFluxo() {
             html += '    <span class="text-xs text-gray-400 font-semibold italic"><i class="fa-solid fa-check-double text-emerald-600"></i> Ciclo Concluído</span>';
         }
 
+        html += '    <button onclick="gerarPdfRequisicao(window.RestauranteApp.requisicoes[' + i + '])" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1" title="Guardar Requisição em PDF com Assinaturas"><i class="fa-solid fa-file-pdf"></i> PDF Req.</button>';
+        var guiaVinc = (window.RestauranteApp.guias || []).find(function(g) { return (g.requisicao_origem || '') === r.numero_requisicao; });
+        if (guiaVinc) {
+            html += '    <button onclick="gerarPdfGuiaEntrada(window.RestauranteApp.guias.find(function(x){return x.id===\'' + guiaVinc.id + '\';}))" class="px-2.5 py-1 bg-teal-700 hover:bg-teal-800 text-white rounded text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1" title="Guardar Guia de Entrada em PDF com Assinaturas"><i class="fa-solid fa-file-signature"></i> PDF Guia</button>';
+        }
         html += '    <button onclick="removerRequisicaoFluxo(' + i + ')" class="text-red-500 hover:text-red-700 p-1 cursor-pointer" title="Remover"><i class="fa-solid fa-trash"></i></button>';
         html += '  </td>';
         html += '</tr>';
@@ -1184,21 +1222,29 @@ function salvarNovaRequisicao() {
         };
     });
 
-    if (!window.RestauranteApp.requisicoes) window.RestauranteApp.requisicoes = [];
-    window.RestauranteApp.requisicoes.unshift({
+    var assSol = document.getElementById('reqAssinaturaSolicitante') ? document.getElementById('reqAssinaturaSolicitante').value : 'Responsável de Armazém / Produção';
+    var assApr = document.getElementById('reqAssinaturaAprovador') ? document.getElementById('reqAssinaturaAprovador').value : 'Administrador Central';
+    var novaReqObj = {
         id: String(Date.now()),
         numero_requisicao: num,
         fornecedor: forn,
         data_pedido: formatarDataHoje(),
         total_estimado: total,
         status: 'AGUARDANDO_APROVACAO',
+        assinatura_solicitante: assSol,
+        assinatura_aprovador: assApr,
         itens: itens
-    });
+    };
+    if (!window.RestauranteApp.requisicoes) window.RestauranteApp.requisicoes = [];
+    window.RestauranteApp.requisicoes.unshift(novaReqObj);
 
     if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
 
     fecharModal('modalRequisicao');
     renderRequisicoesFluxo();
+
+    // Guardar automaticamente a Requisição em PDF com assinaturas
+    gerarPdfRequisicao(novaReqObj);
 
     if (window.mostrarMensagemAmigavel) {
         window.mostrarMensagemAmigavel('Requisição ' + num + ' submetida com sucesso!\n\nPróximo passo: Aprovar para gerar a Compra e Guia de Entrada.', '1. Requisição Emitida', 'sucesso');
@@ -1543,9 +1589,12 @@ function confirmarRecepcaoEEntradaStock() {
         return;
     }
 
+    var assEntregador = document.getElementById('guiaAssinaturaEntregador') ? document.getElementById('guiaAssinaturaEntregador').value : ('Representante (' + (req.fornecedor || 'Fornecedor') + ')');
+    var assFiel = document.getElementById('guiaAssinaturaFiel') ? document.getElementById('guiaAssinaturaFiel').value : 'Fiel de Armazém';
+    var assGerencia = document.getElementById('guiaAssinaturaGerencia') ? document.getElementById('guiaAssinaturaGerencia').value : 'Administrador Central';
+
     // 3. Registar Guia de Entrada emitida no sistema
-    if (!window.RestauranteApp.guias) window.RestauranteApp.guias = [];
-    window.RestauranteApp.guias.unshift({
+    var novaGuiaEmitida = {
         id: String(Date.now()),
         numero: numGuia,
         requisicao_origem: req.numero_requisicao,
@@ -1553,8 +1602,14 @@ function confirmarRecepcaoEEntradaStock() {
         fornecedor: req.fornecedor,
         total: totalValorRecebido,
         itens: itensEntradaEfectiva,
+        itens_em_falta: itensEmFaltaResumo,
+        assinatura_fornecedor: assEntregador,
+        assinatura_armazem: assFiel,
+        assinatura_direcao: assGerencia,
         status: tudoCompleto ? 'Recebido Total & Stock Abastecido' : 'Recebido Parcial (Stock Abastecido c/ Faltas)'
-    });
+    };
+    if (!window.RestauranteApp.guias) window.RestauranteApp.guias = [];
+    window.RestauranteApp.guias.unshift(novaGuiaEmitida);
 
     // 4. Atualizar status da Requisição e Compra conforme conferência
     var compraAssoc = (window.RestauranteApp.compras || []).find(function(c) { return c.numero_requisicao === req.numero_requisicao; });
@@ -1578,6 +1633,9 @@ function confirmarRecepcaoEEntradaStock() {
     fecharModal('modalGuiaEntrada');
     renderRequisicoesFluxo();
     renderCompras();
+
+    // Guardar automaticamente a Guia de Entrada em PDF com assinaturas
+    gerarPdfGuiaEntrada(novaGuiaEmitida);
 
         var msg;
     if (tudoCompleto) {
@@ -1626,6 +1684,220 @@ function removerRequisicaoFluxo(idx) {
         if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
         renderRequisicoesFluxo();
     }
+}
+
+
+// GERAÇÃO DE PDF COM ASSINATURAS PARA REQUISIÇÕES E GUIAS DE ENTRADA
+function gerarPdfRequisicao(req) {
+    if (!req) return;
+    var iframe = document.getElementById('iframeImpressaoCompra');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframeImpressaoCompra';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var itensLinhas = '';
+    (req.itens || []).forEach(function(it, idx) {
+        var qtd = Number(it.qtd_solicitada || it.qtd || 1);
+        var preco = Number(it.preco_unitario || 50);
+        var sub = Number(it.subtotal || (qtd * preco));
+        itensLinhas += '<tr>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center;">' + (idx + 1) + '</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; font-weight: bold;">' + (it.nome || 'Insumo') + '</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">' + qtd + ' ' + (it.unidade || 'UN') + '</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: right;">' + preco.toFixed(2) + ' {{ estabelecimento.moeda }}</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold;">' + sub.toFixed(2) + ' {{ estabelecimento.moeda }}</td>' +
+        '</tr>';
+    });
+
+    var assSol = req.assinatura_solicitante || 'Responsável de Armazém / Produção';
+    var assApr = req.assinatura_aprovador || 'Administrador Central';
+
+    var conteudoHtml = [
+        '<!DOCTYPE html>',
+        '<html><head><title>Requisição de Compra ' + req.numero_requisicao + '</title>',
+        '<style>',
+        '  @page { size: A4; margin: 14mm; }',
+        '  body { font-family: Arial, sans-serif; color: #1e293b; margin: 0; padding: 15px; font-size: 12px; }',
+        '  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #7c3aed; padding-bottom: 12px; margin-bottom: 16px; }',
+        '  .badge { background: #7c3aed; color: #fff; padding: 5px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; }',
+        '  .info-grid { display: flex; justify-content: space-between; margin-bottom: 16px; }',
+        '  .info-box { width: 48%; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; line-height: 1.5; }',
+        '  .info-box h4 { margin: 0 0 6px 0; font-size: 11px; color: #7c3aed; text-transform: uppercase; }',
+        '  table { width: 100%; border-collapse: collapse; margin-top: 10px; }',
+        '  th { background: #f3e8ff; padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; text-align: left; font-size: 11px; text-transform: uppercase; }',
+        '  .signatures { display: flex; justify-content: space-between; margin-top: 60px; padding-top: 10px; text-align: center; }',
+        '  .sig-col { width: 30%; }',
+        '  .sig-line { border-top: 1.5px solid #0f172a; padding-top: 6px; font-weight: bold; font-size: 11px; }',
+        '  .sig-sub { font-size: 10px; color: #475569; margin-top: 2px; }',
+        '</style></head><body>',
+        '<div class="header">',
+        '  <div>',
+        '    <h1 style="margin:0;font-size:20px;color:#0f172a;">REQUISIÇÃO INTERNA DE COMPRA</h1>',
+        '    <div style="font-size:11px;color:#64748b;margin-top:4px;">Documento Oficial de Solicitação de Mercadorias e Insumos</div>',
+        '  </div>',
+        '  <div style="text-align:right;">',
+        '    <span class="badge">' + req.numero_requisicao + '</span>',
+        '    <div style="font-size:11px;color:#475569;margin-top:5px;">Data: <b>' + (req.data_pedido || '-') + '</b></div>',
+        '  </div>',
+        '</div>',
+        '<div class="info-grid">',
+        '  <div class="info-box">',
+        '    <h4>Dados do Estabelecimento Requisitante</h4>',
+        '    <div><b>Estabelecimento:</b> {{ estabelecimento.nome }}</div>',
+        '    <div><b>Endereço:</b> {{ estabelecimento.endereco }} ({{ estabelecimento.cidade }})</div>',
+        '    <div><b>Contacto:</b> {{ estabelecimento.telefone }}</div>',
+        '  </div>',
+        '  <div class="info-box">',
+        '    <h4>Fornecedor & Estado</h4>',
+        '    <div><b>Fornecedor Indicado:</b> ' + (req.fornecedor || 'Fornecedor Geral') + '</div>',
+        '    <div><b>Estado do Processo:</b> ' + (req.status || 'Aguardando Aprovação') + '</div>',
+        '  </div>',
+        '</div>',
+        '<table><thead><tr><th style="width:35px;text-align:center;">#</th><th>Descrição do Insumo / Produto</th><th style="width:110px;text-align:center;">Quantidade</th><th style="width:110px;text-align:right;">Preço Estimado</th><th style="width:120px;text-align:right;">Subtotal</th></tr></thead>',
+        '<tbody>' + itensLinhas + '</tbody></table>',
+        '<div style="text-align:right;margin-top:14px;font-size:14px;">Total Estimado da Requisição: <b style="font-size:17px;color:#7c3aed;">' + Number(req.total_estimado || 0).toFixed(2) + ' {{ estabelecimento.moeda }}</b></div>',
+        '<div class="signatures">',
+        '  <div class="sig-col"><div class="sig-line">Elaborado / Solicitado por</div><div class="sig-sub">' + assSol + '</div><div class="sig-sub">Assinatura do Requisitante</div></div>',
+        '  <div class="sig-col"><div class="sig-line">Conferido por (Compras)</div><div class="sig-sub">Departamento de Compras & Stock</div><div class="sig-sub">Assinatura</div></div>',
+        '  <div class="sig-col"><div class="sig-line">Autorizado / Aprovado por</div><div class="sig-sub">' + assApr + '</div><div class="sig-sub">Assinatura & Carimbo da Direcção</div></div>',
+        '</div>',
+        '<div style="margin-top:30px;border-top:1px dashed #cbd5e1;padding-top:8px;text-align:center;font-size:10px;color:#94a3b8;">Documento gerado pelo Sistema {{ estabelecimento.nome }} • Guardar em PDF com Assinaturas</div>',
+        '</body></html>'
+    ].join('\n');
+
+    var doc = iframe.contentWindow || iframe.contentDocument;
+    if (doc.document) doc = doc.document;
+    doc.open();
+    doc.write(conteudoHtml);
+    doc.close();
+    setTimeout(function() {
+        if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        }
+    }, 300);
+}
+
+function gerarPdfGuiaEntrada(guia) {
+    if (!guia) return;
+    var iframe = document.getElementById('iframeImpressaoCompra');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframeImpressaoCompra';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var numGuia = guia.numero || guia.numero_guia || 'GE-2026';
+    var dataGuia = guia.data || guia.data_emissao || new Date().toLocaleString('pt-PT');
+    var fornGuia = guia.fornecedor || guia.fornecedor_nome || 'Fornecedor';
+    var reqOrig = guia.requisicao_origem || 'N/A';
+    var assForn = guia.assinatura_fornecedor || ('Representante (' + fornGuia + ')');
+    var assArm = guia.assinatura_armazem || 'Fiel de Armazém';
+    var assDir = guia.assinatura_direcao || 'Administrador Central';
+
+    var itensLinhas = '';
+    (guia.itens || []).forEach(function(it, idx) {
+        var nome = it.item_nome || it.nome || 'Insumo';
+        var qtd = Number(it.quantidade_recebida || it.qtd_solicitada || it.qtd || 1);
+        var preco = Number(it.preco_custo || it.preco_unitario || 0);
+        var sub = Number(it.subtotal || (qtd * preco));
+        itensLinhas += '<tr>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center;">' + (idx + 1) + '</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; font-weight: bold;">' + nome + '</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #0f766e;">' + qtd + ' ' + (it.unidade || 'UN') + '</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: right;">' + preco.toFixed(2) + ' {{ estabelecimento.moeda }}</td>' +
+            '<td style="padding: 7px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold;">' + sub.toFixed(2) + ' {{ estabelecimento.moeda }}</td>' +
+        '</tr>';
+    });
+
+    var faltasHtml = '';
+    if (guia.itens_em_falta && guia.itens_em_falta.length > 0) {
+        var fRows = guia.itens_em_falta.map(function(f) {
+            return '<li><b>' + f.nome + '</b>: Recebido ' + f.recebido_hoje + ' ' + f.unidade + ' | <span style="color:#b91c1c;font-weight:bold;">Em Falta: ' + f.falta + ' ' + f.unidade + '</span></li>';
+        }).join('');
+        faltasHtml = '<div style="margin-top:12px;padding:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:11px;color:#991b1b;"><b>Registo de Faltas na Conferência:</b><ul style="margin:4px 0 0 18px;padding:0;">' + fRows + '</ul></div>';
+    }
+
+    var conteudoHtml = [
+        '<!DOCTYPE html>',
+        '<html><head><title>Guia de Entrada ' + numGuia + '</title>',
+        '<style>',
+        '  @page { size: A4; margin: 14mm; }',
+        '  body { font-family: Arial, sans-serif; color: #1e293b; margin: 0; padding: 15px; font-size: 12px; }',
+        '  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0d9488; padding-bottom: 12px; margin-bottom: 16px; }',
+        '  .badge { background: #0d9488; color: #fff; padding: 5px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; }',
+        '  .info-grid { display: flex; justify-content: space-between; margin-bottom: 16px; }',
+        '  .info-box { width: 48%; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; line-height: 1.5; }',
+        '  .info-box h4 { margin: 0 0 6px 0; font-size: 11px; color: #0f766e; text-transform: uppercase; }',
+        '  table { width: 100%; border-collapse: collapse; margin-top: 10px; }',
+        '  th { background: #f0fdfa; padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; text-align: left; font-size: 11px; text-transform: uppercase; }',
+        '  .signatures { display: flex; justify-content: space-between; margin-top: 55px; padding-top: 10px; text-align: center; }',
+        '  .sig-col { width: 30%; }',
+        '  .sig-line { border-top: 1.5px solid #0f172a; padding-top: 6px; font-weight: bold; font-size: 11px; }',
+        '  .sig-sub { font-size: 10px; color: #475569; margin-top: 2px; }',
+        '</style></head><body>',
+        '<div class="header">',
+        '  <div>',
+        '    <h1 style="margin:0;font-size:20px;color:#0f172a;">GUIA DE ENTRADA & RECEPÇÃO FÍSICA DE STOCK</h1>',
+        '    <div style="font-size:11px;color:#64748b;margin-top:4px;">Comprovativo de Conferência e Abastecimento de Armazém</div>',
+        '  </div>',
+        '  <div style="text-align:right;">',
+        '    <span class="badge">' + numGuia + '</span>',
+        '    <div style="font-size:11px;color:#475569;margin-top:5px;">Data & Hora: <b>' + dataGuia + '</b></div>',
+        '  </div>',
+        '</div>',
+        '<div class="info-grid">',
+        '  <div class="info-box">',
+        '    <h4>Entidade Recebedora (Armazém)</h4>',
+        '    <div><b>Estabelecimento:</b> {{ estabelecimento.nome }}</div>',
+        '    <div><b>Endereço:</b> {{ estabelecimento.endereco }} ({{ estabelecimento.cidade }})</div>',
+        '    <div><b>Armazém Destino:</b> Armazém Principal Central</div>',
+        '  </div>',
+        '  <div class="info-box">',
+        '    <h4>Dados da Entrega & Origem</h4>',
+        '    <div><b>Fornecedor:</b> ' + fornGuia + '</div>',
+        '    <div><b>Nº Requisição Vinculada:</b> <span style="color:#7c3aed;font-weight:bold;">' + reqOrig + '</span></div>',
+        '    <div><b>Resultado da Conferência:</b> ' + (guia.status || 'Conferido') + '</div>',
+        '  </div>',
+        '</div>',
+        '<table><thead><tr><th style="width:35px;text-align:center;">#</th><th>Insumo / Mercadoria Recebida</th><th style="width:110px;text-align:center;">Qtd. Conferida</th><th style="width:110px;text-align:right;">Custo Unit.</th><th style="width:120px;text-align:right;">Subtotal</th></tr></thead>',
+        '<tbody>' + itensLinhas + '</tbody></table>',
+        faltasHtml,
+        '<div style="text-align:right;margin-top:14px;font-size:14px;">Total Recebido em Stock: <b style="font-size:17px;color:#0f766e;">' + Number(guia.total || 0).toFixed(2) + ' {{ estabelecimento.moeda }}</b></div>',
+        '<div class="signatures">',
+        '  <div class="sig-col"><div class="sig-line">Entregue pelo Fornecedor</div><div class="sig-sub">' + assForn + '</div><div class="sig-sub">Assinatura do Entregador</div></div>',
+        '  <div class="sig-col"><div class="sig-line">Conferido & Recebido por</div><div class="sig-sub">' + assArm + '</div><div class="sig-sub">Assinatura do Fiel de Armazém</div></div>',
+        '  <div class="sig-col"><div class="sig-line">Visto da Direcção / Gerência</div><div class="sig-sub">' + assDir + '</div><div class="sig-sub">Assinatura & Carimbo</div></div>',
+        '</div>',
+        '<div style="margin-top:30px;border-top:1px dashed #cbd5e1;padding-top:8px;text-align:center;font-size:10px;color:#94a3b8;">Documento oficial gerado pelo Sistema {{ estabelecimento.nome }} • Guardar em PDF com Assinaturas</div>',
+        '</body></html>'
+    ].join('\n');
+
+    var doc = iframe.contentWindow || iframe.contentDocument;
+    if (doc.document) doc = doc.document;
+    doc.open();
+    doc.write(conteudoHtml);
+    doc.close();
+    setTimeout(function() {
+        if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        }
+    }, 300);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
