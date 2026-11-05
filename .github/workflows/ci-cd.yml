@@ -1,0 +1,85 @@
+name: Frontend CI/CD (FastAPI & Vercel)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  lint-and-verify:
+    name: Validar Python, Rotas FastAPI & Templates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Verificar requirements.txt (Sem BOM)
+        run: |
+          python -c "
+          raw = open('requirements.txt', 'rb').read()
+          assert not raw.startswith(b'\xef\xbb\xbf'), 'Erro: requirements.txt contém UTF-8 BOM!'
+          print('requirements.txt limpo e válido.')
+          "
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install httpx
+
+      - name: Validar Sintaxe Python e Templates Jinja2
+        run: |
+          python -m py_compile app.py
+          python -c "
+          import os
+          from jinja2 import Environment, FileSystemLoader
+          env = Environment(loader=FileSystemLoader('templates'))
+          for fname in os.listdir('templates'):
+              if fname.endswith('.html'):
+                  env.get_template(fname)
+          print('Todos os templates HTML Jinja2 compilados com sucesso!')
+          "
+
+      - name: Smoke Test das Rotas FastAPI
+        run: |
+          python -c "
+          from fastapi.testclient import TestClient
+          from app import app
+          client = TestClient(app)
+          for path in ['/', '/pdv', '/mesas', '/produtos', '/stock', '/compras', '/guias-entrada', '/favicon.ico']:
+              resp = client.get(path)
+              assert resp.status_code in (200, 204, 303), f'Falha na rota {path}: {resp.status_code}'
+          print('Smoke test de todas as rotas principais concluído com sucesso!')
+          "
+
+  deploy-vercel:
+    name: Deploy Automático (Vercel)
+    needs: lint-and-verify
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Deploy para Produção no Vercel (se VERCEL_TOKEN estiver configurado)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            npm install --global vercel@latest
+            vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+            vercel build --prod --token=$VERCEL_TOKEN
+            vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+          else
+            echo "Integração Git do Vercel ativa (ou secrets VERCEL_TOKEN/VERCEL_ORG_ID/VERCEL_PROJECT_ID não definidos). O Vercel faz o deploy automaticamente ao receber o push na branch main."
+          fi
