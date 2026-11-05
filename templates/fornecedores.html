@@ -2,33 +2,101 @@
 
 {% block content %}
 <div class="space-y-6">
+    <!-- Cabeçalho Principal -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Fornecedores</h1>
-            <p class="text-gray-500">Gestão e cadastro de parceiros comerciais e distribuidores.</p>
+            <h1 class="text-2xl font-bold text-gray-800">Fornecedores &amp; Preços</h1>
+            <p class="text-gray-500 text-sm">Gestão de parceiros comerciais, distribuidores e tabela de preços de fornecedores.</p>
         </div>
-        <button onclick="abrirModalFornecedor()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold shadow hover:opacity-90 flex items-center gap-2 cursor-pointer">
-            <i class="fa-solid fa-plus"></i> Novo Fornecedor
-        </button>
+        <div class="flex items-center gap-2">
+            <!-- Botão da Tab 1: Fornecedores -->
+            <button id="btnAcaoNovoFornecedor" onclick="abrirModalFornecedor()" class="px-4 py-2 bg-custom-primary text-white rounded-lg font-semibold text-sm shadow hover:opacity-90 flex items-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-plus"></i> Novo Fornecedor
+            </button>
+            <!-- Botão da Tab 2: Tabela de Preços dos Fornecedores -->
+            <button id="btnAcaoNovoPrecoFornecedor" onclick="abrirModalPrecoFornecedorPage()" class="hidden px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm shadow items-center gap-2 cursor-pointer transition">
+                <i class="fa-solid fa-plus"></i> Novo Preço de Produto
+            </button>
+        </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full text-left text-sm text-gray-600">
-            <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
-                <tr>
-                    <th class="p-4">Empresa</th>
-                    <th class="p-4">NIF</th>
-                    <th class="p-4">Contacto</th>
-                    <th class="p-4">Telefone</th>
-                    <th class="p-4">Morada</th>
-                    <th class="p-4 text-right">Acções</th>
-                </tr>
-            </thead>
-            <tbody id="tabelaFornecedores" class="divide-y divide-gray-100"></tbody>
-        </table>
+    <!-- Navegação por Abas (Tabs) -->
+    <div class="border-b border-gray-200">
+        <nav class="flex flex-wrap gap-2 -mb-px" aria-label="Tabs">
+            <button type="button" id="tabBtn-fornecedores" onclick="trocarAbaFornecedores('fornecedores')"
+                class="tab-forn-btn inline-flex items-center gap-2.5 px-5 py-3 text-sm font-bold border-b-2 border-custom-primary text-custom-primary bg-white rounded-t-xl shadow-xs cursor-pointer transition">
+                <i class="fa-solid fa-truck-field"></i>
+                <span>Fornecedores</span>
+                <span id="badgeTotalFornecedores" class="px-2 py-0.5 text-[11px] font-extrabold rounded-full bg-red-50 text-custom-primary border border-red-200">0</span>
+            </button>
+
+            <button type="button" id="tabBtn-precos" onclick="trocarAbaFornecedores('precos')"
+                class="tab-forn-btn inline-flex items-center gap-2.5 px-5 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300 rounded-t-xl cursor-pointer transition">
+                <i class="fa-solid fa-tags"></i>
+                <span>Tabela de Preços dos Fornecedores</span>
+                <span id="badgeTotalPrecosFornecedores" class="px-2 py-0.5 text-[11px] font-extrabold rounded-full bg-gray-100 text-gray-600 border border-gray-200">0</span>
+            </button>
+        </nav>
     </div>
 
-    <!-- Modal CRUD Fornecedor (NATIVO INFALÍVEL) -->
+    <!-- =================================================================== -->
+    <!-- PAINEL TAB 1: FORNECEDORES                                          -->
+    <!-- =================================================================== -->
+    <div id="painelForn-fornecedores" class="space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                        <tr>
+                            <th class="p-4">Empresa</th>
+                            <th class="p-4">NIF</th>
+                            <th class="p-4">Contacto</th>
+                            <th class="p-4">Telefone</th>
+                            <th class="p-4">Morada</th>
+                            <th class="p-4 text-right">Acções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaFornecedores" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- PAINEL TAB 2: TABELA DE PREÇOS DOS FORNECEDORES                     -->
+    <!-- =================================================================== -->
+    <div id="painelForn-precos" class="hidden space-y-4">
+        <!-- Banner com Fórmula -->
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-amber-600 text-base"></i>
+                <span><b>Cálculo Instantâneo:</b> <span class="font-mono bg-white px-2 py-0.5 rounded border border-amber-300 font-bold">Custo Unitário Calculado = Preço da Caixa ÷ Unidades por Caixa</span></span>
+            </div>
+            <span class="font-bold text-[11px] bg-amber-200/80 px-2.5 py-1 rounded text-amber-900 border border-amber-300">Moeda: {{ estabelecimento.moeda or 'MT' }}</span>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
+                        <tr>
+                            <th class="p-4">Produto</th>
+                            <th class="p-4">Fornecedor</th>
+                            <th class="p-4 text-right">Custo Actual</th>
+                            <th class="p-4 text-right">Preço da Caixa</th>
+                            <th class="p-4 text-center">Unidades / Caixa</th>
+                            <th class="p-4 text-right">Custo Unitário Calculado</th>
+                            <th class="p-4 text-right">Novo P. Venda</th>
+                            <th class="p-4 text-right">Acções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaPrecosFornecedoresPage" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal CRUD Fornecedor -->
     <div id="modalFornecedor" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b pb-3">
@@ -69,49 +137,6 @@
                     <button type="button" onclick="salvarFornecedor()" class="px-5 py-2 bg-custom-primary text-white font-bold rounded-lg text-sm shadow hover:opacity-90 cursor-pointer">Gravar</button>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-    <!-- SEÇÃO: TABELA DE PREÇOS DE FORNECEDORES -->
-    <div class="space-y-4 pt-6 border-t border-gray-200">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fa-solid fa-tags text-custom-primary"></i> Tabela de Preços dos Fornecedores
-                </h2>
-                <p class="text-gray-500 text-xs">Acompanhamento de custos de caixas, unidades por caixa e cálculo instantâneo do custo unitário.</p>
-            </div>
-            <button onclick="abrirModalPrecoFornecedorPage()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs shadow flex items-center gap-2 cursor-pointer transition">
-                <i class="fa-solid fa-plus"></i> Novo Preço de Produto
-            </button>
-        </div>
-
-        <!-- Banner com Fórmula -->
-        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-calculator text-amber-600 text-base"></i>
-                <span><b>Cálculo Instantâneo:</b> <span class="font-mono bg-white px-2 py-0.5 rounded border border-amber-300 font-bold">Custo Unitário Calculado = Preço da Caixa ÷ Unidades por Caixa</span></span>
-            </div>
-            <span class="font-bold text-[11px] bg-amber-200/80 px-2.5 py-1 rounded text-amber-900 border border-amber-300">Moeda: {{ estabelecimento.moeda or 'MT' }}</span>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <table class="w-full text-left text-sm text-gray-600">
-                <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
-                    <tr>
-                        <th class="p-4">Produto</th>
-                        <th class="p-4">Fornecedor</th>
-                        <th class="p-4 text-right">Custo Actual</th>
-                        <th class="p-4 text-right">Preço da Caixa</th>
-                        <th class="p-4 text-center">Unidades / Caixa</th>
-                        <th class="p-4 text-right">Custo Unitário Calculado</th>
-                        <th class="p-4 text-right">Novo P. Venda</th>
-                        <th class="p-4 text-right">Acções</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelaPrecosFornecedoresPage" class="divide-y divide-gray-100"></tbody>
-            </table>
         </div>
     </div>
 
@@ -168,13 +193,67 @@
 <script>
 var editandoFornId = null;
 var editandoPrecoFornId = null;
+var abaFornecedoresAtual = 'fornecedores';
+
+function trocarAbaFornecedores(aba) {
+    abaFornecedoresAtual = aba;
+
+    var painelForn = document.getElementById('painelForn-fornecedores');
+    var painelPrecos = document.getElementById('painelForn-precos');
+    var btnTabForn = document.getElementById('tabBtn-fornecedores');
+    var btnTabPrecos = document.getElementById('tabBtn-precos');
+    var btnNovoForn = document.getElementById('btnAcaoNovoFornecedor');
+    var btnNovoPreco = document.getElementById('btnAcaoNovoPrecoFornecedor');
+
+    if (aba === 'precos') {
+        if (painelForn) painelForn.classList.add('hidden');
+        if (painelPrecos) painelPrecos.classList.remove('hidden');
+
+        if (btnNovoForn) {
+            btnNovoForn.classList.add('hidden');
+            btnNovoForn.classList.remove('flex');
+        }
+        if (btnNovoPreco) {
+            btnNovoPreco.classList.remove('hidden');
+            btnNovoPreco.classList.add('flex');
+        }
+
+        if (btnTabForn) {
+            btnTabForn.className = 'tab-forn-btn inline-flex items-center gap-2.5 px-5 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300 rounded-t-xl cursor-pointer transition';
+        }
+        if (btnTabPrecos) {
+            btnTabPrecos.className = 'tab-forn-btn inline-flex items-center gap-2.5 px-5 py-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-700 bg-white rounded-t-xl shadow-xs cursor-pointer transition';
+        }
+    } else {
+        if (painelForn) painelForn.classList.remove('hidden');
+        if (painelPrecos) painelPrecos.classList.add('hidden');
+
+        if (btnNovoForn) {
+            btnNovoForn.classList.remove('hidden');
+            btnNovoForn.classList.add('flex');
+        }
+        if (btnNovoPreco) {
+            btnNovoPreco.classList.add('hidden');
+            btnNovoPreco.classList.remove('flex');
+        }
+
+        if (btnTabForn) {
+            btnTabForn.className = 'tab-forn-btn inline-flex items-center gap-2.5 px-5 py-3 text-sm font-bold border-b-2 border-custom-primary text-custom-primary bg-white rounded-t-xl shadow-xs cursor-pointer transition';
+        }
+        if (btnTabPrecos) {
+            btnTabPrecos.className = 'tab-forn-btn inline-flex items-center gap-2.5 px-5 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300 rounded-t-xl cursor-pointer transition';
+        }
+    }
+}
 
 function renderFornecedores() {
     var tbody = document.getElementById('tabelaFornecedores');
     if (!tbody) return;
     var lista = window.RestauranteApp.fornecedores || [];
-    var html = '';
+    var badge = document.getElementById('badgeTotalFornecedores');
+    if (badge) badge.innerText = lista.length;
 
+    var html = '';
     for (var i = 0; i < lista.length; i++) {
         var f = lista[i];
         html += '<tr class="hover:bg-gray-50">';
@@ -189,7 +268,7 @@ function renderFornecedores() {
         html += '  </td>';
         html += '</tr>';
     }
-    tbody.innerHTML = html;
+    tbody.innerHTML = html || '<tr><td colspan="6" class="p-6 text-center text-gray-400 text-xs">Nenhum fornecedor registado.</td></tr>';
 }
 
 function abrirModalFornecedor() {
@@ -274,8 +353,10 @@ function renderPrecosFornecedoresPage() {
     var tbody = document.getElementById('tabelaPrecosFornecedoresPage');
     if (!tbody) return;
     var precos = window.RestauranteApp.tabela_precos_fornecedores || [];
-    var html = '';
+    var badge = document.getElementById('badgeTotalPrecosFornecedores');
+    if (badge) badge.innerText = precos.length;
 
+    var html = '';
     for (var i = 0; i < precos.length; i++) {
         var p = precos[i];
         var unCaixa = p.unidades_caixa || p.unidades_por_caixa || 1;
@@ -483,6 +564,13 @@ function removerPrecoFornecedorPage(idx) {
 document.addEventListener('DOMContentLoaded', function() {
     renderFornecedores();
     renderPrecosFornecedoresPage();
+
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'precos' || window.location.hash === '#precos') {
+        trocarAbaFornecedores('precos');
+    } else {
+        trocarAbaFornecedores('fornecedores');
+    }
 });
 </script>
 {% endblock %}
