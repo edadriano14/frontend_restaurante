@@ -6,12 +6,19 @@ import base64
 import hashlib
 from urllib.parse import quote
 import requests
+import httpx
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.gzip import GZipMiddleware
 
 app = FastAPI(title="Rede de Restaurantes - PWA")
+# Compressão GZIP de alta performance para transferências instantâneas
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# Cliente HTTP assíncrono com connection pooling e keep-alive para máxima velocidade
+http_client = httpx.AsyncClient(timeout=httpx.Timeout(4.0, connect=1.5), limits=httpx.Limits(max_keepalive_connections=20, max_connections=50))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -454,10 +461,19 @@ async def auth_and_cache_middleware(request: Request, call_next):
 
     response = await call_next(request)
     content_type = response.headers.get("content-type", "")
-    if "text/html" in content_type or "javascript" in content_type or path.endswith(".js"):
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+
+    # Caching inteligente: Recursos estáticos (CSS, fontes, imagens, ícones) são cacheados no browser para carregamento ultra-rápido (0ms)
+    if path.startswith("/static/") or path.startswith("/favicon.ico"):
+        if any(path.endswith(ext) for ext in [".css", ".woff2", ".woff", ".ttf", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".webp"]):
+            response.headers["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
+        elif path.endswith(".js"):
+            # Scripts JS usam stale-while-revalidate para atualização fluida sem travar o browser
+            response.headers["Cache-Control"] = "public, max-age=3600, stale-while-revalidate=600"
+    elif "text/html" in content_type:
+        # Documentos HTML dinâmicos não sofrem cache obsoleto
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
         response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
+
     return response
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -907,19 +923,21 @@ async def criar_estabelecimento(payload: dict):
     }
     ESTABELECIMENTOS_DB.append(novo)
 
-    # Grava na base de dados (Backend .NET / Supabase)
-    try:
-        for base_api in (BACKEND_LOCAL_URL, BACKEND_API_URL):
-            if not base_api:
-                continue
-            requests.post(
+    # Grava na base de dados (Backend .NET / Supabase) de forma não-bloqueante
+    for base_api in (BACKEND_LOCAL_URL, BACKEND_API_URL):
+        if not base_api:
+            continue
+        try:
+            resp = await http_client.post(
                 f"{base_api}/api/syncstate/sync",
                 json={"estabelecimentos": [novo]},
                 headers={"X-Tenant-Id": novo["id"]},
-                timeout=3
+                timeout=2.0
             )
-    except Exception:
-        pass
+            if resp.status_code == 200:
+                break
+        except Exception:
+            pass
 
     return {"status": "ok", "estabelecimento": novo}
 
@@ -928,7 +946,7 @@ async def criar_estabelecimento(payload: dict):
 # =============================================================================
 @app.get("/api/db/state")
 async def db_state(request: Request):
-    """Obtém o estado persistido das tabelas na base de dados através do backend .NET."""
+    """Obtém o estado persistido das tabelas na base de dados através do backend .NET de modo assíncrono e ultra-veloz."""
     usuario = getattr(request.state, "usuario", None) or obter_usuario_request(request)
     tenant_id = usuario.get("estabelecimento_id") if usuario else ESTABELECIMENTO_ATIVO_ID
 
@@ -936,10 +954,10 @@ async def db_state(request: Request):
         if not base_api:
             continue
         try:
-            resp = requests.get(
+            resp = await http_client.get(
                 f"{base_api}/api/syncstate/state",
                 headers={"X-Tenant-Id": str(tenant_id)},
-                timeout=4
+                timeout=3.0
             )
             if resp.status_code == 200:
                 return resp.json()
@@ -950,7 +968,7 @@ async def db_state(request: Request):
 
 @app.post("/api/db/sync")
 async def db_sync(request: Request):
-    """Encaminha os cadastros gravados no Frontend para serem persistidos no Supabase / PostgreSQL."""
+    """Encaminha os cadastros gravados no Frontend para serem persistidos no Supabase / PostgreSQL de modo assíncrono."""
     usuario = getattr(request.state, "usuario", None) or obter_usuario_request(request)
     tenant_id = usuario.get("estabelecimento_id") if usuario else ESTABELECIMENTO_ATIVO_ID
 
@@ -963,11 +981,11 @@ async def db_sync(request: Request):
         if not base_api:
             continue
         try:
-            resp = requests.post(
+            resp = await http_client.post(
                 f"{base_api}/api/syncstate/sync",
                 json=body,
                 headers={"X-Tenant-Id": str(tenant_id), "Content-Type": "application/json"},
-                timeout=5
+                timeout=4.0
             )
             if resp.status_code == 200:
                 return resp.json()

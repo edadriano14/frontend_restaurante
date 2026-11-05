@@ -348,18 +348,18 @@ window.RestauranteApp = {
 
     // 2. Função global salvarEstado(): Salva no localStorage E envia imediatamente para o PostgreSQL / Supabase
     window.RestauranteApp.salvarEstado = function() {
-        // Grava no localStorage local
+        // Grava no localStorage local imediatamente (0ms de latência para a UI)
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(window.RestauranteApp));
         } catch (e) {
             console.warn('Aviso: erro ao gravar no localStorage:', e);
         }
 
-        // Debounce de 300ms para persistir na Base de Dados sem sobrecarregar requisições em lote
+        // Debounce otimizado de 100ms para persistir na Base de Dados de forma ultra-rápida sem perda de eventos
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(function() {
             window.RestauranteApp.sincronizarComBaseDeDados();
-        }, 300);
+        }, 100);
     };
 
     // 3. Sincroniza e grava no Banco de Dados (Supabase & Backend .NET)
@@ -396,7 +396,7 @@ window.RestauranteApp = {
         }
     };
 
-    // 4. Carrega os dados atualizados da Base de Dados ao abrir a página
+    // 4. Carrega os dados atualizados da Base de Dados ao abrir a página em background (não bloqueia a renderização)
     window.RestauranteApp.carregarDaBaseDeDados = async function() {
         try {
             var resp = await fetch('/api/db/state');
@@ -422,12 +422,14 @@ window.RestauranteApp = {
         }
     };
 
-    // Inicia a sincronização automática ao carregar o DOM
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
+    // Executa em segundo plano via requestIdleCallback ou microtask para não atrasar o primeiro frame da UI
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(function() {
             window.RestauranteApp.carregarDaBaseDeDados();
-        });
+        }, { timeout: 1000 });
     } else {
-        window.RestauranteApp.carregarDaBaseDeDados();
+        setTimeout(function() {
+            window.RestauranteApp.carregarDaBaseDeDados();
+        }, 50);
     }
 })();
