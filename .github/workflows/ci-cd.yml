@@ -83,3 +83,4 @@ jobs:
           else
             echo "Integração Git do Vercel ativa (ou secrets VERCEL_TOKEN/VERCEL_ORG_ID/VERCEL_PROJECT_ID não definidos). O Vercel faz o deploy automaticamente ao receber o push na branch main."
           fi
+
