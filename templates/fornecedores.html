@@ -49,7 +49,7 @@
                     <thead class="bg-gray-50 text-gray-700 uppercase font-semibold text-xs border-b">
                         <tr>
                             <th class="p-4">Empresa</th>
-                            <th class="p-4">NIF</th>
+                            <th class="p-4">NUIT</th>
                             <th class="p-4">Contacto</th>
                             <th class="p-4">Telefone</th>
                             <th class="p-4">Morada</th>
@@ -110,7 +110,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">NIF</label>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">NUIT</label>
                         <input type="text" id="fornNif" placeholder="400123456" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                     <div>
@@ -258,7 +258,7 @@ function renderFornecedores() {
         var f = lista[i];
         html += '<tr class="hover:bg-gray-50">';
         html += '  <td class="p-4 font-bold text-gray-900">' + f.nome + '</td>';
-        html += '  <td class="p-4 font-mono text-xs">' + (f.nif || '-') + '</td>';
+        html += '  <td class="p-4 font-mono text-xs">' + (f.nuit || f.nif || '-') + '</td>';
         html += '  <td class="p-4">' + (f.contacto || '-') + '</td>';
         html += '  <td class="p-4 font-mono text-xs">' + (f.telefone || '-') + '</td>';
         html += '  <td class="p-4 text-gray-500">' + (f.morada || '-') + '</td>';
@@ -289,7 +289,7 @@ function editarFornecedor(id) {
     editandoFornId = id;
     document.getElementById('modalFornTitulo').innerText = 'Editar Fornecedor';
     document.getElementById('fornNome').value = f.nome || '';
-    document.getElementById('fornNif').value = f.nif || '';
+    document.getElementById('fornNif').value = f.nuit || f.nif || '';
     document.getElementById('fornContacto').value = f.contacto || '';
     document.getElementById('fornTelefone').value = f.telefone || '';
     document.getElementById('fornEmail').value = f.email || '';
@@ -307,6 +307,7 @@ function salvarFornecedor() {
 
     var item = {
         nome: nome,
+        nuit: document.getElementById('fornNif').value,
         nif: document.getElementById('fornNif').value,
         contacto: document.getElementById('fornContacto').value,
         telefone: document.getElementById('fornTelefone').value,
