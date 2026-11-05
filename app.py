@@ -671,7 +671,7 @@ async def recuperar_senha_submit(request: Request, email: str = Form(...)):
         name="recuperar_senha.html",
         context={
             "estabelecimento": get_ativo(),
-            "mensagem": f"Se o endereço {email} estiver registado, enviámos as instruções para redefinir a palavra-passe."
+            "mensagem": f"Se o endereço {email} estiver registado, enviámos as instruções para redefinir a password."
         }
     )
 
