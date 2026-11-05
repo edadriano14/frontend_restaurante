@@ -22,28 +22,14 @@
         html, body {
             margin: 0;
             padding: 0;
-            height: 100%;
-            overflow: hidden;
-            overscroll-behavior: none;
-        }
-        /* Ocultar barra de scroll visualmente na web mantendo o scroll funcional */
-        .no-scrollbar::-webkit-scrollbar,
-        *::-webkit-scrollbar {
-            display: none;
-            width: 0;
-            height: 0;
-        }
-        .no-scrollbar,
-        * {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            overscroll-behavior-y: none;
         }
     </style>
 </head>
-<body class="bg-gray-50 h-screen flex flex-col text-gray-800 overflow-hidden">
+<body class="bg-gray-50 min-h-screen flex flex-col text-gray-800 overflow-x-hidden">
 
     <!-- Header do Restaurante -->
-    <header class="bg-white shadow-sm border-b shrink-0 z-30">
+    <header class="bg-white shadow-sm border-b sticky top-0 z-30">
         <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <img src="{{ estabelecimento.logotipo_url }}" class="w-10 h-10 rounded-full object-cover border">
@@ -83,8 +69,6 @@
         </div>
     </header>
 
-    <!-- Área Rolável Contendo Conteúdo e Rodapé (para que o scroll pare exatamente no fim do rodapé sem esticar a página) -->
-    <div class="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
     <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6 space-y-6">
 
         <!-- Banner Aviso Fechado -->
@@ -530,7 +514,6 @@
             </div>
         </div>
     </footer>
-    </div>
 
 <script>
 function portalComponent() {
