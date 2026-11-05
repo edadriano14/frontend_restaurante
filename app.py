@@ -113,6 +113,7 @@ ROTAS_MODULO_RBAC = {
 # Rotas públicas isentas de autenticação
 ROTAS_PUBLICAS_PREFIXOS = (
     "/login",
+    "/recuperar-senha",
     "/auth/",
     "/logout",
     "/portal-cliente",
@@ -636,6 +637,43 @@ async def logout_route():
     response = RedirectResponse(url="/login?msg=Sessão+terminada+com+sucesso.", status_code=303)
     response.delete_cookie(key=SESSION_COOKIE_NAME, path="/")
     return response
+
+
+@app.get("/recuperar-senha", response_class=HTMLResponse)
+async def recuperar_senha_page(request: Request, erro: str = None, msg: str = None):
+    return templates.TemplateResponse(
+        request=request,
+        name="recuperar_senha.html",
+        context={
+            "estabelecimento": get_ativo(),
+            "erro": erro,
+            "mensagem": msg
+        }
+    )
+
+
+@app.post("/recuperar-senha", response_class=HTMLResponse)
+async def recuperar_senha_submit(request: Request, email: str = Form(...)):
+    # Dispara recuperação no Supabase Auth caso configurado
+    if SUPABASE_URL and SUPABASE_ANON_KEY and "@" in email:
+        try:
+            await http_client.post(
+                f"{SUPABASE_URL}/auth/v1/recover",
+                json={"email": email.strip()},
+                headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+                timeout=4.0
+            )
+        except Exception:
+            pass
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recuperar_senha.html",
+        context={
+            "estabelecimento": get_ativo(),
+            "mensagem": f"Se o endereço {email} estiver registado, enviámos as instruções para redefinir a palavra-passe."
+        }
+    )
 
 
 @app.get("/auth/me")

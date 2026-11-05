@@ -10,7 +10,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="/static/js/app-data.js?v=4"></script>
 
     <style>
         :root {
@@ -20,171 +19,95 @@
         .bg-custom-primary { background-color: var(--cor-primaria); }
         .text-custom-primary { color: var(--cor-primaria); }
         .border-custom-primary { border-color: var(--cor-primaria); }
-        .bg-custom-secondary { background-color: var(--cor-secundaria); }
+        .bg-restaurant {
+            background-image: linear-gradient(rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.82)),
+                              url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
     </style>
 </head>
-<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4 font-sans antialiased text-gray-800 relative overflow-y-auto">
+<body class="bg-restaurant min-h-screen flex items-center justify-center p-4 font-sans antialiased text-gray-800">
 
-    <!-- Fundo Decorativo -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-red-600/15 blur-3xl"></div>
-        <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-emerald-600/15 blur-3xl"></div>
-    </div>
-
-    <div class="relative z-10 w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 border border-gray-100">
+    <!-- Card de Login Limpo, Moderno e Bonito -->
+    <div class="w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 sm:p-10 border border-white/40 transition-all">
         
-        <!-- Painel Esquerdo: Identidade & Perfis Rápidos Demo -->
-        <div class="md:col-span-5 bg-custom-secondary text-white p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
-            <div class="space-y-4 relative z-10">
-                <div class="flex items-center space-x-3">
-                    {% if estabelecimento.logotipo_url %}
-                    <img src="{{ estabelecimento.logotipo_url }}" alt="Logo" class="w-12 h-12 rounded-2xl object-cover border-2 border-white/30 shadow-md">
-                    {% endif %}
-                    <div>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                            <i class="fa-solid fa-shield-halved mr-1"></i> Supabase Auth &amp; RBAC
-                        </span>
-                        <h1 class="font-black text-lg leading-tight mt-1 text-white">{{ estabelecimento.nome }}</h1>
-                    </div>
-                </div>
-
-                <p class="text-xs text-gray-300 leading-relaxed">
-                    Acesso protegido por autenticação segura com controlo de permissões por perfil (<strong class="text-white">RBAC</strong>) e isolamento Multi-Tenant (<strong class="text-white">Row-Level Security</strong>).
-                </p>
-
-                <!-- Acesso Rápido por Perfil (Para Teste / Demonstração) -->
-                <div class="pt-2 space-y-2">
-                    <div class="text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt text-amber-400"></i> Preenchimento Rápido (Contas de Teste)
-                    </div>
-
-                    <div class="space-y-1.5 text-xs">
-                        <button type="button" onclick="preencherCredenciais('admin@restaurante.com', 'Admin@123')" class="w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 transition flex items-center justify-between text-left group cursor-pointer">
-                            <div>
-                                <div class="font-bold text-white group-hover:text-amber-300 transition">Administrador Geral</div>
-                                <div class="text-[10px] text-gray-400 font-mono">admin@restaurante.com</div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30">ADMIN_GERAL</span>
-                        </button>
-
-                        <button type="button" onclick="preencherCredenciais('gestor@mariscos.co.mz', 'Gestor@123')" class="w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 transition flex items-center justify-between text-left group cursor-pointer">
-                            <div>
-                                <div class="font-bold text-white group-hover:text-amber-300 transition">Gestor de Restaurante</div>
-                                <div class="text-[10px] text-gray-400 font-mono">gestor@mariscos.co.mz</div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">GESTOR</span>
-                        </button>
-
-                        <button type="button" onclick="preencherCredenciais('caixa1@saborbrasa.com', 'Caixa@123')" class="w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 transition flex items-center justify-between text-left group cursor-pointer">
-                            <div>
-                                <div class="font-bold text-white group-hover:text-amber-300 transition">Operador de Caixa / PDV</div>
-                                <div class="text-[10px] text-gray-400 font-mono">caixa1@saborbrasa.com</div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">OPERADOR</span>
-                        </button>
-
-                        <button type="button" onclick="preencherCredenciais('stock@saborbrasa.com', 'Stock@123')" class="w-full p-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 transition flex items-center justify-between text-left group cursor-pointer">
-                            <div>
-                                <div class="font-bold text-white group-hover:text-amber-300 transition">Fiel de Armazém / Stock</div>
-                                <div class="text-[10px] text-gray-400 font-mono">stock@saborbrasa.com</div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30">STOCK</span>
-                        </button>
-                    </div>
-                </div>
+        <!-- Cabeçalho / Identidade -->
+        <div class="text-center mb-8">
+            {% if estabelecimento.logotipo_url %}
+            <img src="{{ estabelecimento.logotipo_url }}" alt="Logo" class="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 shadow-lg border-2 border-white">
+            {% else %}
+            <div class="w-14 h-14 rounded-2xl bg-custom-primary text-white flex items-center justify-center mx-auto mb-3 shadow-lg text-2xl font-black">
+                <i class="fa-solid fa-utensils"></i>
             </div>
-
-            <div class="pt-6 border-t border-white/10 mt-6 flex items-center justify-between text-xs text-gray-400 relative z-10">
-                <a href="/portal-cliente" class="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5">
-                    <i class="fa-solid fa-mobile-screen-button"></i> Ir para Portal do Cliente (Público)
-                </a>
-            </div>
+            {% endif %}
+            <h1 class="text-2xl font-black text-gray-900 tracking-tight">{{ estabelecimento.nome }}</h1>
+            <p class="text-sm text-gray-500 mt-1">Introduza os seus dados para iniciar sessão</p>
         </div>
 
-        <!-- Painel Direito: Formulário de Autenticação -->
-        <div class="md:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
-            <div class="max-w-md mx-auto w-full space-y-6">
-                <div>
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-bold mb-2">
-                        <i class="fa-solid fa-lock text-custom-primary"></i> Área Restrita de Gestão
-                    </div>
-                    <h2 class="text-2xl font-black text-gray-900">Iniciar Sessão</h2>
-                    <p class="text-xs text-gray-500 mt-1">Introduza as suas credenciais do Supabase Auth ou da rede para aceder aos módulos autorizados.</p>
-                </div>
+        {% if erro %}
+        <div class="mb-5 p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-exclamation text-red-600 text-base flex-shrink-0"></i>
+            <span>{{ erro }}</span>
+        </div>
+        {% endif %}
 
-                {% if erro %}
-                <div class="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2.5">
-                    <i class="fa-solid fa-circle-exclamation text-red-600 text-base mt-0.5"></i>
-                    <div>
-                        <p class="font-bold">Falha na Autenticação</p>
-                        <p>{{ erro }}</p>
-                    </div>
-                </div>
-                {% endif %}
+        {% if mensagem %}
+        <div class="mb-5 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-base flex-shrink-0"></i>
+            <span>{{ mensagem }}</span>
+        </div>
+        {% endif %}
 
-                {% if mensagem %}
-                <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-start gap-2.5">
-                    <i class="fa-solid fa-circle-check text-emerald-600 text-base mt-0.5"></i>
-                    <div>{{ mensagem }}</div>
-                </div>
-                {% endif %}
+        <!-- Formulário de Login Direto: Utilizador e Palavra-passe -->
+        <form id="formLogin" method="POST" action="/auth/login" class="space-y-5">
+            <input type="hidden" name="next" value="{{ next_url or '/' }}">
 
-                <form id="formLogin" method="POST" action="/auth/login" class="space-y-4">
-                    <input type="hidden" name="next" value="{{ next_url or '/' }}">
-
-                    <div>
-                        <label for="email" class="block text-xs font-bold text-gray-700 uppercase mb-1">Email ou Utilizador *</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                            <input type="text" id="email" name="email" required value="{{ email_preenchido or 'admin@restaurante.com' }}" placeholder="admin@restaurante.com" class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm outline-none focus:border-custom-primary focus:ring-2 focus:ring-red-500/10 transition">
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label for="password" class="block text-xs font-bold text-gray-700 uppercase">Palavra-passe *</label>
-                        </div>
-                        <div class="relative">
-                            <i class="fa-solid fa-key absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                            <input type="password" id="password" name="password" required value="Admin@123" placeholder="••••••••" class="w-full pl-10 pr-11 py-2.5 border border-gray-300 rounded-xl text-sm outline-none focus:border-custom-primary focus:ring-2 focus:ring-red-500/10 transition font-mono">
-                            <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1 cursor-pointer" title="Mostrar/Ocultar Senha">
-                                <i id="iconeOlho" class="fa-solid fa-eye text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between text-xs text-gray-600 pt-1">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="lembrar" checked class="w-4 h-4 rounded text-custom-primary">
-                            <span>Manter sessão iniciada (Cookie HttpOnly)</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-custom-primary hover:opacity-95 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer">
-                        <i class="fa-solid fa-right-to-bracket"></i>
-                        <span>Entrar no Sistema</span>
-                    </button>
-                </form>
-
-                <!-- Informação de Segurança Supabase -->
-                <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 text-[11px] text-emerald-900 space-y-1">
-                    <div class="font-bold text-emerald-800 flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-check text-emerald-600"></i> Ligado ao Supabase Auth (zkabrymvsdvvaprvhiac)
-                    </div>
-                    <p class="text-emerald-700">
-                        Autenticação ativa via <code class="bg-white px-1 py-0.5 rounded border border-emerald-200 text-emerald-800">https://zkabrymvsdvvaprvhiac.supabase.co/auth/v1</code> com Publishable Key configurada e sincronização RBAC Multi-Tenant.
-                    </p>
+            <!-- Utilizador / Email -->
+            <div>
+                <label for="email" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Utilizador ou Email</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </span>
+                    <input type="text" id="email" name="email" required value="{{ email_preenchido or '' }}" placeholder="ex: admin@restaurante.com" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm outline-none focus:bg-white focus:border-custom-primary focus:ring-4 focus:ring-red-500/10 transition">
                 </div>
             </div>
+
+            <!-- Password com Botão Olho -->
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label for="password" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Palavra-passe</label>
+                    <a href="/recuperar-senha" class="text-xs font-semibold text-custom-primary hover:underline">Esqueceu a palavra-passe?</a>
+                </div>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-lock text-sm"></i>
+                    </span>
+                    <input type="password" id="password" name="password" required placeholder="••••••••" class="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm outline-none focus:bg-white focus:border-custom-primary focus:ring-4 focus:ring-red-500/10 transition font-mono">
+                    <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 cursor-pointer transition" title="Ver/Ocultar Palavra-passe">
+                        <i id="iconeOlho" class="fa-solid fa-eye text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Botão Entrar -->
+            <button type="submit" class="w-full py-3.5 bg-custom-primary hover:opacity-95 text-white font-bold rounded-2xl shadow-lg shadow-red-600/20 transition flex items-center justify-center gap-2 text-sm cursor-pointer mt-2">
+                <span>Entrar no Sistema</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="text-center mt-6 pt-5 border-t border-gray-100">
+            <a href="/portal-cliente" class="text-xs text-gray-500 hover:text-gray-900 font-medium inline-flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-mobile-screen-button text-gray-400"></i>
+                Ir para o Portal do Cliente
+            </a>
         </div>
     </div>
 
     <script>
-        function preencherCredenciais(email, senha) {
-            document.getElementById('email').value = email;
-            document.getElementById('password').value = senha;
-        }
-
         function togglePassword() {
             var input = document.getElementById('password');
             var icon = document.getElementById('iconeOlho');
