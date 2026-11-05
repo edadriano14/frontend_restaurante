@@ -1,9 +1,6 @@
-const CACHE_NAME = 'restaurante-cache-v3';
+const CACHE_NAME = 'restaurante-cache-v4';
 const ASSETS_TO_CACHE = [
-  '/static/manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js'
+  '/static/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,11 +30,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  // Network-first para páginas HTML e rotas da aplicação para exibir sempre a versão mais recente na web
+  // Network-first para todas as páginas e scripts locais para exibir sempre a versão mais recente
+  const url = new URL(event.request.url);
   const acceptHeader = event.request.headers.get('accept') || '';
-  if (event.request.mode === 'navigate' || acceptHeader.includes('text/html')) {
+  if (
+    event.request.mode === 'navigate' ||
+    acceptHeader.includes('text/html') ||
+    url.origin === self.location.origin
+  ) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-store' })
         .then((networkResponse) => {
           return networkResponse;
         })
@@ -48,13 +50,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first apenas para ficheiros estáticos externos (ícones, fontes, bibliotecas CDN)
+  // Cache-first apenas para bibliotecas externas (CDNs)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      return (
-        cachedResponse ||
-        fetch(event.request)
-      );
+      return cachedResponse || fetch(event.request);
     })
   );
 });

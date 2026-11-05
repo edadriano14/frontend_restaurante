@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- SCRIPTS GLOBAIS DE DADOS E MODAIS -->
-    <script src="/static/js/app-data.js"></script>
-    <script src="/static/js/modals.js"></script>
+    <script src="/static/js/app-data.js?v=4"></script>
+    <script src="/static/js/modals.js?v=4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -628,7 +628,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/static/service-worker.js?v=3').then(function(reg) {
+                navigator.serviceWorker.register('/static/service-worker.js?v=4').then(function(reg) {
                     reg.update();
                 });
             });

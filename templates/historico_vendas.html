@@ -8,12 +8,15 @@
             <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
                 <i class="fa-solid fa-clock-rotate-left text-purple-600"></i> Histórico de Vendas
             </h1>
-            <p class="text-gray-500 mt-1">Registo completo de todas as vendas e pedidos facturados no PDV e balcão.</p>
+            <p class="text-gray-500 mt-1 text-sm">Registo de vendas da data actual com pesquisa de vendas anteriores por datas, períodos e recibos.</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
             <span class="px-4 py-2 bg-purple-50 text-purple-800 rounded-xl text-xs font-bold border border-purple-200" id="totalVendasFaturadas">
                 Total Facturado: 0.00 {{ estabelecimento.moeda }}
             </span>
+            <button type="button" onclick="exportarRelatorioVendasPDF()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition">
+                <i class="fa-solid fa-file-pdf"></i> Exportar PDF do Período
+            </button>
         </div>
     </div>
 
@@ -29,7 +32,7 @@
                     <p class="text-lg font-black text-gray-800" id="totalSegregadoCozinha">0.00 {{ estabelecimento.moeda }}</p>
                 </div>
             </div>
-            <span class="px-2 py-0.5 text-[10px] font-bold bg-orange-50 text-orange-700 rounded-lg border border-orange-200">Pratos & Quentes</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-orange-50 text-orange-700 rounded-lg border border-orange-200">Pratos &amp; Quentes</span>
         </div>
 
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-blue-100 flex items-center justify-between">
@@ -42,7 +45,7 @@
                     <p class="text-lg font-black text-gray-800" id="totalSegregadoBar">0.00 {{ estabelecimento.moeda }}</p>
                 </div>
             </div>
-            <span class="px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 rounded-lg border border-blue-200">Bebidas & Cafés</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 rounded-lg border border-blue-200">Bebidas &amp; Cafés</span>
         </div>
 
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 flex items-center justify-between">
@@ -55,7 +58,7 @@
                     <p class="text-lg font-black text-gray-800" id="totalSegregadoPastelaria">0.00 {{ estabelecimento.moeda }}</p>
                 </div>
             </div>
-            <span class="px-2 py-0.5 text-[10px] font-bold bg-purple-50 text-purple-700 rounded-lg border border-purple-200">Doces & Sobremesas</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-purple-50 text-purple-700 rounded-lg border border-purple-200">Doces &amp; Sobremesas</span>
         </div>
 
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-sky-100 flex items-center justify-between">
@@ -68,50 +71,58 @@
                     <p class="text-lg font-black text-sky-800" id="totalSegregadoPiscina">0.00 {{ estabelecimento.moeda }}</p>
                 </div>
             </div>
-            <span class="px-2 py-0.5 text-[10px] font-bold bg-sky-50 text-sky-700 rounded-lg border border-sky-200">Bilheteira & Bar</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-sky-50 text-sky-700 rounded-lg border border-sky-200">Bilheteira &amp; Bar</span>
         </div>
     </div>
 
-    <!-- Filtros de Período (Data Actual por Defeito + Busca de Vendas Anteriores) e Tipo de Pedido -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs font-bold text-gray-500 uppercase mr-1 flex items-center gap-1">
-                    <i class="fa-regular fa-calendar-days text-purple-600"></i> Período:
-                </span>
-                <button type="button" onclick="mudarPeriodoHistorico('hoje')" id="btnPeriodo-hoje" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm cursor-pointer flex items-center gap-1.5">
-                    <i class="fa-solid fa-calendar-day"></i> Hoje (Data Actual)
-                </button>
-                <button type="button" onclick="mudarPeriodoHistorico('ontem')" id="btnPeriodo-ontem" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
-                    Ontem
-                </button>
-                <button type="button" onclick="mudarPeriodoHistorico('7dias')" id="btnPeriodo-7dias" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
-                    Últimos 7 Dias
-                </button>
-                <button type="button" onclick="mudarPeriodoHistorico('mes')" id="btnPeriodo-mes" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
-                    Este Mês
-                </button>
-                <button type="button" onclick="mudarPeriodoHistorico('todas')" id="btnPeriodo-todas" class="periodo-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer">
-                    Todas Anteriores
-                </button>
+    <!-- Painel de Pesquisa de Vendas por Datas (Data Actual por Defeito + Busca de Vendas Anteriores) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+        <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-4 border-b border-gray-100 pb-4">
+            <!-- Atalhos de Período -->
+            <div class="space-y-2">
+                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-regular fa-calendar-check text-purple-600"></i> Período Rápido (Data Actual ou Anteriores):
+                </label>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="mudarPeriodoHistorico('hoje')" id="btnPeriodo-hoje" class="periodo-venda-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm cursor-pointer flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-calendar-day"></i> Hoje (Data Actual)
+                    </button>
+                    <button type="button" onclick="mudarPeriodoHistorico('ontem')" id="btnPeriodo-ontem" class="periodo-venda-btn px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer transition">
+                        Ontem
+                    </button>
+                    <button type="button" onclick="mudarPeriodoHistorico('7dias')" id="btnPeriodo-7dias" class="periodo-venda-btn px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer transition">
+                        Últimos 7 Dias
+                    </button>
+                    <button type="button" onclick="mudarPeriodoHistorico('mes')" id="btnPeriodo-mes" class="periodo-venda-btn px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer transition">
+                        Este Mês
+                    </button>
+                    <button type="button" onclick="mudarPeriodoHistorico('todas')" id="btnPeriodo-todas" class="periodo-venda-btn px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer transition">
+                        Todas Anteriores
+                    </button>
+                </div>
             </div>
 
-            <!-- Busca de Vendas Anteriores por Intervalo de Datas ou Pesquisa -->
-            <div class="flex flex-wrap items-center gap-2">
-                <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
-                    <label class="text-[11px] font-bold text-gray-500">De:</label>
-                    <input type="date" id="dataInicioHistorico" onchange="aplicarFiltroDatasPersonalizado()" class="text-xs font-mono bg-transparent outline-none text-gray-700 cursor-pointer">
-                    <label class="text-[11px] font-bold text-gray-500 ml-1">Até:</label>
-                    <input type="date" id="dataFimHistorico" onchange="aplicarFiltroDatasPersonalizado()" class="text-xs font-mono bg-transparent outline-none text-gray-700 cursor-pointer">
+            <!-- Busca por Intervalo de Datas (De / Até) + Botão Buscar por Datas -->
+            <div class="flex flex-wrap items-end gap-2.5 bg-purple-50/50 border border-purple-100 rounded-xl p-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-purple-900 uppercase mb-1">Data Inicial (De)</label>
+                    <input type="date" id="dataInicioHistorico" onchange="aplicarFiltroDatasPersonalizado()" class="px-3 py-1.5 bg-white border border-purple-200 rounded-lg text-xs font-mono font-bold text-gray-800 outline-none focus:border-purple-600 cursor-pointer">
                 </div>
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-2.5 top-2.5"></i>
-                    <input type="text" id="pesquisaTextoHistorico" oninput="renderHistoricoVendas()" placeholder="Buscar recibo, mesa, item..." class="pl-7 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-purple-500 w-48">
+                <div>
+                    <label class="block text-[10px] font-bold text-purple-900 uppercase mb-1">Data Final (Até)</label>
+                    <input type="date" id="dataFimHistorico" onchange="aplicarFiltroDatasPersonalizado()" class="px-3 py-1.5 bg-white border border-purple-200 rounded-lg text-xs font-mono font-bold text-gray-800 outline-none focus:border-purple-600 cursor-pointer">
                 </div>
+                <button type="button" onclick="buscarVendasPorDatas()" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition h-[32px]">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar por Datas
+                </button>
+                <button type="button" onclick="mudarPeriodoHistorico('hoje')" title="Voltar para Hoje" class="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-lg text-xs font-bold cursor-pointer transition h-[32px]">
+                    <i class="fa-solid fa-rotate-left"></i> Hoje
+                </button>
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-4">
+        <!-- Filtro por Tipo de Pedido e Pesquisa Rápida -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-2">
                 <button onclick="filtrarVendas('TODOS')" id="btnFiltro-TODOS" class="filtro-venda-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white shadow-sm cursor-pointer">
                     Todas as Vendas
@@ -129,11 +140,16 @@
                     Piscina
                 </button>
             </div>
-            <div class="flex items-center gap-3">
+
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs absolute left-3 top-2.5"></i>
+                    <input type="text" id="pesquisaTextoHistorico" oninput="renderHistoricoVendas()" placeholder="Pesquisar nº venda, recibo, mesa, produto..." class="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-purple-500 w-64">
+                </div>
                 <span class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-bold" id="labelPeriodoAtivo">
                     Exibindo: Hoje (Data Actual)
                 </span>
-                <div class="text-xs text-gray-500 font-semibold" id="contadorVendas">
+                <div class="text-xs text-gray-600 font-bold bg-gray-100 px-2.5 py-1 rounded-lg" id="contadorVendas">
                     0 vendas encontradas
                 </div>
             </div>
@@ -148,7 +164,7 @@
                     <tr>
                         <th class="p-4">Nº Venda</th>
                         <th class="p-4">Nº Recibo</th>
-                        <th class="p-4">Data & Hora</th>
+                        <th class="p-4">Data &amp; Hora</th>
                         <th class="p-4">Tipo de Pedido</th>
                         <th class="p-4">Mesa / Local</th>
                         <th class="p-4">Método de Pagamento</th>
@@ -176,7 +192,7 @@
             <div class="flex justify-end space-x-2 pt-3 border-t">
                 <button type="button" onclick="fecharModal('modalDetalheVenda')" class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">Fechar</button>
                 <button type="button" onclick="imprimirReciboDetalheAtual()" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-bold shadow hover:bg-purple-700 cursor-pointer flex items-center gap-1.5">
-                    <i class="fa-solid fa-print"></i> Imprimir Recibo
+                    <i class="fa-solid fa-print"></i> Imprimir / PDF Recibo
                 </button>
             </div>
         </div>
@@ -186,12 +202,113 @@
 <script>
 var filtroAtual = 'TODOS';
 var periodoHistoricoAtual = 'hoje';
+var ultimasVendasFiltradas = [];
+
+function formatarDataPt(d) {
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear();
+    return dd + '/' + mm + '/' + yyyy;
+}
+
+function formatarDataIsoInput(d) {
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear();
+    return yyyy + '-' + mm + '-' + dd;
+}
+
+function garantirVendasExemploDatasRecentes() {
+    if (!window.RestauranteApp) return;
+    if (!Array.isArray(window.RestauranteApp.vendas)) window.RestauranteApp.vendas = [];
+
+    var hoje = new Date();
+    var strHojePt = formatarDataPt(hoje);
+    var ontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
+    var strOntemPt = formatarDataPt(ontem);
+    var anteontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 3);
+    var str3DiasPt = formatarDataPt(anteontem);
+
+    var temVendaHoje = window.RestauranteApp.vendas.some(function(v) {
+        return String(v.data_hora || '').indexOf(strHojePt) === 0;
+    });
+
+    if (!temVendaHoje) {
+        window.RestauranteApp.vendas.unshift(
+            {
+                id: "vnd-hoje-1",
+                numero: "VND-1052",
+                numero_venda: "VND-1052",
+                numero_recibo: "REC-" + hoje.getFullYear() + "/1052",
+                data_hora: strHojePt + " 12:15",
+                tipo_pedido: "Mesa",
+                mesa_local: "Salão Principal • Mesa 01",
+                metodo_pagamento: "M-Pesa (Vodacom)",
+                total: 1570.00,
+                estado: "PAGO",
+                itens: [
+                    { id: "1", nome: "Picanha Especial na Brasa", qtd: 1, preco: 1250.00, opcoes: "Com: Batata Frita Rústica", posto: "Cozinha Principal" },
+                    { id: "3", nome: "Mojito Clássico Cubano", qtd: 1, preco: 320.00, opcoes: "", posto: "Bar & Balcão de Bebidas" }
+                ]
+            },
+            {
+                id: "vnd-hoje-2",
+                numero: "VND-1051",
+                numero_venda: "VND-1051",
+                numero_recibo: "REC-" + hoje.getFullYear() + "/1051",
+                data_hora: strHojePt + " 10:40",
+                tipo_pedido: "Takeaway",
+                mesa_local: "Balcão Principal",
+                metodo_pagamento: "Cartão / Terminal POS",
+                total: 690.00,
+                estado: "PAGO",
+                itens: [
+                    { id: "2", nome: "Hambúrguer Gourmet Artesanal", qtd: 1, preco: 550.00, opcoes: "Com: Batata Frita Rústica", posto: "Cozinha Principal" },
+                    { id: "5", nome: "Cerveja 2M Especial 330ml", qtd: 2, preco: 70.00, opcoes: "", posto: "Bar & Balcão de Bebidas" }
+                ]
+            },
+            {
+                id: "vnd-ontem-1",
+                numero: "VND-1050",
+                numero_venda: "VND-1050",
+                numero_recibo: "REC-" + ontem.getFullYear() + "/1050",
+                data_hora: strOntemPt + " 19:20",
+                tipo_pedido: "Mesa",
+                mesa_local: "Esplanada & Jardim • Mesa 10",
+                metodo_pagamento: "Dinheiro (Numerário)",
+                total: 2010.00,
+                estado: "PAGO",
+                itens: [
+                    { id: "1", nome: "Picanha Especial na Brasa", qtd: 1, preco: 1250.00, opcoes: "Com: Arroz de Alho & Coentros", posto: "Cozinha Principal" },
+                    { id: "4", nome: "Cheesecake de Frutos Vermelhos", qtd: 2, preco: 380.00, opcoes: "", posto: "Pastelaria & Sobremesas" }
+                ]
+            },
+            {
+                id: "vnd-3dias-1",
+                numero: "VND-1049",
+                numero_venda: "VND-1049",
+                numero_recibo: "REC-" + anteontem.getFullYear() + "/1049",
+                data_hora: str3DiasPt + " 14:10",
+                tipo_pedido: "Piscina",
+                mesa_local: "Piscina • ESP-01 [BIL-PSC-1001]",
+                metodo_pagamento: "e-Mola (Movitel)",
+                total: 1450.00,
+                estado: "PAGO",
+                itens: [
+                    { id: "bil-1", nome: "Bilhete Piscina Adulto (Dia Inteiro)", qtd: 2, preco: 500.00, opcoes: "", posto: "Piscina" },
+                    { id: "6", nome: "Cerveja Laurentina", qtd: 3, preco: 100.00, opcoes: "", posto: "Bar & Balcão de Bebidas" },
+                    { id: "7", nome: "Refrigerante Coca-Cola", qtd: 3, preco: 50.00, opcoes: "", posto: "Bar & Balcão de Bebidas" }
+                ]
+            }
+        );
+    }
+}
 
 function parseDataHoraVenda(str) {
     if (!str) return null;
     var s = String(str).trim();
     // Formato DD/MM/YYYY HH:mm ou DD/MM/YYYY, HH:mm:ss
-    var mPt = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+    var mPt = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,T]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
     if (mPt) {
         return new Date(
             parseInt(mPt[3], 10),
@@ -203,7 +320,7 @@ function parseDataHoraVenda(str) {
         );
     }
     // Formato YYYY-MM-DD
-    var mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+    var mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[\s,T]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
     if (mIso) {
         return new Date(
             parseInt(mIso[1], 10),
@@ -232,10 +349,7 @@ function mudarPeriodoHistorico(periodo) {
     }
 
     var hoje = new Date();
-    var yyyy = hoje.getFullYear();
-    var mm = String(hoje.getMonth() + 1).padStart(2, '0');
-    var dd = String(hoje.getDate()).padStart(2, '0');
-    var strHoje = yyyy + '-' + mm + '-' + dd;
+    var strHoje = formatarDataIsoInput(hoje);
 
     var inpIni = document.getElementById('dataInicioHistorico');
     var inpFim = document.getElementById('dataFimHistorico');
@@ -244,24 +358,25 @@ function mudarPeriodoHistorico(periodo) {
     if (periodo === 'hoje') {
         if (inpIni) inpIni.value = strHoje;
         if (inpFim) inpFim.value = strHoje;
-        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Hoje (' + dd + '/' + mm + '/' + yyyy + ')';
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Hoje (' + formatarDataPt(hoje) + ')';
     } else if (periodo === 'ontem') {
         var ontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
-        var sOntem = ontem.getFullYear() + '-' + String(ontem.getMonth() + 1).padStart(2, '0') + '-' + String(ontem.getDate()).padStart(2, '0');
+        var sOntem = formatarDataIsoInput(ontem);
         if (inpIni) inpIni.value = sOntem;
         if (inpFim) inpFim.value = sOntem;
-        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Ontem';
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Ontem (' + formatarDataPt(ontem) + ')';
     } else if (periodo === '7dias') {
         var d7 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 6);
-        var s7 = d7.getFullYear() + '-' + String(d7.getMonth() + 1).padStart(2, '0') + '-' + String(d7.getDate()).padStart(2, '0');
+        var s7 = formatarDataIsoInput(d7);
         if (inpIni) inpIni.value = s7;
         if (inpFim) inpFim.value = strHoje;
-        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Últimos 7 Dias';
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Últimos 7 Dias (' + formatarDataPt(d7) + ' a ' + formatarDataPt(hoje) + ')';
     } else if (periodo === 'mes') {
-        var sMes = yyyy + '-' + mm + '-01';
+        var dMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        var sMes = formatarDataIsoInput(dMes);
         if (inpIni) inpIni.value = sMes;
         if (inpFim) inpFim.value = strHoje;
-        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Este Mês';
+        if (lblPeriodo) lblPeriodo.innerText = 'Exibindo: Este Mês (' + formatarDataPt(dMes) + ' a ' + formatarDataPt(hoje) + ')';
     } else if (periodo === 'todas') {
         if (inpIni) inpIni.value = '';
         if (inpFim) inpFim.value = '';
@@ -282,9 +397,21 @@ function aplicarFiltroDatasPersonalizado() {
     var inpFim = document.getElementById('dataFimHistorico') ? document.getElementById('dataFimHistorico').value : '';
     var lblPeriodo = document.getElementById('labelPeriodoAtivo');
     if (lblPeriodo) {
-        lblPeriodo.innerText = 'Período: ' + (inpIni || 'Início') + ' até ' + (inpFim || 'Hoje');
+        var txtIni = inpIni ? inpIni.split('-').reverse().join('/') : 'Início';
+        var txtFim = inpFim ? inpFim.split('-').reverse().join('/') : 'Hoje';
+        lblPeriodo.innerText = 'Período: ' + txtIni + ' até ' + txtFim;
     }
     renderHistoricoVendas();
+}
+
+function buscarVendasPorDatas() {
+    var inpIni = document.getElementById('dataInicioHistorico') ? document.getElementById('dataInicioHistorico').value : '';
+    var inpFim = document.getElementById('dataFimHistorico') ? document.getElementById('dataFimHistorico').value : '';
+    if (!inpIni && !inpFim) {
+        mudarPeriodoHistorico('todas');
+        return;
+    }
+    aplicarFiltroDatasPersonalizado();
 }
 
 function renderHistoricoVendas() {
@@ -309,8 +436,16 @@ function renderHistoricoVendas() {
             return dt && dt >= inicioDiaHoje && dt <= fimDiaHoje;
         });
     } else if (periodoHistoricoAtual !== 'todas') {
-        var dtIni = inpIni ? new Date(inpIni + 'T00:00:00') : null;
-        var dtFim = inpFim ? new Date(inpFim + 'T23:59:59.999') : null;
+        var dtIni = null;
+        var dtFim = null;
+        if (inpIni) {
+            var pI = inpIni.split('-');
+            dtIni = new Date(parseInt(pI[0], 10), parseInt(pI[1], 10) - 1, parseInt(pI[2], 10), 0, 0, 0, 0);
+        }
+        if (inpFim) {
+            var pF = inpFim.split('-');
+            dtFim = new Date(parseInt(pF[0], 10), parseInt(pF[1], 10) - 1, parseInt(pF[2], 10), 23, 59, 59, 999);
+        }
         lista = lista.filter(function(v) {
             var dt = parseDataHoraVenda(v.data_hora || v.data);
             if (!dt) return false;
@@ -327,18 +462,21 @@ function renderHistoricoVendas() {
         });
     }
 
-    // 3. Filtrar por pesquisa textual (nº venda, recibo, mesa, cliente, produto)
+    // 3. Filtrar por pesquisa textual (nº venda, recibo, mesa, cliente, produto, data)
     var termo = document.getElementById('pesquisaTextoHistorico') ? document.getElementById('pesquisaTextoHistorico').value.trim().toLowerCase() : '';
     if (termo) {
         lista = lista.filter(function(v) {
             var numVnd = (v.numero_venda || v.numero || '').toLowerCase();
             var numRec = (v.numero_recibo || ('REC-' + numVnd.replace('vnd-', ''))).toLowerCase();
+            var dataStr = (v.data_hora || '').toLowerCase();
             var local = (v.mesa_local || '').toLowerCase();
             var pag = (v.metodo_pagamento || '').toLowerCase();
             var itensStr = (v.itens || []).map(function(i) { return (i.nome || '').toLowerCase(); }).join(' ');
-            return numVnd.indexOf(termo) >= 0 || numRec.indexOf(termo) >= 0 || local.indexOf(termo) >= 0 || pag.indexOf(termo) >= 0 || itensStr.indexOf(termo) >= 0;
+            return numVnd.indexOf(termo) >= 0 || numRec.indexOf(termo) >= 0 || dataStr.indexOf(termo) >= 0 || local.indexOf(termo) >= 0 || pag.indexOf(termo) >= 0 || itensStr.indexOf(termo) >= 0;
         });
     }
+
+    ultimasVendasFiltradas = lista;
 
     var totalGeral = 0;
     var totalCozinha = 0;
@@ -431,7 +569,7 @@ function filtrarVendas(tipo) {
 }
 
 function verDetalheVenda(id) {
-    var v = (window.RestauranteApp.vendas || []).find(function(x) { return x.id === id; });
+    var v = (window.RestauranteApp.vendas || []).find(function(x) { return String(x.id) === String(id); });
     if (!v) return;
 
     var numVnd = v.numero_venda || v.numero || '—';
@@ -568,7 +706,81 @@ function imprimirReciboDetalheAtual() {
     }
 }
 
+function exportarRelatorioVendasPDF() {
+    var lista = ultimasVendasFiltradas || [];
+    var moeda = '{{ estabelecimento.moeda }}';
+    var periodoTexto = document.getElementById('labelPeriodoAtivo') ? document.getElementById('labelPeriodoAtivo').innerText : 'Período Seleccionado';
+    var totalPeriodo = lista.reduce(function(acc, v) { return acc + Number(v.total || 0); }, 0);
+
+    var linhasHtml = '';
+    for (var i = 0; i < lista.length; i++) {
+        var v = lista[i];
+        var numVnd = v.numero_venda || v.numero || '—';
+        var numRec = v.numero_recibo || ('REC-' + numVnd.replace('VND-', ''));
+        var itensTxt = (v.itens || []).map(function(x) { return x.qtd + 'x ' + x.nome; }).join(', ');
+        linhasHtml += '<tr>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-weight:bold;">' + numVnd + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;font-family:monospace;">' + numRec + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;">' + (v.data_hora || '—') + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;">' + (v.tipo_pedido || '—') + ' (' + (v.mesa_local || 'Balcão') + ')</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;">' + (v.metodo_pagamento || '—') + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;">' + itensTxt + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;">' + Number(v.total || 0).toFixed(2) + ' ' + moeda + '</td>' +
+            '</tr>';
+    }
+
+    if (!linhasHtml) {
+        linhasHtml = '<tr><td colspan="7" style="padding:16px;text-align:center;color:#6b7280;">Nenhuma venda registada no período seleccionado.</td></tr>';
+    }
+
+    var win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) {
+        alert('Permita pop-ups para gerar o PDF do relatório de vendas.');
+        return;
+    }
+
+    var docHtml = [
+        '<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">',
+        '<title>Relatório de Histórico de Vendas</title>',
+        '<style>',
+        '  body { font-family: Arial, sans-serif; color: #1f2937; margin: 24px; font-size: 12px; }',
+        '  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #7c3aed; padding-bottom: 12px; margin-bottom: 16px; }',
+        '  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 11px; }',
+        '  th { background: #f3f4f6; text-align: left; padding: 8px; border-bottom: 2px solid #d1d5db; text-transform: uppercase; font-size: 10px; }',
+        '  .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; padding-top: 20px; }',
+        '  .ass-box { text-align: center; border-top: 1px solid #374151; padding-top: 8px; font-size: 11px; }',
+        '</style></head><body>',
+        '<div class="header">',
+        '  <div>',
+        '    <h2 style="margin:0;color:#7c3aed;">{{ estabelecimento.nome }}</h2>',
+        '    <p style="margin:4px 0 0 0;color:#4b5563;">{{ estabelecimento.endereco }} • Tel: {{ estabelecimento.telefone }}</p>',
+        '  </div>',
+        '  <div style="text-align:right;">',
+        '    <h3 style="margin:0;">RELATÓRIO DE HISTÓRICO DE VENDAS</h3>',
+        '    <p style="margin:4px 0 0 0;font-weight:bold;color:#059669;">' + periodoTexto + '</p>',
+        '    <p style="margin:2px 0 0 0;font-size:10px;color:#6b7280;">Emitido em: ' + new Date().toLocaleString('pt-PT') + '</p>',
+        '  </div>',
+        '</div>',
+        '<table>',
+        '  <thead><tr><th>Nº Venda</th><th>Nº Recibo</th><th>Data & Hora</th><th>Atendimento / Local</th><th>Pagamento</th><th>Itens</th><th style="text-align:right;">Total</th></tr></thead>',
+        '  <tbody>' + linhasHtml + '</tbody>',
+        '  <tfoot><tr><td colspan="6" style="padding:10px 8px;text-align:right;font-weight:bold;font-size:13px;border-top:2px solid #1f2937;">TOTAL FACTURADO NO PERÍODO (' + lista.length + ' vendas):</td><td style="padding:10px 8px;text-align:right;font-weight:bold;font-size:13px;color:#7c3aed;border-top:2px solid #1f2937;">' + totalPeriodo.toFixed(2) + ' ' + moeda + '</td></tr></tfoot>',
+        '</table>',
+        '<div class="assinaturas">',
+        '  <div class="ass-box"><b>Operador de Caixa / Emissor</b><br><span style="color:#6b7280;font-size:10px;">Assinatura e Data</span></div>',
+        '  <div class="ass-box"><b>Gerência / Conferência Financeira</b><br><span style="color:#6b7280;font-size:10px;">Assinatura e Carimbo</span></div>',
+        '</div>',
+        '<script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };<\/script>',
+        '</body></html>'
+    ].join('\n');
+
+    win.document.open();
+    win.document.write(docHtml);
+    win.document.close();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    garantirVendasExemploDatasRecentes();
     mudarPeriodoHistorico('hoje');
 });
 </script>

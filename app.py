@@ -10,7 +10,7 @@ app = FastAPI(title="Rede de Restaurantes - PWA")
 async def disable_html_cache(request: Request, call_next):
     response = await call_next(request)
     content_type = response.headers.get("content-type", "")
-    if "text/html" in content_type or request.url.path.endswith("service-worker.js"):
+    if "text/html" in content_type or "javascript" in content_type or request.url.path.endswith(".js"):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
