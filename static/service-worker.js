@@ -1,6 +1,5 @@
-﻿const CACHE_NAME = 'restaurante-cache-v1';
+const CACHE_NAME = 'restaurante-cache-v3';
 const ASSETS_TO_CACHE = [
-  '/',
   '/static/manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
@@ -33,14 +32,28 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // Network-first para páginas HTML e rotas da aplicação para exibir sempre a versão mais recente na web
+  const acceptHeader = event.request.headers.get('accept') || '';
+  if (event.request.mode === 'navigate' || acceptHeader.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Cache-first apenas para ficheiros estáticos externos (ícones, fontes, bibliotecas CDN)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       return (
         cachedResponse ||
-        fetch(event.request).catch(() => {
-          // Fallback se estiver offline
-          return caches.match('/');
-        })
+        fetch(event.request)
       );
     })
   );

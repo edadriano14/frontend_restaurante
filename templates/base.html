@@ -63,6 +63,27 @@
         #mainSidebar.sidebar-collapsed .sidebar-footer-text {
             display: none !important;
         }
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        /* Ocultar a barra de scroll mantendo a funcionalidade de rolagem */
+        .no-scrollbar::-webkit-scrollbar,
+        main::-webkit-scrollbar,
+        nav::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+        .no-scrollbar,
+        main,
+        nav {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 h-screen overflow-hidden">
@@ -602,7 +623,9 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/static/service-worker.js');
+                navigator.serviceWorker.register('/static/service-worker.js?v=3').then(function(reg) {
+                    reg.update();
+                });
             });
         }
     </script>

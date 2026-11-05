@@ -6,6 +6,16 @@ from fastapi.templating import Jinja2Templates
 
 app = FastAPI(title="Rede de Restaurantes - PWA")
 
+@app.middleware("http")
+async def disable_html_cache(request: Request, call_next):
+    response = await call_next(request)
+    content_type = response.headers.get("content-type", "")
+    if "text/html" in content_type or request.url.path.endswith("service-worker.js"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.get("/favicon.ico", include_in_schema=False)
