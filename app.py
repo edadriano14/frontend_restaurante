@@ -619,7 +619,11 @@ async def login_submit(
     if modulo_destino and modulo_destino not in permissoes:
         destino = ROTA_INICIAL_POR_PERFIL.get(perfil, "/pdv")
 
-    response = RedirectResponse(url=destino, status_code=303)
+    # Adiciona parâmetro de boas-vindas após o login com sucesso
+    sep = "&" if "?" in destino else "?"
+    destino_com_boas_vindas = f"{destino}{sep}bem_vindo=1"
+
+    response = RedirectResponse(url=destino_com_boas_vindas, status_code=303)
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=token,

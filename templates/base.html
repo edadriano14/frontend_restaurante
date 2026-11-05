@@ -682,6 +682,28 @@
                 });
             });
         }
+
+        // Mensagem Amigável de Boas-Vindas após o Login
+        (function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('bem_vindo')) {
+                var nomeUsuario = '{{ (usuario.nome if usuario else "") }}';
+                var textoSaudacao = nomeUsuario ? ('Olá, ' + nomeUsuario + '! Bem-vindo(a) de volta ao sistema de gestão.') : 'Sessão iniciada com sucesso. Bem-vindo(a) ao sistema!';
+                setTimeout(function() {
+                    if (typeof mostrarMensagemAmigavel === 'function') {
+                        mostrarMensagemAmigavel({
+                            tipo: 'sucesso',
+                            titulo: 'Bem-vindo(a)! 👋',
+                            mensagem: textoSaudacao
+                        });
+                    }
+                }, 400);
+                urlParams.delete('bem_vindo');
+                var queryRestante = urlParams.toString();
+                var novaUrl = window.location.pathname + (queryRestante ? ('?' + queryRestante) : '') + window.location.hash;
+                window.history.replaceState({}, document.title, novaUrl);
+            }
+        })();
     </script>
 </body>
 </html>
