@@ -19,11 +19,10 @@ window.fecharModal = function(id) {
 };
 
 // =============================================================================
-// MENSAGENS AMIGÁVEIS E DIÁLOGOS CENTRALIZADOS (SUBSTITUI ALERT / CONFIRM NATIVOS)
+// MENSAGENS AMIGÁVEIS E DIÁLOGOS CENTRALIZADOS
 // =============================================================================
 
 (function() {
-    // Injetar container de modal de diálogo se ainda não existir
     function garantirContainerDialogo() {
         var el = document.getElementById('dialogoCentralizadoGlobal');
         if (el) return el;
@@ -42,7 +41,7 @@ window.fecharModal = function(id) {
             '  </div>',
             '  <div id="dialogoBotoes" class="pt-2 flex items-center justify-center gap-2">',
             '    <button type="button" id="dialogoBtnOk" class="w-full py-2.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer">',
-            '      OK, Entendido',
+            '      OK, Fechar',
             '    </button>',
             '  </div>',
             '</div>'
@@ -52,7 +51,7 @@ window.fecharModal = function(id) {
         return el;
     }
 
-    // Modal Amigável Centralizado (Substituto moderno e elegante para window.alert)
+    // Modal Amigável Centralizado (Fecha garantidamente no OK)
     window.mostrarMensagemAmigavel = function(mensagem, titulo, tipo, callback) {
         var container = garantirContainerDialogo();
         var card = document.getElementById('dialogoCentralizadoCard');
@@ -62,7 +61,18 @@ window.fecharModal = function(id) {
         var elMensagem = document.getElementById('dialogoMensagem');
         var botoesBox = document.getElementById('dialogoBotoes');
 
-        tipo = tipo || (mensagem.toLowerCase().indexOf('erro') >= 0 ? 'erro' : (mensagem.toLowerCase().indexOf('atenc') >= 0 || mensagem.toLowerCase().indexOf('atenç') >= 0 ? 'aviso' : 'sucesso'));
+        var msgLower = (mensagem || '').toLowerCase();
+        tipo = tipo || (
+            msgLower.indexOf('erro') >= 0 ||
+            msgLower.indexOf('deve conter') >= 0 ||
+            msgLower.indexOf('inválid') >= 0 ||
+            msgLower.indexOf('invalid') >= 0 ||
+            msgLower.indexOf('obrigat') >= 0
+                ? 'erro'
+                : (msgLower.indexOf('atenc') >= 0 || msgLower.indexOf('atenç') >= 0 || msgLower.indexOf('informe') >= 0
+                    ? 'aviso'
+                    : 'sucesso')
+        );
 
         if (tipo === 'erro') {
             elIconeBox.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner bg-red-100 text-red-600';
@@ -92,13 +102,15 @@ window.fecharModal = function(id) {
             btnOk.onclick = function() {
                 container.classList.add('hidden');
                 container.classList.remove('flex');
-                if (callback) callback();
+                if (typeof callback === 'function') {
+                    try { callback(); } catch (err) { console.error('Callback error:', err); }
+                }
             };
             btnOk.focus();
         }
     };
 
-    // Confirm Amigável Centralizado (Substituto moderno e elegante para window.confirm)
+    // Confirm Amigável Centralizado
     window.confirmarAcaoAmigavel = function(mensagem, titulo, onConfirm, onCancel) {
         var container = garantirContainerDialogo();
         var card = document.getElementById('dialogoCentralizadoCard');
@@ -137,12 +149,12 @@ window.fecharModal = function(id) {
         };
     };
 
-    // Sobrescrever alert global do navegador para usar o diálogo amigável centralizado
+    // Não sobrescrever o window.alert se já existir para não criar loops
     var alertOriginal = window.alert;
     window.alert = function(msg) {
         if (document.body) {
             window.mostrarMensagemAmigavel(msg);
-        } else {
+        } else if (alertOriginal) {
             alertOriginal(msg);
         }
     };

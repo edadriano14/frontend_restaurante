@@ -19,7 +19,7 @@
                     <th class="p-4">Código</th>
                     <th class="p-4">Nome do Cliente</th>
                     <th class="p-4">Telemóvel</th>
-                    <th class="p-4">NUIT (10 Dígitos)</th>
+                    <th class="p-4">NUIT</th>
                     <th class="p-4">Endereço / Morada</th>
                     <th class="p-4">Email</th>
                     <th class="p-4">Observações</th>
@@ -54,8 +54,8 @@
                         <input type="text" id="cliTelefone" placeholder="+258 84 000 0000" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">NUIT (Obrigatório 10 Dígitos) *</label>
-                        <input type="text" id="cliNuit" maxlength="10" placeholder="1009876543" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold outline-none">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">NUIT (Moçambique)</label>
+                        <input type="text" id="cliNuit" maxlength="10" placeholder="1009876543 (Opcional)" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold outline-none">
                     </div>
                 </div>
                 <div>
@@ -63,7 +63,7 @@
                     <input type="email" id="cliEmail" placeholder="cliente@email.co.mz" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço Completo / Morada *</label>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço Completo / Morada</label>
                     <input type="text" id="cliEndereco" placeholder="Av. Eduardo Mondlane nº 1234, Maputo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                 </div>
                 <div>
@@ -91,7 +91,7 @@ function renderClientes() {
     for (var i = 0; i < lista.length; i++) {
         var c = lista[i];
         var cod = c.codigo || ('CLI-0' + (i + 1));
-        var nuit = c.nuit || c.nif || '1000000000';
+        var nuit = c.nuit || c.nif || '9999999999';
         var end = c.endereco || c.morada || 'Maputo';
         html += '<tr class="hover:bg-gray-50">';
         html += '  <td class="p-4 font-mono font-bold text-xs text-gray-500">' + cod + '</td>';
@@ -140,33 +140,43 @@ function editarCliente(id) {
 }
 
 function salvarCliente() {
-    var nome = document.getElementById('cliNome').value.trim();
-    var tel = document.getElementById('cliTelefone').value.trim();
-    var nuit = document.getElementById('cliNuit').value.trim();
-    var endereco = document.getElementById('cliEndereco').value.trim();
-    var cod = document.getElementById('cliCodigo').value.trim();
+    var nome = (document.getElementById('cliNome').value || '').trim();
+    var tel = (document.getElementById('cliTelefone').value || '').trim();
+    var nuit = (document.getElementById('cliNuit').value || '').trim();
+    var endereco = (document.getElementById('cliEndereco').value || '').trim();
+    var cod = (document.getElementById('cliCodigo').value || '').trim();
 
-    if (!nome) { alert('Informe o nome do cliente.'); return; }
-    if (!tel) { alert('Informe o telemóvel do cliente.'); return; }
-    if (!endereco) { alert('Informe o endereço completo do cliente.'); return; }
+    if (!nome) { 
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel('Informe o nome do cliente.', 'Campo Obrigatório', 'aviso');
+        else alert('Informe o nome do cliente.');
+        return; 
+    }
 
-    // Validação estrita do NUIT com exactamente 10 números
-    var nuitNumerico = nuit.replace(/[^0-9]/g, '');
-    if (!nuitNumerico || nuitNumerico.length !== 10) {
-        alert('O NUIT deve conter exactamente 10 dígitos numéricos (Moçambique). Exemplo: 4001234567');
+    // Se informou NUIT, valida ou completa 10 dígitos numéricos
+    var nuitNumerico = nuit ? nuit.replace(/[^0-9]/g, '') : '';
+    if (nuit && nuitNumerico.length !== 10) {
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel('O NUIT informado possui ' + nuitNumerico.length + ' dígitos. Um NUIT regular possui 10 dígitos (Ex: 4001234567).\n\nCorrija ou deixe em branco.', 'Atenção ao NUIT', 'aviso');
+        } else {
+            alert('O NUIT deve conter 10 dígitos ou ficar em branco.');
+        }
         return;
     }
 
+    if (!nuitNumerico) {
+        nuitNumerico = '9999999999';
+    }
+
     var item = {
-        codigo: cod,
+        codigo: cod || ('CLI-0' + ((window.RestauranteApp.clientes || []).length + 1)),
         nome: nome,
-        telefone: tel,
-        email: document.getElementById('cliEmail').value.trim(),
+        telefone: tel || '+258 84 000 0000',
+        email: (document.getElementById('cliEmail').value || '').trim(),
         nuit: nuitNumerico,
         nif: nuitNumerico,
-        endereco: endereco,
-        morada: endereco,
-        obs: document.getElementById('cliObs').value.trim()
+        endereco: endereco || 'Maputo',
+        morada: endereco || 'Maputo',
+        obs: (document.getElementById('cliObs').value || '').trim()
     };
 
     if (!window.RestauranteApp.clientes) window.RestauranteApp.clientes = [];
@@ -182,18 +192,32 @@ function salvarCliente() {
         window.RestauranteApp.clientes.push(item);
     }
 
+    // 1. FECHA IMEDIATAMENTE A MODAL
+    fecharModal('modalCliente');
+    renderClientes();
+
+    // 2. GRAVA NO LOCALSTORAGE E BASE DE DADOS SUPABASE / POSTGRESQL
     if (window.RestauranteApp.salvarEstado) {
         window.RestauranteApp.salvarEstado();
     }
 
-    fecharModal('modalCliente');
-    renderClientes();
-    alert('Cliente gravado com sucesso! NUIT validado: ' + nuitNumerico);
+    // 3. EXIBE AVALIAÇÃO DE SUCESSO (Com fecho garantido do diálogo)
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Cliente "' + nome + '" gravado com sucesso!\n\nDados registados na base de dados.', 'Cliente Gravado', 'sucesso');
+    }
 }
 
 function removerCliente(idx) {
-    if (confirm('Deseja realmente remover este cliente?')) {
+    var msg = 'Deseja realmente remover este cliente?';
+    if (window.confirmarAcaoAmigavel) {
+        window.confirmarAcaoAmigavel(msg, 'Remover Cliente', function() {
+            window.RestauranteApp.clientes.splice(idx, 1);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+            renderClientes();
+        });
+    } else if (confirm(msg)) {
         window.RestauranteApp.clientes.splice(idx, 1);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
         renderClientes();
     }
 }

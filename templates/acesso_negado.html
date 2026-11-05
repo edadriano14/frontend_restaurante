@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10 bg-white rounded-3xl shadow-lg border border-red-100 p-8 text-center space-y-5">
+    <div class="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-3xl mx-auto shadow-xs">
+        <i class="fa-solid fa-user-lock"></i>
+    </div>
+
+    <div class="space-y-2">
+        <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200 uppercase tracking-wider">
+            Erro 403 • Acesso Restrito por Perfil (RBAC)
+        </span>
+        <h1 class="text-2xl font-black text-gray-900">Permissão Insuficiente</h1>
+        <p class="text-sm text-gray-600">
+            O seu utilizador (<strong class="text-gray-900">{{ usuario.nome if usuario else 'Operador' }}</strong>) possui o perfil
+            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold text-xs border border-indigo-200">{{ usuario.perfil if usuario else 'DESCONHECIDO' }}</span>,
+            que não tem permissão para aceder ao módulo <strong class="text-red-600">{{ modulo_bloqueado or 'solicitado' }}</strong>.
+        </p>
+    </div>
+
+    <div class="p-4 bg-gray-50 rounded-2xl border border-gray-200 text-left text-xs text-gray-600 space-y-1.5">
+        <div class="font-bold text-gray-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-halved text-indigo-600"></i> Módulos autorizados para o seu perfil:
+        </div>
+        <div class="flex flex-wrap gap-1.5 pt-1">
+            {% if usuario and usuario.permissoes %}
+                {% for perm in usuario.permissoes %}
+                <span class="px-2.5 py-1 bg-white border border-gray-200 rounded-lg font-semibold text-gray-700">{{ perm | upper }}</span>
+                {% endfor %}
+            {% else %}
+                <span class="text-gray-400 italic">Consulte o Administrador Geral para ajustar o seu perfil.</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <a href="{{ rota_inicial or '/pdv' }}" class="px-5 py-2.5 bg-custom-primary text-white font-bold rounded-xl text-xs shadow hover:opacity-90 transition flex items-center gap-2">
+            <i class="fa-solid fa-house"></i> Ir para Módulo Principal Autorizado
+        </a>
+        <a href="/logout" class="px-5 py-2.5 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-50 transition flex items-center gap-2">
+            <i class="fa-solid fa-right-from-bracket text-red-500"></i> Trocar de Utilizador
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -14,9 +14,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- CONFIGURAÇÃO DE COMUNICAÇÃO SUPABASE & BACKEND API -->
+    <script>
+        window.ENV_CONFIG = {
+            SUPABASE_URL: "{{ supabase_url or 'https://zkabrymvsdvvaprvhiac.supabase.co' }}",
+            SUPABASE_ANON_KEY: "{{ supabase_anon_key or 'sb_publishable_j_ICaOPdvpPmikrqaflrfg_bN_hAdEH' }}",
+            BACKEND_API_URL: "{{ backend_api_url or 'https://backend-restaurante.fly.dev' }}",
+            TENANT_ID: "{{ (usuario.estabelecimento_id if usuario else estabelecimento.id) or '1' }}"
+        };
+    </script>
+
     <!-- SCRIPTS GLOBAIS DE DADOS E MODAIS -->
-    <script src="/static/js/app-data.js?v=4"></script>
-    <script src="/static/js/modals.js?v=4"></script>
+    <script src="/static/js/app-data.js?v=999"></script>
+    <script src="/static/js/modals.js?v=999"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -123,51 +133,69 @@
                 </div>
             </div>
 
-            <!-- ITENS DE MENU HAMBURGER (COM SCROLL PRÓPRIO NO MENU LATERAL) -->
+            <!-- ITENS DE MENU HAMBURGER (COM SCROLL PRÓPRIO NO MENU LATERAL E FILTRO RBAC) -->
+            {% set perms = usuario.permissoes if (usuario and usuario.permissoes) else ['dashboard', 'pdv', 'mesas', 'vendas', 'delivery', 'piscina', 'cozinha', 'cardapio', 'stock', 'clientes', 'utilizadores', 'financeiro', 'configuracoes'] %}
             <nav class="flex-1 min-h-0 px-3 py-4 space-y-1 overflow-y-auto overscroll-contain text-sm">
+                {% if 'dashboard' in perms %}
                 <a href="/" title="Dashboard" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'dashboard' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-chart-line w-5 text-center shrink-0"></i>
                     <span class="sidebar-text truncate">Dashboard</span>
                 </a>
+                {% endif %}
 
+                {% if 'pdv' in perms or 'mesas' in perms or 'vendas' in perms or 'delivery' in perms or 'piscina' in perms %}
                 <div class="sidebar-section-title pt-2 text-xs font-bold text-gray-400 uppercase px-3">Vendas & Atendimento</div>
+                {% endif %}
 
+                {% if 'pdv' in perms %}
                 <a href="/pdv" title="Ponto de Venda (PDV)" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'pdv' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-cash-register w-5 text-center text-emerald-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Ponto de Venda (PDV)</span>
                 </a>
+                {% endif %}
 
+                {% if 'mesas' in perms %}
                 <a href="/mesas" title="Salas & Mesas" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'mesas' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-chair w-5 text-center text-blue-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Salas & Mesas</span>
                 </a>
+                {% endif %}
 
+                {% if 'vendas' in perms %}
                 <a href="/historico-vendas" title="Histórico de Vendas" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'historico-vendas' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-clock-rotate-left w-5 text-center text-purple-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Histórico de Vendas</span>
                 </a>
+                {% endif %}
 
                 <!-- DELIVERY & FROTAS -->
+                {% if 'delivery' in perms %}
                 <a href="/veiculos-delivery" title="Delivery & Frotas" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'veiculos-delivery' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-motorcycle w-5 text-center text-cyan-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Delivery & Frotas</span>
                 </a>
+                {% endif %}
 
                 <!-- GESTÃO DE PISCINA & RESORT (Apenas para estabelecimentos com piscina) -->
-                {% if estabelecimento.tem_piscina %}
+                {% if estabelecimento.tem_piscina and 'piscina' in perms %}
                 <a href="/piscina" title="Gestão de Piscina" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'piscina' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-person-swimming w-5 text-center text-sky-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Gestão de Piscina</span>
                 </a>
                 {% endif %}
 
+                {% if 'cozinha' in perms or 'cardapio' in perms %}
                 <div class="sidebar-section-title pt-2 text-xs font-bold text-gray-400 uppercase px-3">Cardápio & Produção</div>
+                {% endif %}
 
+                {% if 'cozinha' in perms %}
                 <a href="/cozinha" title="Cozinha (KDS)" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'cozinha' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-kitchen-set w-5 text-center text-orange-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Cozinha (KDS)</span>
                 </a>
+                {% endif %}
 
+                {% if 'cardapio' in perms %}
                 <a href="/acompanhamentos" title="Acompanhamentos" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'acompanhamentos' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-bowl-food w-5 text-center shrink-0"></i>
                     <span class="sidebar-text truncate">Acompanhamentos</span>
@@ -182,7 +210,9 @@
                     <i class="fa-solid fa-layer-group w-5 text-center shrink-0"></i>
                     <span class="sidebar-text truncate">Categorias</span>
                 </a>
+                {% endif %}
 
+                {% if 'stock' in perms %}
                 <div class="sidebar-section-title pt-3 text-xs font-bold text-gray-400 uppercase px-3">Stock & Armazém</div>
 
                 <a href="/stock" title="Stock" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'stock' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
@@ -209,14 +239,20 @@
                     <i class="fa-solid fa-truck-moving w-5 text-center shrink-0"></i>
                     <span class="sidebar-text truncate">Fornecedores</span>
                 </a>
+                {% endif %}
 
+                {% if 'clientes' in perms or 'utilizadores' in perms or 'financeiro' in perms %}
                 <div class="sidebar-section-title pt-3 text-xs font-bold text-gray-400 uppercase px-3">Administração</div>
+                {% endif %}
 
+                {% if 'clientes' in perms %}
                 <a href="/clientes" title="Dados de Clientes" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'clientes' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-users w-5 text-center shrink-0"></i>
                     <span class="sidebar-text truncate">Dados de Clientes</span>
                 </a>
+                {% endif %}
 
+                {% if 'utilizadores' in perms %}
                 <a href="/utilizadores" title="Utilizadores" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'utilizadores' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-id-badge w-5 text-center text-amber-300 shrink-0"></i>
                     <span class="sidebar-text truncate">Utilizadores</span>
@@ -226,19 +262,24 @@
                     <i class="fa-solid fa-shield-halved w-5 text-center text-indigo-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Perfis de Acesso</span>
                 </a>
+                {% endif %}
 
                 <!-- MÓDULO FINANCEIRO (ANTERIOR GESTÃO DE CAIXA) -->
+                {% if 'financeiro' in perms %}
                 <a href="/financeiro" title="Financeiro" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'financeiro' or active_page == 'gestao-caixa' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-coins w-5 text-center text-amber-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Financeiro</span>
                 </a>
+                {% endif %}
 
+                {% if 'configuracoes' in perms %}
                 <div class="sidebar-section-title pt-2 text-xs font-bold text-gray-400 uppercase px-3">Configurações</div>
 
                 <a href="/estabelecimento" title="Configurações" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'estabelecimento' or active_page == 'configuracoes' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-sliders w-5 text-center text-cyan-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Configurações</span>
                 </a>
+                {% endif %}
 
                 <div class="pt-4 mt-4 border-t border-gray-700"></div>
 
@@ -250,8 +291,13 @@
             </nav>
 
             <div class="sidebar-footer p-4 border-t border-gray-700 flex items-center justify-between text-sm text-gray-400 shrink-0">
-                <span class="sidebar-footer-text truncate">Operador: Admin</span>
-                <button class="hover:text-red-400" title="Sair"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+                <div class="sidebar-footer-text min-w-0 pr-2">
+                    <span class="block text-xs font-bold text-white truncate">{{ usuario.nome if usuario else 'Administrador Central' }}</span>
+                    <span class="block text-[10px] text-emerald-400 font-semibold truncate">{{ usuario.perfil if usuario else 'ADMIN_GERAL' }}</span>
+                </div>
+                <a href="/logout" class="hover:text-red-400 p-1.5 rounded-lg hover:bg-gray-800 transition shrink-0" title="Terminar Sessão (Sair)">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </a>
             </div>
         </aside>
 
@@ -288,12 +334,15 @@
                         <!-- Utilizador Logado -->
                         <div class="flex items-center space-x-2.5 pl-2 border-l border-gray-200">
                             <div class="text-right hidden sm:block">
-                                <span id="headerNomeUtilizador" class="text-xs font-bold text-gray-900 block leading-tight">Administrador Central</span>
-                                <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Admin Geral • Online</span>
+                                <span id="headerNomeUtilizador" class="text-xs font-bold text-gray-900 block leading-tight">{{ usuario.nome if usuario else 'Administrador Central' }}</span>
+                                <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">{{ usuario.perfil if usuario else 'ADMIN_GERAL' }} • Online</span>
                             </div>
-                            <div class="w-9 h-9 rounded-xl bg-custom-primary text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white">
+                            <div class="w-9 h-9 rounded-xl bg-custom-primary text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white" title="{{ usuario.email if usuario else '' }}">
                                 <i class="fa-solid fa-user-shield"></i>
                             </div>
+                            <a href="/logout" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition" title="Terminar Sessão">
+                                <i class="fa-solid fa-power-off text-sm"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
