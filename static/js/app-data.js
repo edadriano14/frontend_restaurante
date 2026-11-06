@@ -377,7 +377,8 @@ window.RestauranteApp = {
             postos_preparacao: window.RestauranteApp.postos_preparacao || [],
             tipos_pedidos: window.RestauranteApp.tipos_pedidos || [],
             metodos_pagamento: window.RestauranteApp.metodos_pagamento || [],
-            taxas_iva: window.RestauranteApp.taxas_iva || []
+            taxas_iva: window.RestauranteApp.taxas_iva || [],
+            utilizadores: window.RestauranteApp.utilizadores || []
         };
 
         try {

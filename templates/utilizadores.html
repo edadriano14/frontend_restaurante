@@ -776,5 +776,12 @@ document.addEventListener('DOMContentLoaded', function() {
         alternarAbaGestao('perfis');
     }
 });
+
+// Atualiza a tabela assim que os dados chegarem da base de dados Supabase / PostgreSQL
+window.addEventListener('RestauranteAppDbReady', function() {
+    popularSelectPerfisUtilizador();
+    renderUtilizadores();
+    renderPerfisAcesso();
+});
 </script>
 {% endblock %}
