@@ -38,8 +38,8 @@
                 <input type="text" id="filtroUtilizadorTexto" oninput="renderUtilizadores()" placeholder="Pesquisar por nome, código ou email..." class="px-3 py-1.5 border rounded-lg bg-white outline-none w-64">
             </div>
             <div class="flex items-center gap-2">
-                <span class="text-gray-500 font-semibold">Filtrar por Perfil:</span>
-                <select id="filtroUtilizadorPerfil" onchange="renderUtilizadores()" class="px-2.5 py-1.5 border rounded-lg bg-white outline-none">
+                <label for="filtroUtilizadorPerfil" class="text-gray-500 font-semibold">Filtrar por Perfil:</label>
+                <select id="filtroUtilizadorPerfil" name="filtroUtilizadorPerfil" title="Filtrar por Perfil de Acesso" aria-label="Filtrar por Perfil de Acesso" onchange="renderUtilizadores()" class="px-2.5 py-1.5 border rounded-lg bg-white outline-none">
                     <option value="todos">Todos os Perfis</option>
                 </select>
             </div>
@@ -147,14 +147,14 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Restaurante Pertencente *</label>
-                    <select id="userRestaurante" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-gray-800">
+                    <label for="userRestaurante" class="block text-xs font-bold text-gray-700 uppercase mb-1">Restaurante Pertencente *</label>
+                    <select id="userRestaurante" name="userRestaurante" title="Restaurante Pertencente" aria-label="Restaurante Pertencente" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-gray-800">
                         <!-- Preenchido dinamicamente -->
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Perfil de Acesso *</label>
-                    <select id="userPerfil" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-indigo-900">
+                    <label for="userPerfil" class="block text-xs font-bold text-gray-700 uppercase mb-1">Perfil de Acesso *</label>
+                    <select id="userPerfil" name="userPerfil" title="Perfil de Acesso" aria-label="Perfil de Acesso" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-indigo-900">
                         <!-- Preenchido dinamicamente a partir dos perfis cadastrados -->
                     </select>
                 </div>
@@ -205,8 +205,8 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Etiqueta de Cor</label>
-                        <select id="perfilCor" class="w-full px-3 py-2 border rounded-lg text-xs outline-none bg-white font-semibold">
+                        <label for="perfilCor" class="block text-xs font-bold text-gray-700 uppercase mb-1">Etiqueta de Cor</label>
+                        <select id="perfilCor" name="perfilCor" title="Etiqueta de Cor" aria-label="Etiqueta de Cor" class="w-full px-3 py-2 border rounded-lg text-xs outline-none bg-white font-semibold">
                             <option value="purple">Roxo (Administrativo)</option>
                             <option value="blue">Azul (Gestão)</option>
                             <option value="emerald">Verde (Operacional / Vendas)</option>
