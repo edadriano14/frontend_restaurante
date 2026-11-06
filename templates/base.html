@@ -568,6 +568,29 @@
         });
 
         // =========================================================================
+        // REATIVIDADE GLOBAL: ATUALIZA AUTOMATICAMENTE COMPONENTES NA TELA QUANDO A BASE DE DADOS SINCRONIZA
+        // =========================================================================
+        window.addEventListener('RestauranteAppDbReady', function() {
+            if (typeof renderProdutos === 'function') renderProdutos();
+            if (typeof renderCategorias === 'function') renderCategorias();
+            if (typeof renderClientes === 'function') renderClientes();
+            if (typeof renderFornecedores === 'function') renderFornecedores();
+            if (typeof renderSalasEMesas === 'function') renderSalasEMesas();
+            if (typeof renderMesas === 'function') renderMesas();
+            if (typeof renderStock === 'function') renderStock();
+            if (typeof renderAcompanhamentos === 'function') renderAcompanhamentos();
+            if (typeof renderPostos === 'function') renderPostos();
+            if (typeof renderTiposPedidos === 'function') renderTiposPedidos();
+            if (typeof renderTabelasApoio === 'function') renderTabelasApoio();
+            if (typeof renderUtilizadores === 'function') renderUtilizadores();
+            if (typeof renderPerfisAcesso === 'function') renderPerfisAcesso();
+            if (typeof renderCozinha === 'function') renderCozinha();
+            if (typeof renderPiscina === 'function') renderPiscina();
+            if (typeof renderHistoricoVendas === 'function') renderHistoricoVendas();
+            if (typeof atualizarContadorAlertasGlobal === 'function') atualizarContadorAlertasGlobal();
+        });
+
+        // =========================================================================
         // CENTRAL DE ALERTAS GLOBAL (PEDIDOS PORTAL, RESERVAS, STOCK CRÍTICO)
         // =========================================================================
         var filtroAlertaAtual = 'todos';

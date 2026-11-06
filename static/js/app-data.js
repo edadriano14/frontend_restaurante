@@ -405,7 +405,7 @@ window.RestauranteApp = {
                 var dadosDb = await resp.json();
                 var alterou = false;
                 for (var key in dadosDb) {
-                    if (dadosDb.hasOwnProperty(key) && Array.isArray(dadosDb[key]) && dadosDb[key].length > 0) {
+                    if (dadosDb.hasOwnProperty(key) && Array.isArray(dadosDb[key])) {
                         window.RestauranteApp[key] = dadosDb[key];
                         alterou = true;
                     }
