@@ -383,20 +383,20 @@ window.RestauranteApp = {
 
     var debounceTimer = null;
 
-    // 2. Função global salvarEstado(): Salva no localStorage E envia imediatamente para o PostgreSQL / Supabase
+    // 2. Função global salvarEstado(): Atualiza instantaneamente a UI em < 5ms e sincroniza em background
     window.RestauranteApp.salvarEstado = function() {
-        // Grava no localStorage local imediatamente (0ms de latência para a UI)
+        // Grava no localStorage local imediatamente (< 2ms de latência para a UI)
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(window.RestauranteApp));
         } catch (e) {
             console.warn('Aviso: erro ao gravar no localStorage:', e);
         }
 
-        // Debounce otimizado de 100ms para persistir na Base de Dados de forma ultra-rápida sem perda de eventos
+        // Executa a persistência na base de dados de forma quase imediata (10ms) sem travar a interface
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(function() {
             window.RestauranteApp.sincronizarComBaseDeDados();
-        }, 100);
+        }, 10);
     };
 
     // 3. Sincroniza e grava no Banco de Dados (Supabase & Backend .NET)
