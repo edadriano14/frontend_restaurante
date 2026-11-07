@@ -78,12 +78,12 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento</label>
-                    <input type="text" id="editNome" value="{{ estabelecimento.nome }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    <label for="editNome" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento</label>
+                    <input type="text" id="editNome" value="{{ estabelecimento.nome }}" placeholder="Nome do Estabelecimento" title="Nome do Estabelecimento" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda Local</label>
-                    <input type="text" id="editMoeda" value="{{ estabelecimento.moeda }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-bold">
+                    <label for="editMoeda" class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda Local</label>
+                    <input type="text" id="editMoeda" value="{{ estabelecimento.moeda }}" placeholder="MZN" title="Moeda Local" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-bold">
                 </div>
             </div>
 
@@ -92,17 +92,17 @@
                 <h4 class="text-sm font-bold text-gray-800 uppercase mb-3">Identidade Visual & Cores do Sistema</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Cor Primária (Header, Destaques, Botões)</label>
+                        <label for="editCorPrimariaText" class="block text-xs font-bold text-gray-700 uppercase mb-2">Cor Primária (Header, Destaques, Botões)</label>
                         <div class="flex items-center space-x-3">
-                            <input type="color" id="editCorPrimariaPicker" value="{{ estabelecimento.cor_primaria }}" onchange="document.getElementById('editCorPrimariaText').value = this.value" class="w-12 h-10 border rounded cursor-pointer">
-                            <input type="text" id="editCorPrimariaText" value="{{ estabelecimento.cor_primaria }}" onchange="document.getElementById('editCorPrimariaPicker').value = this.value" class="w-full px-4 py-2 border rounded-lg outline-none font-mono text-sm bg-white">
+                            <input type="color" id="editCorPrimariaPicker" value="{{ estabelecimento.cor_primaria }}" title="Seletor de Cor Primária" aria-label="Seletor de Cor Primária" onchange="document.getElementById('editCorPrimariaText').value = this.value" class="w-12 h-10 border rounded cursor-pointer">
+                            <input type="text" id="editCorPrimariaText" value="{{ estabelecimento.cor_primaria }}" placeholder="#E53935" title="Código Hexadecimal da Cor Primária" aria-label="Código Hexadecimal da Cor Primária" onchange="document.getElementById('editCorPrimariaPicker').value = this.value" class="w-full px-4 py-2 border rounded-lg outline-none font-mono text-sm bg-white">
                         </div>
                     </div>
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Cor Secundária (Menu Hamburger & Sidebar)</label>
+                        <label for="editCorSecundariaText" class="block text-xs font-bold text-gray-700 uppercase mb-2">Cor Secundária (Menu Hamburger & Sidebar)</label>
                         <div class="flex items-center space-x-3">
-                            <input type="color" id="editCorSecundariaPicker" value="{{ estabelecimento.cor_secundaria }}" onchange="document.getElementById('editCorSecundariaText').value = this.value" class="w-12 h-10 border rounded cursor-pointer">
-                            <input type="text" id="editCorSecundariaText" value="{{ estabelecimento.cor_secundaria }}" onchange="document.getElementById('editCorSecundariaPicker').value = this.value" class="w-full px-4 py-2 border rounded-lg outline-none font-mono text-sm bg-white">
+                            <input type="color" id="editCorSecundariaPicker" value="{{ estabelecimento.cor_secundaria }}" title="Seletor de Cor Secundária" aria-label="Seletor de Cor Secundária" onchange="document.getElementById('editCorSecundariaText').value = this.value" class="w-12 h-10 border rounded cursor-pointer">
+                            <input type="text" id="editCorSecundariaText" value="{{ estabelecimento.cor_secundaria }}" placeholder="#1E293B" title="Código Hexadecimal da Cor Secundária" aria-label="Código Hexadecimal da Cor Secundária" onchange="document.getElementById('editCorSecundariaPicker').value = this.value" class="w-full px-4 py-2 border rounded-lg outline-none font-mono text-sm bg-white">
                         </div>
                     </div>
                 </div>
@@ -113,11 +113,11 @@
                 <h4 class="text-sm font-bold text-gray-800 uppercase mb-3">Logotipo do Estabelecimento</h4>
                 <div class="flex items-center space-x-6">
                     <div class="w-20 h-20 rounded-2xl border border-gray-200 overflow-hidden flex items-center justify-center bg-gray-50 shadow-inner">
-                        <img id="editLogoPreview" src="{{ estabelecimento.logotipo_url }}" alt="Logo" class="w-full h-full object-cover">
+                        <img id="editLogoPreview" src="{{ estabelecimento.logotipo_url }}" alt="Logo do Estabelecimento" class="w-full h-full object-cover">
                     </div>
                     <div class="flex-1 space-y-2">
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">URL do Logotipo</label>
-                        <input type="text" id="editLogoUrl" value="{{ estabelecimento.logotipo_url }}" oninput="document.getElementById('editLogoPreview').src = this.value" class="w-full px-4 py-2 border rounded-lg outline-none text-sm font-mono">
+                        <label for="editLogoUrl" class="block text-xs font-bold text-gray-700 uppercase mb-1">URL do Logotipo</label>
+                        <input type="text" id="editLogoUrl" value="{{ estabelecimento.logotipo_url }}" placeholder="https://exemplo.com/logo.png" title="URL do Logotipo" oninput="document.getElementById('editLogoPreview').src = this.value" class="w-full px-4 py-2 border rounded-lg outline-none text-sm font-mono">
                         <button type="button" onclick="abrirGaleria('editLogoUrl', 'editLogoPreview')" class="px-3.5 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-bold hover:bg-gray-700 flex items-center gap-1.5 cursor-pointer">
                             <i class="fa-solid fa-images text-amber-400"></i> Buscar Logotipo na Galeria de Imagens
                         </button>
@@ -163,24 +163,24 @@
             <!-- Contactos, Cidade e Endereço -->
             <div class="border-t pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Telemóvel / Telefone</label>
-                    <input type="text" id="editTelefone" value="{{ estabelecimento.telefone }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    <label for="editTelefone" class="block text-xs font-bold text-gray-700 uppercase mb-1">Telemóvel / Telefone</label>
+                    <input type="text" id="editTelefone" value="{{ estabelecimento.telefone }}" placeholder="+258 84 000 0000" title="Telemóvel ou Telefone" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">WhatsApp de Pedidos</label>
-                    <input type="text" id="editWhatsapp" value="{{ estabelecimento.whatsapp or '+258840000000' }}" placeholder="+258 84 000 0000" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-semibold text-emerald-700">
+                    <label for="editWhatsapp" class="block text-xs font-bold text-gray-700 uppercase mb-1">WhatsApp de Pedidos</label>
+                    <input type="text" id="editWhatsapp" value="{{ estabelecimento.whatsapp or '+258840000000' }}" placeholder="+258 84 000 0000" title="WhatsApp de Pedidos" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-semibold text-emerald-700">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email de Contacto</label>
-                    <input type="email" id="editEmail" value="{{ estabelecimento.email }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    <label for="editEmail" class="block text-xs font-bold text-gray-700 uppercase mb-1">Email de Contacto</label>
+                    <input type="email" id="editEmail" value="{{ estabelecimento.email }}" placeholder="contacto@restaurante.co.mz" title="Email de Contacto" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cidade</label>
-                    <input type="text" id="editCidade" value="{{ estabelecimento.cidade or 'Maputo' }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    <label for="editCidade" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cidade</label>
+                    <input type="text" id="editCidade" value="{{ estabelecimento.cidade or 'Maputo' }}" placeholder="Maputo" title="Cidade" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
                 </div>
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço Físico</label>
-                    <input type="text" id="editEndereco" value="{{ estabelecimento.endereco }}" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    <label for="editEndereco" class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço Físico</label>
+                    <input type="text" id="editEndereco" value="{{ estabelecimento.endereco }}" placeholder="Av. Julius Nyerere, Maputo" title="Endereço Físico" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
                 </div>
             </div>
 
@@ -614,8 +614,8 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Período de Acesso *</label>
-                        <select id="tarifaPiscinaPeriodo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
+                        <label for="tarifaPiscinaPeriodo" class="block text-xs font-bold text-gray-700 uppercase mb-1">Período de Acesso *</label>
+                        <select id="tarifaPiscinaPeriodo" title="Período de Acesso à Piscina" aria-label="Período de Acesso à Piscina" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
                             <option value="Dia Inteiro">Dia Inteiro</option>
                             <option value="Meio Período (Manhã)">Meio Período (Manhã)</option>
                             <option value="Meio Período (Tarde)">Meio Período (Tarde)</option>
@@ -666,38 +666,38 @@
             <div class="space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="sm:col-span-2">
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento *</label>
-                        <input type="text" id="novoNome" placeholder="Ex: Pizzaria Forno a Lenha" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                        <label for="novoNome" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento *</label>
+                        <input type="text" id="novoNome" placeholder="Ex: Pizzaria Forno a Lenha" title="Nome do Estabelecimento" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda</label>
-                        <input type="text" id="novoMoeda" value="MZN" class="w-full px-3 py-2 border rounded-lg text-sm font-bold outline-none">
+                        <label for="novoMoeda" class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda</label>
+                        <input type="text" id="novoMoeda" value="MZN" placeholder="MZN" title="Moeda Local" class="w-full px-3 py-2 border rounded-lg text-sm font-bold outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cor Primária (Tema)</label>
+                        <label for="novoCorPrimariaText" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cor Primária (Tema)</label>
                         <div class="flex items-center space-x-2">
-                            <input type="color" id="novoCorPrimaria" value="#0D9488" class="w-10 h-8 border rounded cursor-pointer">
-                            <input type="text" id="novoCorPrimariaText" value="#0D9488" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono bg-white">
+                            <input type="color" id="novoCorPrimaria" value="#0D9488" title="Seletor de Cor Primária" aria-label="Seletor de Cor Primária" class="w-10 h-8 border rounded cursor-pointer">
+                            <input type="text" id="novoCorPrimariaText" value="#0D9488" placeholder="#0D9488" title="Código Hexadecimal Cor Primária" aria-label="Código Hexadecimal Cor Primária" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono bg-white">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cor Secundária (Menu)</label>
+                        <label for="novoCorSecundariaText" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cor Secundária (Menu)</label>
                         <div class="flex items-center space-x-2">
-                            <input type="color" id="novoCorSecundaria" value="#0F172A" class="w-10 h-8 border rounded cursor-pointer">
-                            <input type="text" id="novoCorSecundariaText" value="#0F172A" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono bg-white">
+                            <input type="color" id="novoCorSecundaria" value="#0F172A" title="Seletor de Cor Secundária" aria-label="Seletor de Cor Secundária" class="w-10 h-8 border rounded cursor-pointer">
+                            <input type="text" id="novoCorSecundariaText" value="#0F172A" placeholder="#0F172A" title="Código Hexadecimal Cor Secundária" aria-label="Código Hexadecimal Cor Secundária" class="w-full px-3 py-1.5 border rounded-lg text-xs font-mono bg-white">
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Logotipo</label>
+                    <label for="novoLogo" class="block text-xs font-bold text-gray-700 uppercase mb-1">Logotipo</label>
                     <div class="flex items-center space-x-3">
-                        <img id="novoLogoPreview" src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-xl object-cover border">
+                        <img id="novoLogoPreview" src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=80" alt="Pré-visualização do Logotipo" class="w-12 h-12 rounded-xl object-cover border">
                         <div class="flex-1 space-y-1">
-                            <input type="text" id="novoLogo" value="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=80" oninput="document.getElementById('novoLogoPreview').src = this.value" class="w-full px-3 py-1.5 border rounded-lg text-xs outline-none font-mono">
+                            <input type="text" id="novoLogo" value="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=150&auto=format&fit=crop&q=80" placeholder="https://exemplo.com/logo.jpg" title="URL do Logotipo" oninput="document.getElementById('novoLogoPreview').src = this.value" class="w-full px-3 py-1.5 border rounded-lg text-xs outline-none font-mono">
                             <button type="button" onclick="abrirGaleria('novoLogo', 'novoLogoPreview')" class="px-2.5 py-1 bg-gray-800 text-white rounded text-[11px] font-bold hover:bg-gray-700 flex items-center gap-1 cursor-pointer">
                                 <i class="fa-solid fa-images text-amber-400"></i> Buscar na Galeria
                             </button>
@@ -707,18 +707,18 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Telefone</label>
-                        <input type="text" id="novoTelefone" placeholder="+258 84 123 4567" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                        <label for="novoTelefone" class="block text-xs font-bold text-gray-700 uppercase mb-1">Telefone</label>
+                        <input type="text" id="novoTelefone" placeholder="+258 84 123 4567" title="Telefone de Contacto" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email</label>
-                        <input type="email" id="novoEmail" placeholder="contato@pizzaria.com" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                        <label for="novoEmail" class="block text-xs font-bold text-gray-700 uppercase mb-1">Email</label>
+                        <input type="email" id="novoEmail" placeholder="contato@pizzaria.com" title="Email de Contacto" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço</label>
-                    <input type="text" id="novoEndereco" placeholder="Bairro Central, Maputo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    <label for="novoEndereco" class="block text-xs font-bold text-gray-700 uppercase mb-1">Endereço</label>
+                    <input type="text" id="novoEndereco" placeholder="Bairro Central, Maputo" title="Endereço do Estabelecimento" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                 </div>
 
                 <div class="p-3 bg-sky-50 rounded-xl border border-sky-200 flex items-center justify-between">
@@ -726,8 +726,8 @@
                         <span class="block text-xs font-bold text-sky-950 uppercase">Dispõe de Instalações de Piscina?</span>
                         <span class="text-[11px] text-sky-700">Se selecionado, ativará bilheteira, controle de lotação e bar de piscina.</span>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="novoTemPiscina" checked class="sr-only peer">
+                    <label for="novoTemPiscina" class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="novoTemPiscina" checked title="Ativar Instalações de Piscina" aria-label="Ativar Instalações de Piscina" class="sr-only peer">
                         <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
                     </label>
                 </div>
@@ -792,14 +792,14 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Restaurante Pertencente *</label>
-                    <select id="userEstabelecimento" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-gray-800">
+                    <label for="userEstabelecimento" class="block text-xs font-bold text-gray-700 uppercase mb-1">Restaurante Pertencente *</label>
+                    <select id="userEstabelecimento" title="Restaurante Pertencente" aria-label="Restaurante Pertencente" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold text-gray-800">
                         <!-- Preenchido dinamicamente via renderOpcoesEstabelecimentos() -->
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Perfil de Acesso</label>
-                    <select id="userPerfil" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
+                    <label for="userPerfil" class="block text-xs font-bold text-gray-700 uppercase mb-1">Perfil de Acesso</label>
+                    <select id="userPerfil" title="Perfil de Acesso" aria-label="Perfil de Acesso" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
                         <option value="ADMIN_GERAL">ADMIN_GERAL (Acesso Global)</option>
                         <option value="GESTOR">GESTOR (Gerencia o Restaurante)</option>
                         <option value="OPERADOR">OPERADOR (PDV / Caixa)</option>
@@ -883,8 +883,8 @@
                     <input type="text" id="pagNome" placeholder="Ex: M-Pesa Carteira Móvel" class="w-full px-3 py-2 border rounded-lg text-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ícone FontAwesome</label>
-                    <input type="text" id="pagIcone" value="fa-solid fa-credit-card" class="w-full px-3 py-2 border rounded-lg text-xs font-mono">
+                    <label for="pagIcone" class="block text-xs font-bold text-gray-700 uppercase mb-1">Ícone FontAwesome</label>
+                    <input type="text" id="pagIcone" value="fa-solid fa-credit-card" placeholder="fa-solid fa-credit-card" title="Ícone FontAwesome" class="w-full px-3 py-2 border rounded-lg text-xs font-mono">
                 </div>
                 <div class="flex items-center space-x-2 pt-1">
                     <input type="checkbox" id="pagTroco" checked class="w-4 h-4 text-emerald-600 rounded">
@@ -918,8 +918,8 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda</label>
-                        <input type="text" id="ivaMoeda" value="MZN" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                        <label for="ivaMoeda" class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda</label>
+                        <input type="text" id="ivaMoeda" value="MZN" placeholder="MZN" title="Moeda da Taxa de IVA" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição</label>
@@ -1026,8 +1026,8 @@
                         <input type="text" id="locCodigo" placeholder="Ex: GEL-02" class="w-full px-3 py-2 border rounded-lg text-sm uppercase font-mono outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Estrutura *</label>
-                        <select id="locTipo" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold">
+                        <label for="locTipo" class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Estrutura *</label>
+                        <select id="locTipo" title="Tipo de Estrutura" aria-label="Tipo de Estrutura" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold">
                             <option value="GELEIRA">Geleira / Frigorífico</option>
                             <option value="CONGELADOR">Congelador</option>
                             <option value="CAMARA_FRIA">Câmara Fria</option>
@@ -1037,12 +1037,12 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição / Identificação *</label>
-                    <input type="text" id="locDescricao" placeholder="Ex: Geleira Bar Superior 02" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    <label for="locDescricao" class="block text-xs font-bold text-gray-700 uppercase mb-1">Descrição / Identificação *</label>
+                    <input type="text" id="locDescricao" placeholder="Ex: Geleira Bar Superior 02" title="Descrição ou Identificação do Local" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Armazém Pertencente</label>
-                    <select id="locArmazemSelect" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-medium">
+                    <label for="locArmazemSelect" class="block text-xs font-bold text-gray-700 uppercase mb-1">Armazém Pertencente</label>
+                    <select id="locArmazemSelect" title="Armazém Pertencente" aria-label="Armazém Pertencente" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-medium">
                         <!-- Preenchido via abrirModalLocal() -->
                     </select>
                 </div>
@@ -1064,8 +1064,8 @@
             <div class="space-y-3">
                 <div class="grid grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Código</label>
-                        <input type="text" id="fornCodigo" value="FORN-01" class="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-gray-50 outline-none">
+                        <label for="fornCodigo" class="block text-xs font-bold text-gray-700 uppercase mb-1">Código</label>
+                        <input type="text" id="fornCodigo" value="FORN-01" placeholder="FORN-01" title="Código do Fornecedor" class="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-gray-50 outline-none">
                     </div>
                     <div class="col-span-2">
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome da Empresa *</label>
@@ -1088,8 +1088,8 @@
                         <input type="text" id="fornTelefone" placeholder="+258 84 123 4567" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Prazo de Entrega</label>
-                        <input type="text" id="fornPrazo" value="24 a 48 Horas" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                        <label for="fornPrazo" class="block text-xs font-bold text-gray-700 uppercase mb-1">Prazo de Entrega</label>
+                        <input type="text" id="fornPrazo" value="24 a 48 Horas" placeholder="Ex: 24 a 48 Horas" title="Prazo de Entrega do Fornecedor" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                 </div>
                 <div>
@@ -1113,25 +1113,25 @@
             </div>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Produto Associado *</label>
-                    <select id="tabFornProdSelect" onchange="aoMudarProdTabPreco()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
+                    <label for="tabFornProdSelect" class="block text-xs font-bold text-gray-700 uppercase mb-1">Produto Associado *</label>
+                    <select id="tabFornProdSelect" title="Produto Associado" aria-label="Produto Associado" onchange="aoMudarProdTabPreco()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
                         <!-- Preenchido dinamicamente -->
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor *</label>
-                    <select id="tabFornFornecedorSelect" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
+                    <label for="tabFornFornecedorSelect" class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor *</label>
+                    <select id="tabFornFornecedorSelect" title="Fornecedor" aria-label="Fornecedor" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none">
                         <!-- Preenchido dinamicamente -->
                     </select>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço da Caixa (MT) *</label>
-                        <input type="number" step="0.01" id="tabFornPrecoCaixa" oninput="calcularCustoUnitarioModal()" placeholder="1250.00" class="w-full px-3 py-2 border rounded-lg text-sm font-bold text-emerald-700 outline-none">
+                        <label for="tabFornPrecoCaixa" class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço da Caixa (MT) *</label>
+                        <input type="number" step="0.01" id="tabFornPrecoCaixa" oninput="calcularCustoUnitarioModal()" placeholder="1250.00" title="Preço da Caixa" class="w-full px-3 py-2 border rounded-lg text-sm font-bold text-emerald-700 outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidades por Caixa *</label>
-                        <input type="number" id="tabFornUnidadesCaixa" oninput="calcularCustoUnitarioModal()" value="24" class="w-full px-3 py-2 border rounded-lg text-sm font-bold outline-none">
+                        <label for="tabFornUnidadesCaixa" class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidades por Caixa *</label>
+                        <input type="number" id="tabFornUnidadesCaixa" oninput="calcularCustoUnitarioModal()" value="24" placeholder="24" title="Unidades por Caixa" class="w-full px-3 py-2 border rounded-lg text-sm font-bold outline-none">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
