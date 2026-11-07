@@ -455,12 +455,21 @@ window.RestauranteApp = {
             if (resp.ok) {
                 var dadosDb = await resp.json();
                 var alterou = false;
+                var tabelasVaziasNoBanco = false;
+
                 for (var key in dadosDb) {
                     if (dadosDb.hasOwnProperty(key) && Array.isArray(dadosDb[key])) {
-                        window.RestauranteApp[key] = dadosDb[key];
-                        alterou = true;
+                        // Se a base de dados tem registos, actualiza o estado local
+                        if (dadosDb[key].length > 0) {
+                            window.RestauranteApp[key] = dadosDb[key];
+                            alterou = true;
+                        } else if (window.RestauranteApp[key] && window.RestauranteApp[key].length > 0) {
+                            // Se a base de dados ainda estiver vazia nesta tabela mas o frontend tem dados iniciais, marca para semear o banco
+                            tabelasVaziasNoBanco = true;
+                        }
                     }
                 }
+
                 if (alterou) {
                     try {
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(window.RestauranteApp));
@@ -468,6 +477,13 @@ window.RestauranteApp = {
                     // Despacha evento informando que os dados da base de dados foram carregados
                     window.dispatchEvent(new CustomEvent('RestauranteAppDbReady', { detail: dadosDb }));
                 }
+
+                // Se identificou tabelas com dados no frontend mas vazias na base de dados, sincroniza imediatamente para popular o Supabase
+                if (tabelasVaziasNoBanco) {
+                    console.log('Populando tabelas vazias da base de dados com as informações do frontend...');
+                    window.RestauranteApp.sincronizarComBaseDeDados();
+                }
+            }
             }
         } catch (e) {
             console.warn('Aviso: base de dados não contactada no arranque, a usar dados locais:', e);
