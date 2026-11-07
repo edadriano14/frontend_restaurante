@@ -484,7 +484,6 @@ window.RestauranteApp = {
                     window.RestauranteApp.sincronizarComBaseDeDados();
                 }
             }
-            }
         } catch (e) {
             console.warn('Aviso: base de dados não contactada no arranque, a usar dados locais:', e);
         }
