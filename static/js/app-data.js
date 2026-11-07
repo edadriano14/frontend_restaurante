@@ -321,10 +321,43 @@ window.RestauranteApp = {
 
     compras: [],
     guias: [],
+    guias_entrada: [],
     requisicoes: [],
     movimentos_stock: [],
     pedidos_concluidos: [],
-    tabela_precos_fornecedores: []
+    tabela_precos_fornecedores: [],
+
+    // 15. TABELAS ADICIONAIS GLOBAIS
+    armazens: [
+        { id: "1", codigo: "ARM-01", nome: "Armazém Geral Central", tipo: "GERAL", ativo: true },
+        { id: "2", codigo: "ARM-02", nome: "Cozinha e Despensa de Insumos", tipo: "COZINHA", ativo: true },
+        { id: "3", codigo: "ARM-03", nome: "Bar & Bebidas", tipo: "BAR", ativo: true }
+    ],
+    locais_armazenamento: [
+        { id: "1", armazem_id: "1", codigo: "LOC-01", tipo_estrutura: "ESTANTE", descricao: "Estante Principal A1 - Secos & Enlatados", ativo: true },
+        { id: "2", armazem_id: "2", codigo: "LOC-02", tipo_estrutura: "CAMARA_FRIA", descricao: "Câmara Frigorífica - Carnes & Mariscos", ativo: true },
+        { id: "3", armazem_id: "3", codigo: "LOC-03", tipo_estrutura: "GELEIRA", descricao: "Geleira Expositora Bar - Refrigerantes & Cervejas", ativo: true }
+    ],
+    canais_pagamento: [
+        { id: "1", codigo: "CP-01", codigo_operadora: "MPESA", descricao: "M-Pesa Restaurante Oficial", numero_associado: "+258 84 000 0000", titular_conta: "Rede Restaurante Lda", ativo: true },
+        { id: "2", codigo: "CP-02", codigo_operadora: "EMOLA", descricao: "e-Mola Restaurante", numero_associado: "+258 86 000 0000", titular_conta: "Rede Restaurante Lda", ativo: true },
+        { id: "3", codigo: "CP-03", codigo_operadora: "CONTA_MOVEL", descricao: "mKesh / BCI Conta Móvel", numero_associado: "+258 82 000 0000", titular_conta: "Rede Restaurante Lda", ativo: true }
+    ],
+    categorias_stock: [
+        { id: "1", codigo: "CAT-STK-01", nome: "Carnes & Aves", descricao: "Cortes bovinos, suínos e aves frescas" },
+        { id: "2", codigo: "CAT-STK-02", nome: "Mariscos & Peixes", descricao: "Camarão, lagosta e peixes da costa" },
+        { id: "3", codigo: "CAT-STK-03", nome: "Bebidas & Refrigerantes", descricao: "Sumos, refrigerantes e água mineral" },
+        { id: "4", codigo: "CAT-STK-04", nome: "Mercearia & Secos", descricao: "Arroz, farinha, especiarias e óleos" }
+    ],
+    caixas_sessoes: [
+        { id: "1", codigo: "CXS-01", utilizador_id: "1", saldo_abertura: 1500.00, saldo_fecho: null, estado: "ABERTO", aberto_em: new Date().toISOString() }
+    ],
+    turnos_caixa: [],
+    itens_compra: [],
+    itens_guia_entrada: [],
+    pedidos_vendas: [],
+    itens_pedidos_vendas: [],
+    pedidos_online: []
 };
 
 // =============================================================================
@@ -382,7 +415,21 @@ window.RestauranteApp = {
             tipos_pedidos: window.RestauranteApp.tipos_pedidos || [],
             metodos_pagamento: window.RestauranteApp.metodos_pagamento || [],
             taxas_iva: window.RestauranteApp.taxas_iva || [],
-            utilizadores: window.RestauranteApp.utilizadores || []
+            utilizadores: window.RestauranteApp.utilizadores || [],
+            unidades_medida: window.RestauranteApp.unidades_medida || [],
+            armazens: window.RestauranteApp.armazens || [],
+            locais_armazenamento: window.RestauranteApp.locais_armazenamento || [],
+            canais_pagamento: window.RestauranteApp.canais_pagamento || [],
+            categorias_stock: window.RestauranteApp.categorias_stock || [],
+            caixas_sessoes: window.RestauranteApp.caixas_sessoes || [],
+            turnos_caixa: window.RestauranteApp.turnos_caixa || [],
+            compras: window.RestauranteApp.compras || [],
+            itens_compra: window.RestauranteApp.itens_compra || [],
+            guias_entrada: (window.RestauranteApp.guias_entrada && window.RestauranteApp.guias_entrada.length > 0) ? window.RestauranteApp.guias_entrada : (window.RestauranteApp.guias || []),
+            itens_guia_entrada: window.RestauranteApp.itens_guia_entrada || [],
+            pedidos_vendas: (window.RestauranteApp.pedidos_vendas && window.RestauranteApp.pedidos_vendas.length > 0) ? window.RestauranteApp.pedidos_vendas : (window.RestauranteApp.vendas || []),
+            itens_pedidos_vendas: window.RestauranteApp.itens_pedidos_vendas || [],
+            pedidos_online: window.RestauranteApp.pedidos_online || []
         };
 
         try {

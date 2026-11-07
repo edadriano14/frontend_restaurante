@@ -8,10 +8,11 @@
         <!-- Header do Caixa / Gaveta -->
         <div class="p-3 border-b flex flex-wrap items-center justify-between gap-3 bg-gray-50">
             <div class="flex items-center space-x-3">
-                <span class="px-2.5 py-1 text-xs font-bold rounded-md bg-green-100 text-green-800 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Caixa Aberto
+                <span id="badgeEstadoCaixaPDV" class="px-2.5 py-1 text-xs font-bold rounded-md bg-green-100 text-green-800 flex items-center gap-1.5 transition-all">
+                    <span id="dotEstadoCaixaPDV" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span id="textoEstadoCaixaPDV">Caixa Aberto</span>
                 </span>
-                <span class="text-xs text-gray-500">Saldo Abertura: <b>1,500.00 {{ estabelecimento.moeda }}</b></span>
+                <span class="text-xs text-gray-500">Saldo Abertura: <b id="valorSaldoAberturaPDV">1,500.00 {{ estabelecimento.moeda }}</b></span>
             </div>
             
             <div class="flex items-center space-x-2">
@@ -627,6 +628,43 @@
 </div>
 
 <!-- ========================================================================= -->
+<!-- ========================================================================= -->
+<!-- MODAL: ABERTURA DE TURNO DE CAIXA -->
+<!-- ========================================================================= -->
+<div id="modalAberturaCaixaPDV" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center space-x-2.5 pb-2 border-b">
+            <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-lock-open"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-gray-900">Abrir Turno do Caixa</h3>
+                <p class="text-xs text-gray-500">Defina o fundo de maneio inicial.</p>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label for="inputSaldoAberturaCaixa" class="block text-xs font-bold text-gray-700 mb-1">Fundo de Maneio / Saldo Inicial (MT) *</label>
+                <input type="number" id="inputSaldoAberturaCaixa" step="50" min="0" value="1500.00" title="Saldo de abertura do caixa" class="w-full px-3 py-2 border-2 border-gray-300 rounded-xl font-bold font-mono text-base text-gray-900 focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label for="inputObsAberturaCaixa" class="block text-xs font-semibold text-gray-600 mb-1">Observações (Opcional)</label>
+                <input type="text" id="inputObsAberturaCaixa" placeholder="Ex: Turno da manhã - Notas e moedas contadas" title="Observações de abertura" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs text-gray-800 focus:outline-none focus:border-emerald-500">
+            </div>
+        </div>
+
+        <div class="pt-3 border-t flex items-center justify-end gap-2">
+            <button type="button" onclick="fecharModal('modalAberturaCaixaPDV')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">
+                Cancelar
+            </button>
+            <button type="button" onclick="confirmarAberturaCaixaPDV()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">
+                Abrir Caixa
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL: RETIRADA DE VALOR PARA COMPRAS (SANGRIA DE CAIXA) -->
 <!-- ========================================================================= -->
 <div id="modalSangriaCompras" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
@@ -753,6 +791,7 @@ function renderFiltroCategorias() {
 
 function filtrarCategoriaPDV(catId) {
     catAtivaPDV = catId;
+    inicializarEstadoCaixaPDV();
     renderFiltroCategorias();
     renderProdutosPDV();
 }
@@ -2452,7 +2491,11 @@ function suspenderVendaPDV() {
     if (btnFecharCaixa) {
         btnFecharCaixa.addEventListener('click', function(e) {
             e.preventDefault();
-            window.iniciarFechoTurnoPDV();
+            if (typeof estadoCaixaAtual !== 'undefined' && !estadoCaixaAtual.aberto) {
+                window.abrirModalAberturaCaixaPDV();
+            } else {
+                window.iniciarFechoTurnoPDV();
+            }
         });
     }
 
@@ -2508,7 +2551,11 @@ function renderTabelaVendasSuspensas() {
     if (btnFecharCaixa) {
         btnFecharCaixa.addEventListener('click', function(e) {
             e.preventDefault();
-            window.iniciarFechoTurnoPDV();
+            if (typeof estadoCaixaAtual !== 'undefined' && !estadoCaixaAtual.aberto) {
+                window.abrirModalAberturaCaixaPDV();
+            } else {
+                window.iniciarFechoTurnoPDV();
+            }
         });
     }
 
@@ -2566,7 +2613,11 @@ function renderTabelaVendasSuspensas() {
     if (btnFecharCaixa) {
         btnFecharCaixa.addEventListener('click', function(e) {
             e.preventDefault();
-            window.iniciarFechoTurnoPDV();
+            if (typeof estadoCaixaAtual !== 'undefined' && !estadoCaixaAtual.aberto) {
+                window.abrirModalAberturaCaixaPDV();
+            } else {
+                window.iniciarFechoTurnoPDV();
+            }
         });
     }
 
@@ -2682,7 +2733,11 @@ function puxarPedidoSuspenso(id) {
     if (btnFecharCaixa) {
         btnFecharCaixa.addEventListener('click', function(e) {
             e.preventDefault();
-            window.iniciarFechoTurnoPDV();
+            if (typeof estadoCaixaAtual !== 'undefined' && !estadoCaixaAtual.aberto) {
+                window.abrirModalAberturaCaixaPDV();
+            } else {
+                window.iniciarFechoTurnoPDV();
+            }
         });
     }
 
@@ -2729,7 +2784,11 @@ function cancelarPedidoSuspenso(id) {
     if (btnFecharCaixa) {
         btnFecharCaixa.addEventListener('click', function(e) {
             e.preventDefault();
-            window.iniciarFechoTurnoPDV();
+            if (typeof estadoCaixaAtual !== 'undefined' && !estadoCaixaAtual.aberto) {
+                window.abrirModalAberturaCaixaPDV();
+            } else {
+                window.iniciarFechoTurnoPDV();
+            }
         });
     }
 
@@ -3148,6 +3207,105 @@ window.solicitarAbrirGavetaComSenha = function() {
     if (inp) setTimeout(function() { inp.focus(); }, 100);
 }
 
+
+// =============================================================================
+// GESTÃO DE ESTADO DO CAIXA: ABERTO / FECHADO COM INCLUSÃO DO SALDO DE ABERTURA
+// =============================================================================
+var CAIXA_SESSION_KEY = 'PDV_CAIXA_SESSAO_ESTADO';
+var estadoCaixaAtual = {
+    aberto: true,
+    saldoAbertura: 1500.00,
+    abertoEm: new Date().toISOString()
+};
+
+function inicializarEstadoCaixaPDV() {
+    try {
+        var salvo = localStorage.getItem(CAIXA_SESSION_KEY);
+        if (salvo) {
+            estadoCaixaAtual = Object.assign(estadoCaixaAtual, JSON.parse(salvo));
+        }
+    } catch(e) {}
+    atualizarUICaixaEstado();
+}
+
+function atualizarUICaixaEstado() {
+    var badge = document.getElementById('badgeEstadoCaixaPDV');
+    var dot = document.getElementById('dotEstadoCaixaPDV');
+    var txt = document.getElementById('textoEstadoCaixaPDV');
+    var val = document.getElementById('valorSaldoAberturaPDV');
+    var btnFechar = document.getElementById('btnFecharCaixaPDV');
+
+    if (val) {
+        val.innerText = Number(estadoCaixaAtual.saldoAbertura || 0).toFixed(2) + ' ' + (moedaAtual || 'MT');
+    }
+
+    if (estadoCaixaAtual.aberto) {
+        if (badge) badge.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-green-100 text-green-800 flex items-center gap-1.5 transition-all';
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+        if (txt) txt.innerText = 'Caixa Aberto';
+        if (btnFechar) {
+            btnFechar.innerText = 'Fechar Caixa';
+            btnFechar.className = 'px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-200 cursor-pointer';
+            btnFechar.onclick = function() { window.iniciarFechoTurnoPDV(); };
+        }
+    } else {
+        if (badge) badge.className = 'px-2.5 py-1 text-xs font-bold rounded-md bg-gray-200 text-gray-700 flex items-center gap-1.5 transition-all';
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-gray-400';
+        if (txt) txt.innerText = 'Caixa Fechado';
+        if (btnFechar) {
+            btnFechar.innerText = 'Abrir Caixa';
+            btnFechar.className = 'px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 cursor-pointer shadow-sm';
+            btnFechar.onclick = function() { window.abrirModalAberturaCaixaPDV(); };
+        }
+    }
+}
+
+window.abrirModalAberturaCaixaPDV = function() {
+    var inp = document.getElementById('inputSaldoAberturaCaixa');
+    if (inp) inp.value = Number(estadoCaixaAtual.saldoAbertura || 1500).toFixed(2);
+    abrirModal('modalAberturaCaixaPDV');
+};
+
+window.confirmarAberturaCaixaPDV = function() {
+    var inp = document.getElementById('inputSaldoAberturaCaixa');
+    var valor = parseFloat(inp ? inp.value : 0) || 0;
+    if (valor < 0) {
+        alert('O saldo de abertura não pode ser negativo.');
+        return;
+    }
+    var obs = (document.getElementById('inputObsAberturaCaixa')?.value || '').trim();
+
+    estadoCaixaAtual.aberto = true;
+    estadoCaixaAtual.saldoAbertura = valor;
+    estadoCaixaAtual.abertoEm = new Date().toISOString();
+
+    try {
+        localStorage.setItem(CAIXA_SESSION_KEY, JSON.stringify(estadoCaixaAtual));
+    } catch(e) {}
+
+    // Registar sessão de caixa na base de dados
+    if (!window.RestauranteApp.caixas_sessoes) window.RestauranteApp.caixas_sessoes = [];
+    var novaSessao = {
+        id: String(Date.now()),
+        codigo: 'CXS-' + Date.now().toString().slice(-4),
+        utilizador_id: (window.usuarioLogado && window.usuarioLogado.id) ? window.usuarioLogado.id : '1',
+        saldo_abertura: valor,
+        saldo_fecho: null,
+        estado: 'ABERTO',
+        aberto_em: estadoCaixaAtual.abertoEm,
+        observacoes: obs
+    };
+    window.RestauranteApp.caixas_sessoes.unshift(novaSessao);
+    if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+
+    fecharModal('modalAberturaCaixaPDV');
+    atualizarUICaixaEstado();
+
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Caixa aberto com sucesso com fundo de maneio de ' + valor.toFixed(2) + ' MT.', 'Caixa Aberto', 'sucesso');
+    }
+};
+
 window.iniciarFechoTurnoPDV = function() {
     acaoCaixaPendente = 'fecharTurno';
     var tit = document.getElementById('authAcaoCaixaTitulo');
@@ -3266,7 +3424,7 @@ window.abrirModalFechoTurnoPDV = function() {
     var elTot = document.getElementById('fechoTotalVendasCalculado');
     if (elTot) elTot.innerText = somaTotalVendas.toFixed(2) + ' MT';
 
-    // Fundo de Maneio padrão 1,500.00 MT + Vendas em Numerário
+    // Fundo de Maneio de abertura do caixa + Vendas em Numerário
     var vendasNumerario = 0;
     for (var k in metodosTotais) {
         var kl = k.toLowerCase();
@@ -3274,7 +3432,7 @@ window.abrirModalFechoTurnoPDV = function() {
             vendasNumerario += metodosTotais[k];
         }
     }
-    var fundoManeio = 1500.00;
+    var fundoManeio = Number(estadoCaixaAtual.saldoAbertura || 1500.00);
     totalEstimadoGavetaFecho = fundoManeio + vendasNumerario;
 
     var elFundo = document.getElementById('fechoFundoManeioAbertura');
@@ -3348,6 +3506,12 @@ window.concluirFechoTurnoPDV = function() {
     if (window.RestauranteApp.salvarEstado) {
         window.RestauranteApp.salvarEstado();
     }
+
+    estadoCaixaAtual.aberto = false;
+    try {
+        localStorage.setItem(CAIXA_SESSION_KEY, JSON.stringify(estadoCaixaAtual));
+    } catch(e) {}
+    atualizarUICaixaEstado();
 
     fecharModal('modalFechoTurnoPDV');
     var msg = 'Turno de caixa fechado com sucesso!\n\n• Saldo Contado: ' + contado.toFixed(2) + ' MT\n• Diferença: ' + diferenca.toFixed(2) + ' MT' + (justificativa ? ('\n• Justificativa: ' + justificativa) : '');
@@ -3450,7 +3614,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnFecharCaixa) {
         btnFecharCaixa.addEventListener('click', function(e) {
             e.preventDefault();
-            window.iniciarFechoTurnoPDV();
+            if (typeof estadoCaixaAtual !== 'undefined' && !estadoCaixaAtual.aberto) {
+                window.abrirModalAberturaCaixaPDV();
+            } else {
+                window.iniciarFechoTurnoPDV();
+            }
         });
     }
 

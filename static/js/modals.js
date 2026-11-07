@@ -29,9 +29,9 @@ window.fecharModal = function(id) {
 
         el = document.createElement('div');
         el.id = 'dialogoCentralizadoGlobal';
-        el.className = 'fixed inset-0 bg-black/60 z-[99999] hidden items-center justify-center p-4 transition-opacity duration-200';
+        el.className = 'fixed inset-0 bg-black/60 z-[99999] hidden items-center justify-center p-4 transition-opacity duration-75';
         el.innerHTML = [
-            '<div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 transform transition-transform duration-200 scale-95 border border-gray-100" id="dialogoCentralizadoCard">',
+            '<div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 transform transition-transform duration-75 scale-95 border border-gray-100" id="dialogoCentralizadoCard">',
             '  <div id="dialogoIconeContainer" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner bg-emerald-100 text-emerald-600">',
             '    <i id="dialogoIcone" class="fa-solid fa-check"></i>',
             '  </div>',
@@ -93,9 +93,7 @@ window.fecharModal = function(id) {
 
         container.classList.remove('hidden');
         container.classList.add('flex');
-        setTimeout(function() {
-            if (card) card.classList.remove('scale-95');
-        }, 10);
+        if (card) card.classList.remove('scale-95');
 
         var btnOk = document.getElementById('dialogoBtnOk');
         if (btnOk) {
@@ -132,9 +130,7 @@ window.fecharModal = function(id) {
 
         container.classList.remove('hidden');
         container.classList.add('flex');
-        setTimeout(function() {
-            if (card) card.classList.remove('scale-95');
-        }, 10);
+        if (card) card.classList.remove('scale-95');
 
         document.getElementById('dialogoBtnCancelar').onclick = function() {
             container.classList.add('hidden');
