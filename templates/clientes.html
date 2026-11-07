@@ -152,28 +152,40 @@ function salvarCliente() {
         return; 
     }
 
-    // Se informou NUIT, valida ou completa 10 dígitos numéricos
+    // Se informou NUIT, valida 10 dígitos numéricos
     var nuitNumerico = nuit ? nuit.replace(/[^0-9]/g, '') : '';
     if (nuit && nuitNumerico.length !== 10) {
-        if (window.mostrarMensagemAmigavel) {
-            window.mostrarMensagemAmigavel('O NUIT informado possui ' + nuitNumerico.length + ' dígitos. Um NUIT regular possui 10 dígitos (Ex: 4001234567).\n\nCorrija ou deixe em branco.', 'Atenção ao NUIT', 'aviso');
-        } else {
-            alert('O NUIT deve conter 10 dígitos ou ficar em branco.');
-        }
+        var msgNuit = 'O NUIT informado possui ' + nuitNumerico.length + ' dígitos. O NUIT deve conter exactamente 10 dígitos (Ex: 4001234567).';
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel(msgNuit, 'Atenção ao NUIT', 'aviso');
+        else alert(msgNuit);
         return;
     }
 
-    if (!nuitNumerico) {
-        nuitNumerico = '9999999999';
+    // Se informou Telefone, valida 10 dígitos numéricos
+    var telNumerico = tel ? tel.replace(/[^0-9]/g, '') : '';
+    if (tel && telNumerico.length !== 10) {
+        var msgTel = 'O telefone informado possui ' + telNumerico.length + ' dígitos. O telefone deve conter exactamente 10 dígitos (Ex: 8412345678).';
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel(msgTel, 'Atenção ao Telefone', 'aviso');
+        else alert(msgTel);
+        return;
+    }
+
+    // Se informou Email, deve conter @
+    var email = (document.getElementById('cliEmail').value || '').trim();
+    if (email && !email.includes('@')) {
+        var msgEmail = 'O email informado é inválido. O email deve conter o caractere "@" (Ex: cliente@dominio.com).';
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel(msgEmail, 'Email Inválido', 'aviso');
+        else alert(msgEmail);
+        return;
     }
 
     var item = {
         codigo: cod || ('CLI-0' + ((window.RestauranteApp.clientes || []).length + 1)),
         nome: nome,
-        telefone: tel || '+258 84 000 0000',
-        email: (document.getElementById('cliEmail').value || '').trim(),
-        nuit: nuitNumerico,
-        nif: nuitNumerico,
+        telefone: telNumerico || tel || '',
+        email: email,
+        nuit: nuitNumerico || '',
+        nif: nuitNumerico || '',
         endereco: endereco || 'Maputo',
         morada: endereco || 'Maputo',
         obs: (document.getElementById('cliObs').value || '').trim()

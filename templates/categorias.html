@@ -198,12 +198,30 @@ function editarCategoria(id) {
 }
 
 function salvarCategoria() {
-    var nome = document.getElementById('catNome').value;
-    if (!nome) { alert('Informe o nome da categoria.'); return; }
+    var nome = (document.getElementById('catNome').value || '').trim();
+    if (!nome) { 
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel('Informe o nome da categoria.', 'Campo Obrigatório', 'aviso');
+        else alert('Informe o nome da categoria.'); 
+        return; 
+    }
+
+    // Regra: O nome da categoria deve ser único
+    var nomeMinusculo = nome.toLowerCase();
+    var duplicada = (window.RestauranteApp.categorias || []).some(function(c) {
+        if (editandoCatId && String(c.id) === String(editandoCatId)) return false;
+        return (c.nome || '').trim().toLowerCase() === nomeMinusculo;
+    });
+
+    if (duplicada) {
+        var msgDuplicada = 'Já existe uma categoria cadastrada com o nome "' + nome + '". O nome da categoria deve ser único.';
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel(msgDuplicada, 'Nome de Categoria Duplicado', 'aviso');
+        else alert(msgDuplicada);
+        return;
+    }
 
     var item = {
         emoji: document.getElementById('catEmoji').value || '🍽️',
-        codigo: document.getElementById('catCodigo').value,
+        codigo: document.getElementById('catCodigo').value || ('CAT-0' + ((window.RestauranteApp.categorias || []).length + 1)),
         nome: nome,
         ordem: Number(document.getElementById('catOrdem').value) || 1
     };

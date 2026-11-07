@@ -536,6 +536,10 @@ function salvarUtilizador() {
     var perfil = document.getElementById('userPerfil').value;
 
     if (!cod || !nome || !email) { alert('Código, nome completo e email são obrigatórios.'); return; }
+    if (!email.includes('@')) {
+        alert('O email é inválido. Deve conter o caractere "@" (Ex: utilizador@dominio.com).');
+        return;
+    }
     if (!editandoUserId && !pass) { alert('Defina a palavra-passe do utilizador.'); return; }
 
     var perfilObj = (window.RestauranteApp.perfis_acesso || []).find(function(p){ return p.nome === perfil; });

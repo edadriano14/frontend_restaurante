@@ -1243,6 +1243,19 @@ function trocarEstabelecimento(id) {
 }
 
 function salvarConfiguracoes() {
+    var email = (document.getElementById('editEmail').value || '').trim();
+    if (email && !email.includes('@')) {
+        alert('O email do restaurante é inválido. Deve conter o caractere "@".');
+        return;
+    }
+
+    var tel = (document.getElementById('editTelefone').value || '').trim();
+    var telDigitos = tel.replace(/[^0-9]/g, '');
+    if (tel && telDigitos.length !== 10) {
+        alert('O telefone deve conter exactamente 10 dígitos (Ex: 8412345678).');
+        return;
+    }
+
     var corP = document.getElementById('editCorPrimariaText').value;
     var corS = document.getElementById('editCorSecundariaText').value;
     var isAtivo = document.getElementById('editAtivo').checked;
@@ -1313,8 +1326,23 @@ function salvarConfiguracoes() {
 function salvarNovoEstabelecimento() {
     var nome = document.getElementById('novoNome').value;
     if (!nome) { alert('Informe o nome do novo restaurante.'); return; }
+
+    var email = (document.getElementById('novoEmail').value || '').trim();
+    if (email && !email.includes('@')) {
+        alert('O email do novo restaurante é inválido. Deve conter o caractere "@".');
+        return;
+    }
+
+    var tel = (document.getElementById('novoTelefone').value || '').trim();
+    var telDigitos = tel.replace(/[^0-9]/g, '');
+    if (tel && telDigitos.length !== 10) {
+        alert('O telefone deve conter exactamente 10 dígitos (Ex: 8412345678).');
+        return;
+    }
+
     var novo = {
         id: String(Date.now()),
+        codigo: 'EST-0' + ((window.RestauranteApp.estabelecimentos || []).length + 1),
         nome: nome,
         moeda: document.getElementById('novoMoeda').value || 'MZN',
         cor_primaria: document.getElementById('novoCorPrimaria').value || '#0D9488',

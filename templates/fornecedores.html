@@ -298,21 +298,51 @@ function editarFornecedor(id) {
 }
 
 function salvarFornecedor() {
-    var nome = document.getElementById('fornNome').value;
+    var nome = (document.getElementById('fornNome').value || '').trim();
     if (!nome) { 
         if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel('Por favor informe o nome do fornecedor.', 'Campo Obrigatório', 'aviso');
         else alert('Informe o nome do fornecedor.'); 
         return; 
     }
 
+    // Validação NUIT (10 dígitos)
+    var nuitRaw = (document.getElementById('fornNif').value || '').trim();
+    var nuitNumerico = nuitRaw ? nuitRaw.replace(/[^0-9]/g, '') : '';
+    if (nuitRaw && nuitNumerico.length !== 10) {
+        var msgNuit = 'O NUIT informado possui ' + nuitNumerico.length + ' dígitos. O NUIT deve conter exactamente 10 dígitos (Ex: 4001234567).';
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel(msgNuit, 'Atenção ao NUIT', 'aviso');
+        else alert(msgNuit);
+        return;
+    }
+
+    // Validação Telefone (10 dígitos)
+    var telRaw = (document.getElementById('fornTelefone').value || '').trim();
+    var telNumerico = telRaw ? telRaw.replace(/[^0-9]/g, '') : '';
+    if (telRaw && telNumerico.length !== 10) {
+        var msgTel = 'O telefone informado possui ' + telNumerico.length + ' dígitos. O telefone deve conter exactamente 10 dígitos (Ex: 8412345678).';
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel(msgTel, 'Atenção ao Telefone', 'aviso');
+        else alert(msgTel);
+        return;
+    }
+
+    // Validação Email (deve conter @)
+    var email = (document.getElementById('fornEmail').value || '').trim();
+    if (email && !email.includes('@')) {
+        var msgEmail = 'O email informado é inválido. O email deve conter o caractere "@" (Ex: vendas@fornecedor.mz).';
+        if (window.mostrarMensagemAmigavel) window.mostrarMensagemAmigavel(msgEmail, 'Email Inválido', 'aviso');
+        else alert(msgEmail);
+        return;
+    }
+
     var item = {
+        codigo: 'FORN-0' + ((window.RestauranteApp.fornecedores || []).length + 1),
         nome: nome,
-        nuit: document.getElementById('fornNif').value,
-        nif: document.getElementById('fornNif').value,
-        contacto: document.getElementById('fornContacto').value,
-        telefone: document.getElementById('fornTelefone').value,
-        email: document.getElementById('fornEmail').value,
-        morada: document.getElementById('fornMorada').value
+        nuit: nuitNumerico || nuitRaw,
+        nif: nuitNumerico || nuitRaw,
+        contacto: (document.getElementById('fornContacto').value || '').trim(),
+        telefone: telNumerico || telRaw,
+        email: email,
+        morada: (document.getElementById('fornMorada').value || '').trim()
     };
 
     if (editandoFornId) {
