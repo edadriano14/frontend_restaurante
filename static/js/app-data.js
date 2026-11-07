@@ -433,4 +433,92 @@ window.RestauranteApp = {
             window.RestauranteApp.carregarDaBaseDeDados();
         }, 50);
     }
+
+    // =========================================================================
+    // 5. CLIENTE CRUD UNIVERSAL (Direct API REST para todas as tabelas)
+    // =========================================================================
+    window.RestauranteApp.crud = {
+        listar: async function(tabela) {
+            try {
+                var resp = await fetch('/api/crud/' + encodeURIComponent(tabela));
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return await resp.json();
+            } catch (err) {
+                console.error('[CRUD] Erro ao listar ' + tabela + ':', err);
+                return window.RestauranteApp[tabela] || [];
+            }
+        },
+        obter: async function(tabela, id) {
+            try {
+                var resp = await fetch('/api/crud/' + encodeURIComponent(tabela) + '/' + encodeURIComponent(id));
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                return await resp.json();
+            } catch (err) {
+                console.error('[CRUD] Erro ao obter ' + tabela + ' #' + id + ':', err);
+                return null;
+            }
+        },
+        criar: async function(tabela, dados) {
+            try {
+                var resp = await fetch('/api/crud/' + encodeURIComponent(tabela), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+                var res = await resp.json();
+                if (resp.ok) {
+                    if (!window.RestauranteApp[tabela]) window.RestauranteApp[tabela] = [];
+                    window.RestauranteApp[tabela].push(res.item || dados);
+                    window.RestauranteApp.salvarEstado();
+                }
+                return res;
+            } catch (err) {
+                console.error('[CRUD] Erro ao criar em ' + tabela + ':', err);
+                return { erro: err.message };
+            }
+        },
+        atualizar: async function(tabela, id, dados) {
+            try {
+                var resp = await fetch('/api/crud/' + encodeURIComponent(tabela) + '/' + encodeURIComponent(id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+                var res = await resp.json();
+                if (resp.ok) {
+                    var lista = window.RestauranteApp[tabela];
+                    if (Array.isArray(lista)) {
+                        var idx = lista.findIndex(function(it) { return String(it.id) === String(id); });
+                        if (idx !== -1) {
+                            lista[idx] = Object.assign({}, lista[idx], res.item || dados);
+                            window.RestauranteApp.salvarEstado();
+                        }
+                    }
+                }
+                return res;
+            } catch (err) {
+                console.error('[CRUD] Erro ao atualizar em ' + tabela + ' #' + id + ':', err);
+                return { erro: err.message };
+            }
+        },
+        eliminar: async function(tabela, id) {
+            try {
+                var resp = await fetch('/api/crud/' + encodeURIComponent(tabela) + '/' + encodeURIComponent(id), {
+                    method: 'DELETE'
+                });
+                var res = await resp.json();
+                if (resp.ok) {
+                    var lista = window.RestauranteApp[tabela];
+                    if (Array.isArray(lista)) {
+                        window.RestauranteApp[tabela] = lista.filter(function(it) { return String(it.id) !== String(id); });
+                        window.RestauranteApp.salvarEstado();
+                    }
+                }
+                return res;
+            } catch (err) {
+                console.error('[CRUD] Erro ao eliminar de ' + tabela + ' #' + id + ':', err);
+                return { erro: err.message };
+            }
+        }
+    };
 })();

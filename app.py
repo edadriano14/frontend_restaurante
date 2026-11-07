@@ -1036,6 +1036,58 @@ async def db_sync(request: Request):
 
     return {"status": "saved_locally", "message": "Guardado com sucesso."}
 
+# =============================================================================
+# ENDPOINTS REST CRUD UNIVERSAIS (Frontend <-> Backend .NET / Supabase)
+# =============================================================================
+@app.api_route("/api/crud/{tabela}", methods=["GET", "POST"])
+@app.api_route("/api/crud/{tabela}/{id}", methods=["GET", "PUT", "DELETE"])
+async def crud_proxy(request: Request, tabela: str, id: str = None):
+    """
+    Encaminha pedidos CRUD completos (GET, POST, PUT, DELETE) para o Backend Fly.io / Supabase
+    garantindo o isolamento de tenant com X-Tenant-Id.
+    """
+    usuario = getattr(request.state, "usuario", None) or obter_usuario_request(request)
+    tenant_id = usuario.get("estabelecimento_id") if usuario else ESTABELECIMENTO_ATIVO_ID
+    method = request.method.upper()
+
+    headers = {
+        "X-Tenant-Id": str(tenant_id),
+        "Content-Type": "application/json"
+    }
+
+    body_bytes = None
+    if method in ("POST", "PUT"):
+        body_bytes = await request.body()
+
+    path_suffix = f"/api/crud/{tabela}/{id}" if id else f"/api/crud/{tabela}"
+
+    # Tenta contactar backend local ou fly.io
+    for base_api in (BACKEND_LOCAL_URL, BACKEND_API_URL):
+        if not base_api:
+            continue
+        try:
+            target_url = f"{base_api}{path_suffix}"
+            if request.query_params:
+                target_url += f"?{request.query_params}"
+
+            resp = await http_client.request(
+                method=method,
+                url=target_url,
+                headers=headers,
+                content=body_bytes,
+                timeout=10.0
+            )
+            # Retorna a resposta do backend
+            try:
+                content_json = resp.json()
+                return JSONResponse(status_code=resp.status_code, content=content_json)
+            except Exception:
+                return JSONResponse(status_code=resp.status_code, content={"message": resp.text})
+        except Exception:
+            continue
+
+    return JSONResponse(status_code=502, content={"erro": "Não foi possível conectar ao backend da base de dados."})
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8070, reload=True)
