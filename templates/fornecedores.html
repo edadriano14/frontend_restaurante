@@ -149,21 +149,21 @@
             </div>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Produto *</label>
-                    <select id="tabFornProdSelectPage" onchange="aoMudarProdTabPrecoPage()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none"></select>
+                    <label for="tabFornProdSelectPage" class="block text-xs font-bold text-gray-700 uppercase mb-1">Produto *</label>
+                    <select id="tabFornProdSelectPage" title="Produto" aria-label="Produto" onchange="aoMudarProdTabPrecoPage()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none"></select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor *</label>
-                    <select id="tabFornFornecedorSelectPage" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none"></select>
+                    <label for="tabFornFornecedorSelectPage" class="block text-xs font-bold text-gray-700 uppercase mb-1">Fornecedor *</label>
+                    <select id="tabFornFornecedorSelectPage" title="Fornecedor" aria-label="Fornecedor" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold outline-none"></select>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço da Caixa (MT) *</label>
-                        <input type="number" step="0.01" id="tabFornPrecoCaixaPage" oninput="calcularCustoUnitarioModalPage()" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-gray-900 outline-none">
+                        <label for="tabFornPrecoCaixaPage" class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço da Caixa (MT) *</label>
+                        <input type="number" step="0.01" id="tabFornPrecoCaixaPage" oninput="calcularCustoUnitarioModalPage()" placeholder="0.00" title="Preço da Caixa em Meticais" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-gray-900 outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidades por Caixa *</label>
-                        <input type="number" min="1" id="tabFornUnidadesCaixaPage" oninput="calcularCustoUnitarioModalPage()" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-gray-900 outline-none">
+                        <label for="tabFornUnidadesCaixaPage" class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidades por Caixa *</label>
+                        <input type="number" min="1" id="tabFornUnidadesCaixaPage" oninput="calcularCustoUnitarioModalPage()" value="24" placeholder="24" title="Quantidade de Unidades por Caixa" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-gray-900 outline-none">
                     </div>
                 </div>
 
@@ -177,8 +177,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço de Venda Sugerido (MT)</label>
-                    <input type="number" step="0.01" id="tabFornPrecoVendaPage" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-blue-700 outline-none">
+                    <label for="tabFornPrecoVendaPage" class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço de Venda Sugerido (MT)</label>
+                    <input type="number" step="0.01" id="tabFornPrecoVendaPage" placeholder="0.00" title="Preço de Venda Sugerido em Meticais" class="w-full px-3 py-2 border rounded-lg text-sm font-mono font-bold text-blue-700 outline-none">
                 </div>
 
                 <div class="flex justify-end space-x-2 pt-3 border-t">
