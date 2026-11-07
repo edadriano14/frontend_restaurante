@@ -220,6 +220,11 @@
                     <span class="sidebar-text truncate">Stock</span>
                 </a>
 
+                <a href="/armazens" title="Armazéns & Locais" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'armazens' or active_page == 'armazens-locais' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-warehouse w-5 text-center text-amber-400 shrink-0"></i>
+                    <span class="sidebar-text truncate">Armazéns &amp; Locais</span>
+                </a>
+
                 <a href="/movimentos-stock" title="Movimentos de Stock" class="flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors {% if active_page == 'movimentos-stock' %}bg-custom-primary text-white font-semibold{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
                     <i class="fa-solid fa-arrow-right-arrow-left w-5 text-center text-teal-400 shrink-0"></i>
                     <span class="sidebar-text truncate">Movimentos de Stock</span>
@@ -334,8 +339,8 @@
                         <!-- Utilizador Logado -->
                         <div class="flex items-center space-x-2.5 pl-2 border-l border-gray-200">
                             <div class="text-right hidden sm:block">
-                                <span id="headerNomeUtilizador" class="text-xs font-bold text-gray-900 block leading-tight">{{ usuario.nome if usuario else 'Administrador Central' }}</span>
-                                <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">{{ usuario.perfil if usuario else 'ADMIN_GERAL' }} • Online</span>
+                                <span id="headerNomeUtilizador" class="text-xs font-bold text-gray-900 block leading-tight">{{ usuario.nome if usuario else 'Administrador Geral' }}</span>
+                                <span id="headerPerfilUtilizador" class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">{{ usuario.perfil if usuario else 'ADMIN_GERAL' }} • Online</span>
                             </div>
                             <div class="w-9 h-9 rounded-xl bg-custom-primary text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white" title="{{ usuario.email if usuario else '' }}">
                                 <i class="fa-solid fa-user-shield"></i>
@@ -545,6 +550,19 @@
         document.addEventListener('DOMContentLoaded', function() {
             atualizarRelogioCabecalho();
             setInterval(atualizarRelogioCabecalho, 1000);
+
+            // Sincronizar nome do utilizador logado no cabeçalho caso venha da API ou localStorage
+            try {
+                fetch('/auth/me').then(function(r) { return r.ok ? r.json() : null; }).then(function(dados) {
+                    if (dados && dados.usuario) {
+                        var elNome = document.getElementById('headerNomeUtilizador');
+                        var elPerfil = document.getElementById('headerPerfilUtilizador');
+                        if (elNome && dados.usuario.nome) elNome.innerText = dados.usuario.nome;
+                        if (elPerfil && dados.usuario.perfil) elPerfil.innerText = dados.usuario.perfil + ' • Online';
+                        window.usuarioLogado = dados.usuario;
+                    }
+                }).catch(function() {});
+            } catch(e) {}
 
             // Restaurar estado da barra lateral no desktop
             try {
