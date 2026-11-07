@@ -57,7 +57,7 @@
                 </div>
             </div>
             <div class="flex items-center space-x-1 border-l pl-2">
-                <select id="filtroPosto" onchange="renderProdutosPDV()" class="text-xs px-2 py-1 border rounded-lg bg-gray-50 outline-none">
+                <select id="filtroPosto" onchange="renderProdutosPDV()" title="Filtrar por Posto de Preparação" aria-label="Filtrar por Posto de Preparação" class="text-xs px-2 py-1 border rounded-lg bg-gray-50 outline-none">
                     <option value="todos">Todos os Postos</option>
                     <option value="1">Cozinha Principal</option>
                     <option value="2">Pastelaria</option>
@@ -89,8 +89,8 @@
 
             <!-- Seleção do Tipo de Pedido (Balcão, Mesa/Salão, Takeaway, Delivery, Encomenda) -->
             <div class="space-y-1.5">
-                <label class="block text-[10px] font-bold text-gray-500 uppercase">Tipo de Atendimento *</label>
-                <select id="pdvTipoPedido" onchange="alternarCamposMesa()" class="w-full px-2.5 py-1.5 border rounded-lg text-xs font-semibold bg-white outline-none">
+                <label for="pdvTipoPedido" class="block text-[10px] font-bold text-gray-500 uppercase">Tipo de Atendimento *</label>
+                <select id="pdvTipoPedido" title="Tipo de Atendimento" aria-label="Tipo de Atendimento" onchange="alternarCamposMesa()" class="w-full px-2.5 py-1.5 border rounded-lg text-xs font-semibold bg-white outline-none">
                     <!-- Preenchido via carregarTiposPedidos() -->
                 </select>
             </div>
@@ -105,14 +105,14 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Sala / Área</label>
-                        <select id="pdvSalaSelect" onchange="carregarMesasDaSala()" class="w-full px-2 py-1 text-xs border rounded bg-white outline-none">
+                        <label for="pdvSalaSelect" class="block text-[10px] text-gray-600 font-semibold mb-0.5">Sala / Área</label>
+                        <select id="pdvSalaSelect" title="Selecionar Sala ou Área" aria-label="Selecionar Sala ou Área" onchange="carregarMesasDaSala()" class="w-full px-2 py-1 text-xs border rounded bg-white outline-none">
                             <!-- Preenchido dinamicamente -->
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Mesa</label>
-                        <select id="pdvMesaSelect" class="w-full px-2 py-1 text-xs border rounded bg-white font-bold text-blue-900 outline-none">
+                        <label for="pdvMesaSelect" class="block text-[10px] text-gray-600 font-semibold mb-0.5">Mesa</label>
+                        <select id="pdvMesaSelect" title="Selecionar Mesa" aria-label="Selecionar Mesa" class="w-full px-2 py-1 text-xs border rounded bg-white font-bold text-blue-900 outline-none">
                             <!-- Preenchido dinamicamente -->
                         </select>
                     </div>
@@ -129,14 +129,14 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Espaço / Espreguiçadeira</label>
-                        <select id="pdvEspacoPiscinaSelect" class="w-full px-2 py-1 text-xs border rounded bg-white font-semibold text-sky-900 outline-none">
+                        <label for="pdvEspacoPiscinaSelect" class="block text-[10px] text-gray-600 font-semibold mb-0.5">Espaço / Espreguiçadeira</label>
+                        <select id="pdvEspacoPiscinaSelect" title="Selecionar Espaço ou Espreguiçadeira" aria-label="Selecionar Espaço ou Espreguiçadeira" class="w-full px-2 py-1 text-xs border rounded bg-white font-semibold text-sky-900 outline-none">
                             <!-- Preenchido dinamicamente -->
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] text-gray-600 font-semibold mb-0.5">Vincular Bilhete (Opcional)</label>
-                        <select id="pdvBilhetePiscinaSelect" class="w-full px-2 py-1 text-xs border rounded bg-white font-mono text-gray-800 outline-none">
+                        <label for="pdvBilhetePiscinaSelect" class="block text-[10px] text-gray-600 font-semibold mb-0.5">Vincular Bilhete (Opcional)</label>
+                        <select id="pdvBilhetePiscinaSelect" title="Vincular Bilhete de Piscina" aria-label="Vincular Bilhete de Piscina" class="w-full px-2 py-1 text-xs border rounded bg-white font-mono text-gray-800 outline-none">
                             <!-- Preenchido dinamicamente -->
                         </select>
                     </div>
@@ -470,24 +470,24 @@
         <!-- Formulário -->
         <div class="space-y-3.5">
             <div>
-                <label class="block text-xs font-semibold text-gray-300 mb-1">Nome / Descrição do Artigo <span class="text-red-400">*</span></label>
-                <input type="text" id="genArtigoNome" value="Artigo Diverso / Balcão" class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500">
+                <label for="genArtigoNome" class="block text-xs font-semibold text-gray-300 mb-1">Nome / Descrição do Artigo <span class="text-red-400">*</span></label>
+                <input type="text" id="genArtigoNome" value="Artigo Diverso / Balcão" placeholder="Artigo Diverso / Balcão" title="Nome ou Descrição do Artigo Genérico" class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500">
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-300 mb-1">Preço Unitário (MZN) <span class="text-red-400">*</span></label>
-                    <input type="number" id="genArtigoPreco" step="0.5" min="0" value="0.00" oninput="recalcularTotaisProdutoGenerico()" class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500">
+                    <label for="genArtigoPreco" class="block text-xs font-semibold text-gray-300 mb-1">Preço Unitário (MZN) <span class="text-red-400">*</span></label>
+                    <input type="number" id="genArtigoPreco" step="0.5" min="0" value="0.00" placeholder="0.00" title="Preço Unitário em Meticais" oninput="recalcularTotaisProdutoGenerico()" class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-300 mb-1">Quantidade <span class="text-red-400">*</span></label>
-                    <input type="number" id="genArtigoQtd" step="1" min="1" value="1" oninput="recalcularTotaisProdutoGenerico()" class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs font-bold text-white focus:outline-none focus:border-amber-500">
+                    <label for="genArtigoQtd" class="block text-xs font-semibold text-gray-300 mb-1">Quantidade <span class="text-red-400">*</span></label>
+                    <input type="number" id="genArtigoQtd" step="1" min="1" value="1" placeholder="1" title="Quantidade de Artigos" oninput="recalcularTotaisProdutoGenerico()" class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs font-bold text-white focus:outline-none focus:border-amber-500">
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-300 mb-1">Observações / Detalhes (Opcional)</label>
-                <input type="text" id="genArtigoObs" placeholder="Ex: Sem cebola, cliente pediu sem açúcar..." class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-amber-500">
+                <label for="genArtigoObs" class="block text-xs font-semibold text-gray-300 mb-1">Observações / Detalhes (Opcional)</label>
+                <input type="text" id="genArtigoObs" placeholder="Ex: Sem cebola, cliente pediu sem açúcar..." title="Observações ou Detalhes Opcionais" class="w-full px-3 py-2 bg-[#20222B] border border-[#3A3D4D] rounded-xl text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-amber-500">
             </div>
 
             <!-- Resumo e Cálculo do IVA 3% -->
@@ -598,8 +598,8 @@
 
             <!-- Contagem de Numerário Físico -->
             <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-gray-700">Valor Físico Contado na Gaveta (Numerário) *</label>
-                <input type="number" id="fechoValorContadoFisico" step="0.5" value="0.00" oninput="calcularDiferencaFechoCaixa()" class="w-full px-3 py-2 border-2 border-gray-300 rounded-xl font-bold font-mono text-base text-gray-900 focus:outline-none focus:border-red-500">
+                <label for="fechoValorContadoFisico" class="block text-xs font-bold text-gray-700">Valor Físico Contado na Gaveta (Numerário) *</label>
+                <input type="number" id="fechoValorContadoFisico" step="0.5" value="0.00" placeholder="0.00" title="Valor Físico Contado em Dinheiro" oninput="calcularDiferencaFechoCaixa()" class="w-full px-3 py-2 border-2 border-gray-300 rounded-xl font-bold font-mono text-base text-gray-900 focus:outline-none focus:border-red-500">
             </div>
 
             <div id="blocoDiferencaCaixa" class="p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between">
@@ -609,8 +609,8 @@
 
             <!-- Campo de Justificação obrigatório se diferença != 0 -->
             <div id="blocoJustificativaQuebra" class="space-y-1 hidden">
-                <label class="block text-xs font-bold text-red-600">Justificação Obrigatória da Diferença *</label>
-                <textarea id="fechoJustificativaDiferenca" rows="2" placeholder="Explique o motivo do valor a mais ou a menos na gaveta..." class="w-full p-2.5 border-2 border-red-300 rounded-xl text-xs text-gray-800 focus:outline-none focus:border-red-500"></textarea>
+                <label for="fechoJustificativaDiferenca" class="block text-xs font-bold text-red-600">Justificação Obrigatória da Diferença *</label>
+                <textarea id="fechoJustificativaDiferenca" rows="2" placeholder="Explique o motivo do valor a mais ou a menos na gaveta..." title="Justificação do motivo da diferença ou quebra de caixa" class="w-full p-2.5 border-2 border-red-300 rounded-xl text-xs text-gray-800 focus:outline-none focus:border-red-500"></textarea>
             </div>
         </div>
 
