@@ -8,6 +8,8 @@ window.RestauranteApp = {
         {
             id: "1",
             nome: "Restaurante Sabor & Brasa",
+            slogan: "O melhor churrasco e comida tradicional de Maputo",
+            nuit: "4001928310",
             moeda: "MZN",
             cor_primaria: "#DC2626",
             cor_secundaria: "#1E293B",
@@ -29,6 +31,8 @@ window.RestauranteApp = {
         {
             id: "2",
             nome: "Mariscos & Petiscos da Costa",
+            slogan: "Frutos do mar frescos com a brisa do Oceano Índico",
+            nuit: "4002839120",
             moeda: "MZN",
             cor_primaria: "#0284C7",
             cor_secundaria: "#0F172A",

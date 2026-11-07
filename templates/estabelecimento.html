@@ -77,10 +77,21 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="md:col-span-2">
-                    <label for="editNome" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento</label>
-                    <input type="text" id="editNome" value="{{ estabelecimento.nome }}" placeholder="Nome do Estabelecimento" title="Nome do Estabelecimento" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                <div>
+                    <label for="editNome" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nome do Estabelecimento *</label>
+                    <input type="text" id="editNome" value="{{ estabelecimento.nome }}" placeholder="Nome do Estabelecimento" title="Nome do Estabelecimento" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-semibold">
                 </div>
+                <div>
+                    <label for="editSlogan" class="block text-xs font-bold text-gray-700 uppercase mb-1">Slogan / Frase da Marca</label>
+                    <input type="text" id="editSlogan" value="{{ estabelecimento.slogan or 'O melhor sabor e qualidade para si' }}" placeholder="Ex: O autêntico sabor das melhores carnes" title="Slogan do Estabelecimento" class="w-full px-4 py-2 border rounded-lg text-sm outline-none text-amber-700 font-medium">
+                </div>
+                <div>
+                    <label for="editNuit" class="block text-xs font-bold text-gray-700 uppercase mb-1">NUIT do Restaurante *</label>
+                    <input type="text" id="editNuit" value="{{ estabelecimento.nuit or estabelecimento.nif or '4001928310' }}" maxlength="10" placeholder="Ex: 4001928310" title="NUIT do Restaurante" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-mono font-bold text-gray-900">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                     <label for="editMoeda" class="block text-xs font-bold text-gray-700 uppercase mb-1">Moeda Local</label>
                     <input type="text" id="editMoeda" value="{{ estabelecimento.moeda }}" placeholder="MZN" title="Moeda Local" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-bold">
@@ -163,12 +174,12 @@
             <!-- Contactos, Cidade e Endereço -->
             <div class="border-t pt-5 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                    <label for="editTelefone" class="block text-xs font-bold text-gray-700 uppercase mb-1">Telemóvel / Telefone</label>
-                    <input type="text" id="editTelefone" value="{{ estabelecimento.telefone }}" placeholder="+258 84 000 0000" title="Telemóvel ou Telefone" class="w-full px-4 py-2 border rounded-lg text-sm outline-none">
+                    <label for="editTelefone" class="block text-xs font-bold text-gray-700 uppercase mb-1">Telemóvel / Telefone (Até 14 Caracteres)</label>
+                    <input type="text" id="editTelefone" value="{{ estabelecimento.telefone }}" maxlength="14" placeholder="+258840000000" title="Telemóvel ou Telefone" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-mono">
                 </div>
                 <div>
                     <label for="editWhatsapp" class="block text-xs font-bold text-gray-700 uppercase mb-1">WhatsApp de Pedidos</label>
-                    <input type="text" id="editWhatsapp" value="{{ estabelecimento.whatsapp or '+258840000000' }}" placeholder="+258 84 000 0000" title="WhatsApp de Pedidos" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-semibold text-emerald-700">
+                    <input type="text" id="editWhatsapp" value="{{ estabelecimento.whatsapp or '+258840000000' }}" maxlength="14" placeholder="+258840000000" title="WhatsApp de Pedidos" class="w-full px-4 py-2 border rounded-lg text-sm outline-none font-semibold text-emerald-700 font-mono">
                 </div>
                 <div>
                     <label for="editEmail" class="block text-xs font-bold text-gray-700 uppercase mb-1">Email de Contacto</label>
@@ -675,6 +686,17 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="novoSlogan" class="block text-xs font-bold text-gray-700 uppercase mb-1">Slogan / Frase da Marca</label>
+                        <input type="text" id="novoSlogan" placeholder="Ex: O sabor autêntico de Moçambique" title="Slogan do Estabelecimento" class="w-full px-3 py-2 border rounded-lg text-sm outline-none text-amber-700 font-medium">
+                    </div>
+                    <div>
+                        <label for="novoNuit" class="block text-xs font-bold text-gray-700 uppercase mb-1">NUIT do Restaurante *</label>
+                        <input type="text" id="novoNuit" maxlength="10" placeholder="Ex: 4001239870" title="NUIT do Restaurante" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-mono font-bold">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
                     <div>
                         <label for="novoCorPrimariaText" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cor Primária (Tema)</label>
@@ -707,8 +729,8 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="novoTelefone" class="block text-xs font-bold text-gray-700 uppercase mb-1">Telefone</label>
-                        <input type="text" id="novoTelefone" placeholder="+258 84 123 4567" title="Telefone de Contacto" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                        <label for="novoTelefone" class="block text-xs font-bold text-gray-700 uppercase mb-1">Telefone (Até 14 Caracteres)</label>
+                        <input type="text" id="novoTelefone" maxlength="14" placeholder="+258841234567" title="Telefone de Contacto" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-mono">
                     </div>
                     <div>
                         <label for="novoEmail" class="block text-xs font-bold text-gray-700 uppercase mb-1">Email</label>
@@ -1212,9 +1234,15 @@ function renderEstabelecimentos() {
         html += '    <img src="' + est.logotipo_url + '" class="w-12 h-12 rounded-full object-cover border shadow-sm">';
         html += '    <div>';
         html += '      <h4 class="font-bold text-sm text-gray-900">' + est.nome + '</h4>';
+        if (est.slogan) {
+            html += '      <p class="text-xs text-amber-600 font-medium italic truncate">' + est.slogan + '</p>';
+        }
         html += '      <div class="flex items-center space-x-2 mt-0.5">';
         html += '        <span class="w-3 h-3 rounded-full border" style="background-color: ' + est.cor_primaria + '"></span>';
         html += '        <span class="text-xs text-gray-500 font-mono">' + est.moeda + '</span>';
+        if (est.nuit) {
+            html += '        <span class="text-xs text-gray-700 font-mono font-semibold">NUIT: ' + est.nuit + '</span>';
+        }
         html += '        <span class="text-xs text-gray-400">' + (est.telefone || 'Sem telefone') + '</span>';
         if (est.tem_piscina) {
             html += '        <span class="text-[10px] bg-sky-100 text-sky-800 font-bold px-1.5 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-person-swimming text-[9px]"></i> Piscina</span>';
@@ -1251,8 +1279,15 @@ function salvarConfiguracoes() {
 
     var tel = (document.getElementById('editTelefone').value || '').trim();
     var telDigitos = tel.replace(/[^0-9]/g, '');
-    if (tel && telDigitos.length !== 10) {
-        alert('O telefone deve conter exactamente 10 dígitos (Ex: 8412345678).');
+    if (tel && (telDigitos.length < 9 || telDigitos.length > 14)) {
+        alert('O telefone deve conter entre 9 e 14 dígitos (Ex: 8412345678 ou +258 84 000 0000).');
+        return;
+    }
+
+    var nuit = (document.getElementById('editNuit').value || '').trim();
+    var nuitDigitos = nuit.replace(/[^0-9]/g, '');
+    if (nuit && nuitDigitos.length !== 10) {
+        alert('O NUIT do restaurante deve conter exactamente 10 dígitos.');
         return;
     }
 
@@ -1266,6 +1301,9 @@ function salvarConfiguracoes() {
     var dadosAtualizados = {
         id: estabAtualId,
         nome: document.getElementById('editNome').value,
+        slogan: document.getElementById('editSlogan') ? document.getElementById('editSlogan').value : '',
+        nuit: nuit,
+        nif: nuit,
         moeda: document.getElementById('editMoeda').value,
         cor_primaria: corP,
         cor_secundaria: corS,
@@ -1335,8 +1373,15 @@ function salvarNovoEstabelecimento() {
 
     var tel = (document.getElementById('novoTelefone').value || '').trim();
     var telDigitos = tel.replace(/[^0-9]/g, '');
-    if (tel && telDigitos.length !== 10) {
-        alert('O telefone deve conter exactamente 10 dígitos (Ex: 8412345678).');
+    if (tel && (telDigitos.length < 9 || telDigitos.length > 14)) {
+        alert('O telefone deve conter entre 9 e 14 dígitos (Ex: 8412345678 ou +258 84 000 0000).');
+        return;
+    }
+
+    var nuit = (document.getElementById('novoNuit') ? document.getElementById('novoNuit').value : '').trim();
+    var nuitDigitos = nuit.replace(/[^0-9]/g, '');
+    if (nuit && nuitDigitos.length !== 10) {
+        alert('O NUIT do novo restaurante deve conter exactamente 10 dígitos.');
         return;
     }
 
@@ -1344,6 +1389,9 @@ function salvarNovoEstabelecimento() {
         id: String(Date.now()),
         codigo: 'EST-0' + ((window.RestauranteApp.estabelecimentos || []).length + 1),
         nome: nome,
+        slogan: document.getElementById('novoSlogan') ? document.getElementById('novoSlogan').value : '',
+        nuit: nuit,
+        nif: nuit,
         moeda: document.getElementById('novoMoeda').value || 'MZN',
         cor_primaria: document.getElementById('novoCorPrimaria').value || '#0D9488',
         cor_secundaria: document.getElementById('novoCorSecundaria').value || '#0F172A',

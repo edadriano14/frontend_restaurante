@@ -705,9 +705,11 @@ var metodoPagamentoSelecionado = 'Dinheiro';
 
 var DADOS_ESTABELECIMENTO = {
     nome: "{{ estabelecimento.nome or 'Restaurante Sabor Moçambicano' }}",
-    nif: "{{ estabelecimento.nif or '400192831' }}",
+    slogan: "{{ estabelecimento.slogan or 'O melhor sabor e qualidade para si' }}",
+    nif: "{{ estabelecimento.nuit or estabelecimento.nif or '4001928310' }}",
+    nuit: "{{ estabelecimento.nuit or estabelecimento.nif or '4001928310' }}",
     endereco: "{{ estabelecimento.endereco or 'Av. Marginal, Maputo, Moçambique' }}",
-    telefone: "{{ estabelecimento.telefone or '+258 84 123 4567' }}",
+    telefone: "{{ estabelecimento.telefone or '+258 84 000 0000' }}",
     email: "{{ estabelecimento.email or 'contacto@restaurante.co.mz' }}",
     moeda: "{{ estabelecimento.moeda or 'MT' }}",
     logotipo_url: "{{ estabelecimento.logotipo_url or '' }}"
@@ -1804,7 +1806,8 @@ function abrirModalSucessoFacturacao(venda) {
         reciboDiv.innerHTML = [
             '<div class="text-center pb-2 border-b border-dashed border-gray-400">',
             '  <div class="font-black text-sm uppercase text-gray-900">' + DADOS_ESTABELECIMENTO.nome + '</div>',
-            '  <div class="text-[10px] text-gray-600 font-medium">NUIT: ' + DADOS_ESTABELECIMENTO.nif + ' | Tel: ' + DADOS_ESTABELECIMENTO.telefone + '</div>',
+            (DADOS_ESTABELECIMENTO.slogan ? ('  <div class="text-[10px] text-gray-600 italic font-medium">' + DADOS_ESTABELECIMENTO.slogan + '</div>') : ''),
+            '  <div class="text-[10px] text-gray-600 font-medium">NUIT: ' + (DADOS_ESTABELECIMENTO.nuit || DADOS_ESTABELECIMENTO.nif) + ' | Tel: ' + DADOS_ESTABELECIMENTO.telefone + '</div>',
             '  <div class="text-[10px] text-gray-500">' + DADOS_ESTABELECIMENTO.endereco + '</div>',
             '  <div class="mt-1 font-bold text-xs uppercase text-emerald-800 bg-emerald-50 py-0.5 rounded border border-emerald-200">FACTURA / RECIBO</div>',
             '</div>',

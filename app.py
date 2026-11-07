@@ -494,6 +494,8 @@ ESTABELECIMENTOS_DB = [
     {
         "id": "1",
         "nome": "Restaurante Sabor & Brasa",
+        "slogan": "O melhor churrasco e comida tradicional de Maputo",
+        "nuit": "4001928310",
         "slug": "sabor-brasa",
         "logotipo_url": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&auto=format&fit=crop&q=80",
         "cor_primaria": "#DC2626",
@@ -516,6 +518,8 @@ ESTABELECIMENTOS_DB = [
     {
         "id": "2",
         "nome": "Mariscos & Petiscos da Costa",
+        "slogan": "Frutos do mar frescos com a brisa do Oceano Índico",
+        "nuit": "4002839120",
         "slug": "mariscos-costa",
         "logotipo_url": "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=150&auto=format&fit=crop&q=80",
         "cor_primaria": "#0284C7",

@@ -111,13 +111,19 @@
         <!-- HAMBURGER DRAWER (Com scroll próprio no menu lateral, mantendo a direita fixa) -->
         <aside id="mainSidebar" class="fixed inset-y-0 left-0 z-50 w-72 h-full max-h-screen overflow-hidden bg-custom-secondary text-white transition-all duration-300 ease-in-out md:static md:inset-auto flex flex-col shadow-2xl shrink-0">
             
-            <div class="sidebar-header-box p-4 border-b border-gray-700 bg-gray-900/40 space-y-3 shrink-0">
+            <div class="sidebar-header-box p-4 border-b border-gray-700 bg-gray-900/40 space-y-2 shrink-0">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2.5 min-w-0">
                         {% if estabelecimento.logotipo_url %}
-                        <img src="{{ estabelecimento.logotipo_url }}" alt="Logo" class="w-8 h-8 rounded-full object-cover border border-white/50 shrink-0">
+                        <img src="{{ estabelecimento.logotipo_url }}" alt="Logo" class="w-9 h-9 rounded-full object-cover border border-white/50 shrink-0">
                         {% endif %}
-                        <span class="sidebar-logo-text font-bold text-sm leading-tight truncate text-white">{{ estabelecimento.nome }}</span>
+                        <div class="min-w-0">
+                            <span class="sidebar-logo-text font-bold text-sm leading-tight block truncate text-white">{{ estabelecimento.nome }}</span>
+                            <span class="sidebar-text text-[11px] text-amber-300 font-medium italic block truncate leading-tight mt-0.5">{{ estabelecimento.slogan or 'O melhor sabor e qualidade para si' }}</span>
+                            {% if estabelecimento.nuit %}
+                            <span class="sidebar-text text-[9px] text-gray-400 font-mono block leading-none mt-0.5">NUIT: {{ estabelecimento.nuit }}</span>
+                            {% endif %}
+                        </div>
                     </div>
                     <!-- Botão para fechar no mobile -->
                     <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition cursor-pointer" title="Fechar Menu">
