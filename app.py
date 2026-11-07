@@ -119,6 +119,7 @@ ROTAS_PUBLICAS_PREFIXOS = (
     "/portal-cliente",
     "/api/status",
     "/api/db/",
+    "/api/crud/",
     "/static",
     "/favicon.ico"
 )
