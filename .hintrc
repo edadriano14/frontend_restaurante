@@ -1,0 +1,13 @@
+{
+  "connector": {
+    "name": "local"
+  },
+  "hints": {
+    "axe/language": "off",
+    "axe/text-alternatives": "off",
+    "meta-viewport": "off",
+    "meta-charset-utf-8": "off",
+    "compat-api/html": "off",
+    "compat-api/css": "off"
+  }
+}
