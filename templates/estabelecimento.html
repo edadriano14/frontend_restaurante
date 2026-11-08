@@ -305,7 +305,7 @@
                         <th class="p-4 text-right">Acções</th>
                     </tr>
                 </thead>
-                <tbody id="tabelaUtilizadores" class="divide-y divide-gray-100"></tbody>
+                <tbody id="tabelaUtilizadoresEstab" class="divide-y divide-gray-100"></tbody>
             </table>
         </div>
     </div>
@@ -1203,7 +1203,7 @@ function trocarTabConfig(tab) {
     }
 
     if (tab === 'postos-preparacao') renderPostos();
-    if (tab === 'utilizadores') renderUtilizadores();
+    if (tab === 'utilizadores') renderUtilizadoresEstab();
     if (tab === 'tipos-pedidos') renderTiposPedidos();
     if (tab === 'metodos-pagamento') renderMetodosPagamento();
     if (tab === 'taxas-iva') renderTaxasIva();
@@ -1541,8 +1541,8 @@ function getNomeEstabelecimento(id) {
     return e ? e.nome : 'Todas as Filiais';
 }
 
-function renderUtilizadores() {
-    var tbody = document.getElementById('tabelaUtilizadores');
+function renderUtilizadoresEstab() {
+    var tbody = document.getElementById('tabelaUtilizadoresEstab');
     if (!tbody) return;
     var lista = window.RestauranteApp.utilizadores || [];
     var html = '';
@@ -1678,7 +1678,7 @@ function salvarUtilizador() {
     if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
 
     fecharModal('modalUtilizador');
-    renderUtilizadores();
+    renderUtilizadoresEstab();
     alert('Utilizador gravado com sucesso!');
 }
 
@@ -1686,7 +1686,7 @@ function removerUtilizador(idx) {
     if (confirm('Deseja remover este utilizador?')) {
         window.RestauranteApp.utilizadores.splice(idx, 1);
         if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
-        renderUtilizadores();
+        renderUtilizadoresEstab();
     }
 }
 

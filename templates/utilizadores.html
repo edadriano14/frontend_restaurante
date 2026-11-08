@@ -440,11 +440,13 @@ function popularSelectPerfisUtilizador() {
     }
 
     if (filtroSel) {
+        var valorAtual = filtroSel.value || 'todos';
         var optHtml = '<option value="todos">Todos os Perfis</option>';
         perfis.forEach(function(p) {
             optHtml += '<option value="' + p.nome + '">' + p.nome + '</option>';
         });
         filtroSel.innerHTML = optHtml;
+        filtroSel.value = valorAtual;
     }
 }
 
