@@ -490,15 +490,23 @@ window.RestauranteApp = {
         }
     };
 
-    // Executa em segundo plano via requestIdleCallback ou microtask para não atrasar o primeiro frame da UI
-    if (typeof window.requestIdleCallback === 'function') {
-        window.requestIdleCallback(function() {
-            window.RestauranteApp.carregarDaBaseDeDados();
-        }, { timeout: 1000 });
-    } else {
-        setTimeout(function() {
-            window.RestauranteApp.carregarDaBaseDeDados();
-        }, 50);
+    // Executa em segundo plano via requestIdleCallback apenas uma vez por sessão ativa ou a cada 5 minutos
+    var lastSyncKey = 'REDE_REST_LAST_DB_FETCH';
+    var lastFetch = parseInt(sessionStorage.getItem(lastSyncKey) || '0', 10);
+    var nowTime = Date.now();
+
+    if (!lastFetch || (nowTime - lastFetch) > (5 * 60 * 1000)) {
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(function() {
+                window.RestauranteApp.carregarDaBaseDeDados();
+                sessionStorage.setItem(lastSyncKey, String(Date.now()));
+            }, { timeout: 2000 });
+        } else {
+            setTimeout(function() {
+                window.RestauranteApp.carregarDaBaseDeDados();
+                sessionStorage.setItem(lastSyncKey, String(Date.now()));
+            }, 300);
+        }
     }
 
     // =========================================================================
