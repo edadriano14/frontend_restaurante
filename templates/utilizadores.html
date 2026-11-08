@@ -582,6 +582,7 @@ async function salvarUtilizador() {
                 var criado = await window.RestauranteApp.crud.criar('utilizadores', item);
                 if (criado && criado.id) item.id = criado.id;
                 else item.id = String(Date.now());
+                window.RestauranteApp.utilizadores.push(item);
             } catch (e) {
                 console.warn('Erro ao criar utilizador no backend, usando local:', e);
                 item.id = String(Date.now());
