@@ -996,13 +996,13 @@
         </div>
     </div>
 
-    <!-- MODAL NOVO ARMAZÉM -->
+    <!-- MODAL NOVO/EDITAR ARMAZÉM -->
     <div id="modalArmazem" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b pb-3">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-warehouse text-blue-600"></i>
-                    <h3 class="font-bold text-lg text-gray-800">Novo Armazém</h3>
+                    <h3 id="modalArmazemTitulo" class="font-bold text-lg text-gray-800">Novo Armazém</h3>
                 </div>
                 <button type="button" onclick="fecharModal('modalArmazem')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
             </div>
@@ -1031,13 +1031,13 @@
         </div>
     </div>
 
-    <!-- MODAL NOVO LOCAL FÍSICO (GELEIRA / ESTANTE) -->
+    <!-- MODAL NOVO/EDITAR LOCAL FÍSICO (GELEIRA / ESTANTE) -->
     <div id="modalLocal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b pb-3">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-snowflake text-cyan-600"></i>
-                    <h3 class="font-bold text-lg text-gray-800">Novo Local (Geleira / Estante)</h3>
+                    <h3 id="modalLocalTitulo" class="font-bold text-lg text-gray-800">Novo Local (Geleira / Estante)</h3>
                 </div>
                 <button type="button" onclick="fecharModal('modalLocal')" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
             </div>
@@ -2009,6 +2009,9 @@ function renderFichasTecnicas() {
 }
 
 // ── ARMAZÉNS & LOCAIS ────────────────────────────────────────────────────────
+var editandoArmazemId = null;
+var editandoLocalId = null;
+
 function renderArmazensELocais() {
     var divArm = document.getElementById('listaArmazens');
     var divLoc = document.getElementById('listaLocais');
@@ -2018,27 +2021,52 @@ function renderArmazensELocais() {
     divArm.innerHTML = arm.map(function(a) {
         return '<div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">'
             + '<div><h4 class="font-bold text-xs text-gray-900">' + a.nome + '</h4>'
-            + '<span class="text-[10px] text-gray-500 font-mono">' + a.codigo + ' • ' + a.tipo + (a.localizacao ? ' (' + a.localizacao + ')' : '') + '</span></div>'
-            + '<span class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Activo</span></div>';
+            + '<span class="text-[10px] text-gray-500 font-mono">' + a.codigo + ' • ' + (a.tipo || 'Geral') + (a.localizacao ? ' (' + a.localizacao + ')' : '') + '</span></div>'
+            + '<div class="flex items-center space-x-2">'
+            + '<span class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Activo</span>'
+            + '<button onclick="editarArmazem(\'' + a.id + '\')" class="p-1 text-blue-600 hover:text-blue-800 cursor-pointer" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>'
+            + '<button onclick="apagarArmazem(\'' + a.id + '\')" class="p-1 text-red-600 hover:text-red-800 cursor-pointer" title="Apagar"><i class="fa-solid fa-trash"></i></button>'
+            + '</div></div>';
     }).join('') || '<p class="text-xs text-gray-400">Nenhum armazém registado.</p>';
 
     var loc = window.RestauranteApp.locais_armazenamento || [];
     divLoc.innerHTML = loc.map(function(l) {
-        var ic = (['GELEIRA', 'CONGELADOR', 'CAMARA_FRIA'].indexOf(l.tipo) >= 0) ? 'fa-snowflake text-cyan-600' : 'fa-layer-group text-amber-600';
+        var ic = (['GELEIRA', 'CONGELADOR', 'CAMARA_FRIA'].indexOf(l.tipo || l.tipo_estrutura) >= 0) ? 'fa-snowflake text-cyan-600' : 'fa-layer-group text-amber-600';
+        var tTipo = l.tipo || l.tipo_estrutura || 'ESTANTE';
         return '<div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">'
             + '<div class="flex items-center space-x-3"><div class="w-8 h-8 rounded-lg bg-white border flex items-center justify-center"><i class="fa-solid ' + ic + '"></i></div>'
-            + '<div><h4 class="font-bold text-xs text-gray-900">' + l.descricao + '</h4>'
-            + '<span class="text-[10px] text-gray-500 font-mono">' + l.codigo + ' • ' + (l.armazem_nome || '') + '</span></div></div>'
-            + '<span class="text-[10px] uppercase font-bold text-gray-600 bg-gray-200 px-2 py-0.5 rounded">' + l.tipo + '</span></div>';
+            + '<div><h4 class="font-bold text-xs text-gray-900">' + (l.descricao || l.codigo) + '</h4>'
+            + '<span class="text-[10px] text-gray-500 font-mono">' + l.codigo + ' • ' + (l.armazem_nome || 'Armazém Geral') + '</span></div></div>'
+            + '<div class="flex items-center space-x-2">'
+            + '<span class="text-[10px] uppercase font-bold text-gray-600 bg-gray-200 px-2 py-0.5 rounded">' + tTipo + '</span>'
+            + '<button onclick="editarLocal(\'' + l.id + '\')" class="p-1 text-blue-600 hover:text-blue-800 cursor-pointer" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>'
+            + '<button onclick="apagarLocal(\'' + l.id + '\')" class="p-1 text-red-600 hover:text-red-800 cursor-pointer" title="Apagar"><i class="fa-solid fa-trash"></i></button>'
+            + '</div></div>';
     }).join('') || '<p class="text-xs text-gray-400">Nenhum local registado.</p>';
 }
 
 function abrirModalArmazem() {
+    editandoArmazemId = null;
+    var tit = document.getElementById('modalArmazemTitulo');
+    if (tit) tit.innerText = 'Novo Armazém';
     var nextId = ((window.RestauranteApp.armazens || []).length + 1);
     document.getElementById('armCodigo').value = 'ARM-0' + nextId;
     document.getElementById('armNome').value = '';
     document.getElementById('armTipo').value = 'Logística & Armazenamento';
     document.getElementById('armLocalizacao').value = '';
+    abrirModal('modalArmazem');
+}
+
+function editarArmazem(id) {
+    var a = (window.RestauranteApp.armazens || []).find(function(item) { return String(item.id) === String(id); });
+    if (!a) return;
+    editandoArmazemId = id;
+    var tit = document.getElementById('modalArmazemTitulo');
+    if (tit) tit.innerText = 'Editar Armazém';
+    document.getElementById('armCodigo').value = a.codigo || '';
+    document.getElementById('armNome').value = a.nome || '';
+    document.getElementById('armTipo').value = a.tipo || '';
+    document.getElementById('armLocalizacao').value = a.localizacao || '';
     abrirModal('modalArmazem');
 }
 
@@ -2050,13 +2078,30 @@ function salvarArmazem() {
     if (!cod || !nome) { alert('Código e Nome do armazém são obrigatórios.'); return; }
 
     if (!window.RestauranteApp.armazens) window.RestauranteApp.armazens = [];
-    window.RestauranteApp.armazens.push({
-        id: String(Date.now()),
+
+    var dadosArm = {
         codigo: cod,
         nome: nome,
         tipo: tipo || 'Geral',
         localizacao: loc || 'Piso Principal'
-    });
+    };
+
+    if (editandoArmazemId) {
+        var idx = window.RestauranteApp.armazens.findIndex(function(x) { return String(x.id) === String(editandoArmazemId); });
+        if (idx !== -1) {
+            window.RestauranteApp.armazens[idx] = Object.assign({}, window.RestauranteApp.armazens[idx], dadosArm);
+        }
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.atualizar) {
+            window.RestauranteApp.crud.atualizar('armazens', editandoArmazemId, dadosArm);
+        }
+    } else {
+        var novoId = String(Date.now());
+        dadosArm.id = novoId;
+        window.RestauranteApp.armazens.push(dadosArm);
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.criar) {
+            window.RestauranteApp.crud.criar('armazens', dadosArm);
+        }
+    }
 
     if (window.RestauranteApp.salvarEstado) {
         window.RestauranteApp.salvarEstado();
@@ -2064,10 +2109,43 @@ function salvarArmazem() {
 
     fecharModal('modalArmazem');
     renderArmazensELocais();
-    alert('Novo Armazém gravado com sucesso!');
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Armazém gravado com sucesso!', 'Armazéns', 'sucesso');
+    } else {
+        alert('Armazém gravado com sucesso!');
+    }
+}
+
+function apagarArmazem(id) {
+    var a = (window.RestauranteApp.armazens || []).find(function(item) { return String(item.id) === String(id); });
+    var nome = a ? a.nome : 'este armazém';
+    var confirmMsg = 'Tem certeza que deseja apagar o armazém "' + nome + '"?';
+
+    var executaExclusao = function() {
+        window.RestauranteApp.armazens = (window.RestauranteApp.armazens || []).filter(function(x) { return String(x.id) !== String(id); });
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.eliminar) {
+            window.RestauranteApp.crud.eliminar('armazens', id);
+        }
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+        renderArmazensELocais();
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel('Armazém apagado com sucesso.', 'Eliminado', 'sucesso');
+        }
+    };
+
+    if (window.confirmarAcaoAmigavel) {
+        window.confirmarAcaoAmigavel(confirmMsg, 'Eliminar Armazém', executaExclusao);
+    } else if (confirm(confirmMsg)) {
+        executaExclusao();
+    }
 }
 
 function abrirModalLocal() {
+    editandoLocalId = null;
+    var tit = document.getElementById('modalLocalTitulo');
+    if (tit) tit.innerText = 'Novo Local (Geleira / Estante)';
     var nextId = ((window.RestauranteApp.locais_armazenamento || []).length + 1);
     document.getElementById('locCodigo').value = 'LOC-0' + nextId;
     document.getElementById('locDescricao').value = '';
@@ -2085,6 +2163,30 @@ function abrirModalLocal() {
     abrirModal('modalLocal');
 }
 
+function editarLocal(id) {
+    var l = (window.RestauranteApp.locais_armazenamento || []).find(function(item) { return String(item.id) === String(id); });
+    if (!l) return;
+    editandoLocalId = id;
+    var tit = document.getElementById('modalLocalTitulo');
+    if (tit) tit.innerText = 'Editar Local de Armazenamento';
+    document.getElementById('locCodigo').value = l.codigo || '';
+    document.getElementById('locTipo').value = l.tipo || l.tipo_estrutura || 'GELEIRA';
+    document.getElementById('locDescricao').value = l.descricao || '';
+
+    var selArm = document.getElementById('locArmazemSelect');
+    if (selArm) {
+        var arms = window.RestauranteApp.armazens || [];
+        var html = '';
+        for (var i = 0; i < arms.length; i++) {
+            var selected = (l.armazem_nome && l.armazem_nome === arms[i].nome) ? ' selected' : '';
+            html += '<option value="' + arms[i].nome + '"' + selected + '>' + arms[i].nome + ' (' + arms[i].codigo + ')</option>';
+        }
+        selArm.innerHTML = html || '<option value="Armazém Principal Central">Armazém Principal Central</option>';
+    }
+
+    abrirModal('modalLocal');
+}
+
 function salvarLocal() {
     var cod = document.getElementById('locCodigo').value.trim().toUpperCase();
     var tipo = document.getElementById('locTipo').value;
@@ -2094,13 +2196,31 @@ function salvarLocal() {
     if (!cod || !desc) { alert('Código e Descrição do local são obrigatórios.'); return; }
 
     if (!window.RestauranteApp.locais_armazenamento) window.RestauranteApp.locais_armazenamento = [];
-    window.RestauranteApp.locais_armazenamento.push({
-        id: String(Date.now()),
+
+    var dadosLoc = {
         codigo: cod,
         armazem_nome: armNome,
         descricao: desc,
-        tipo: tipo
-    });
+        tipo: tipo,
+        tipo_estrutura: tipo
+    };
+
+    if (editandoLocalId) {
+        var idx = window.RestauranteApp.locais_armazenamento.findIndex(function(x) { return String(x.id) === String(editandoLocalId); });
+        if (idx !== -1) {
+            window.RestauranteApp.locais_armazenamento[idx] = Object.assign({}, window.RestauranteApp.locais_armazenamento[idx], dadosLoc);
+        }
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.atualizar) {
+            window.RestauranteApp.crud.atualizar('locais_armazenamento', editandoLocalId, dadosLoc);
+        }
+    } else {
+        var novoId = String(Date.now());
+        dadosLoc.id = novoId;
+        window.RestauranteApp.locais_armazenamento.push(dadosLoc);
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.criar) {
+            window.RestauranteApp.crud.criar('locais_armazenamento', dadosLoc);
+        }
+    }
 
     if (window.RestauranteApp.salvarEstado) {
         window.RestauranteApp.salvarEstado();
@@ -2108,7 +2228,37 @@ function salvarLocal() {
 
     fecharModal('modalLocal');
     renderArmazensELocais();
-    alert('Novo Local Físico gravado com sucesso!');
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('Local Físico gravado com sucesso!', 'Locais & Estruturas', 'sucesso');
+    } else {
+        alert('Local Físico gravado com sucesso!');
+    }
+}
+
+function apagarLocal(id) {
+    var l = (window.RestauranteApp.locais_armazenamento || []).find(function(item) { return String(item.id) === String(id); });
+    var desc = l ? (l.descricao || l.codigo) : 'este local';
+    var confirmMsg = 'Tem certeza que deseja apagar o local "' + desc + '"?';
+
+    var executaExclusao = function() {
+        window.RestauranteApp.locais_armazenamento = (window.RestauranteApp.locais_armazenamento || []).filter(function(x) { return String(x.id) !== String(id); });
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.eliminar) {
+            window.RestauranteApp.crud.eliminar('locais_armazenamento', id);
+        }
+        if (window.RestauranteApp.salvarEstado) {
+            window.RestauranteApp.salvarEstado();
+        }
+        renderArmazensELocais();
+        if (window.mostrarMensagemAmigavel) {
+            window.mostrarMensagemAmigavel('Local físico apagado com sucesso.', 'Eliminado', 'sucesso');
+        }
+    };
+
+    if (window.confirmarAcaoAmigavel) {
+        window.confirmarAcaoAmigavel(confirmMsg, 'Eliminar Local', executaExclusao);
+    } else if (confirm(confirmMsg)) {
+        executaExclusao();
+    }
 }
 
 // ── FORNECEDORES ────────────────────────────────────────────────────────────
@@ -2407,9 +2557,15 @@ function salvarPrecoFornecedor() {
             item.id = editandoPrecoFornId;
             window.RestauranteApp.tabela_precos_fornecedores[idx] = item;
         }
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.atualizar) {
+            window.RestauranteApp.crud.atualizar('tabela_precos_fornecedores', editandoPrecoFornId, item);
+        }
     } else {
         item.id = String(Date.now());
         window.RestauranteApp.tabela_precos_fornecedores.push(item);
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.criar) {
+            window.RestauranteApp.crud.criar('tabela_precos_fornecedores', item);
+        }
     }
 
     if (prod) {
@@ -2430,15 +2586,23 @@ function salvarPrecoFornecedor() {
 }
 
 function removerPrecoFornecedor(idx) {
+    var itemRemover = (window.RestauranteApp.tabela_precos_fornecedores || [])[idx];
+    var itemId = itemRemover ? itemRemover.id : null;
     var msg = 'Deseja remover este item da tabela de preços?';
     if (window.confirmarAcaoAmigavel) {
         window.confirmarAcaoAmigavel(msg, 'Remover Preço', function() {
             window.RestauranteApp.tabela_precos_fornecedores.splice(idx, 1);
+            if (itemId && window.RestauranteApp.crud && window.RestauranteApp.crud.eliminar) {
+                window.RestauranteApp.crud.eliminar('tabela_precos_fornecedores', itemId);
+            }
             if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
             renderPrecosFornecedores();
         });
     } else if (confirm(msg)) {
         window.RestauranteApp.tabela_precos_fornecedores.splice(idx, 1);
+        if (itemId && window.RestauranteApp.crud && window.RestauranteApp.crud.eliminar) {
+            window.RestauranteApp.crud.eliminar('tabela_precos_fornecedores', itemId);
+        }
         if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
         renderPrecosFornecedores();
     }

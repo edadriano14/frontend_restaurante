@@ -429,7 +429,8 @@ window.RestauranteApp = {
             itens_guia_entrada: window.RestauranteApp.itens_guia_entrada || [],
             pedidos_vendas: (window.RestauranteApp.pedidos_vendas && window.RestauranteApp.pedidos_vendas.length > 0) ? window.RestauranteApp.pedidos_vendas : (window.RestauranteApp.vendas || []),
             itens_pedidos_vendas: window.RestauranteApp.itens_pedidos_vendas || [],
-            pedidos_online: window.RestauranteApp.pedidos_online || []
+            pedidos_online: window.RestauranteApp.pedidos_online || [],
+            tabela_precos_fornecedores: window.RestauranteApp.tabela_precos_fornecedores || []
         };
 
         try {
