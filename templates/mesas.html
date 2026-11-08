@@ -156,17 +156,19 @@
 </div>
 
 <script>
-var salaAtivaId = "1";
+var salaAtivaId = 'todas';
 
 function renderTabsSalas() {
     var container = document.getElementById('tabsSalas');
     if (!container) return;
-    var salas = window.RestauranteApp.salas;
+    var salas = window.RestauranteApp.salas || [];
     var html = '<button onclick="trocarSala(\'todas\')" class="px-4 py-2.5 font-bold text-xs whitespace-nowrap border-b-2 ' + (salaAtivaId === 'todas' ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700') + ' cursor-pointer">Todas as Salas</button>';
 
     for (var i = 0; i < salas.length; i++) {
         var s = salas[i];
-        html += '<button onclick="trocarSala(\'' + s.id + '\')" class="px-4 py-2.5 font-bold text-xs whitespace-nowrap border-b-2 ' + (salaAtivaId === s.id ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700') + ' cursor-pointer flex items-center gap-1.5">';
+        var sIdStr = String(s.id);
+        var active = (String(salaAtivaId) === sIdStr);
+        html += '<button onclick="trocarSala(\'' + sIdStr + '\')" class="px-4 py-2.5 font-bold text-xs whitespace-nowrap border-b-2 ' + (active ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700') + ' cursor-pointer flex items-center gap-1.5">';
         html += '  <i class="fa-solid fa-layer-group text-[10px]"></i> ' + s.nome;
         html += '</button>';
     }
@@ -184,9 +186,9 @@ function renderMesas() {
     var contador = document.getElementById('contadorMesasSala');
     if (!grid) return;
 
-    var mesas = window.RestauranteApp.mesas;
+    var mesas = window.RestauranteApp.mesas || [];
     var filtradas = mesas.filter(function(m) {
-        return (salaAtivaId === 'todas' || m.sala_id === salaAtivaId);
+        return (salaAtivaId === 'todas' || String(m.sala_id) === String(salaAtivaId));
     });
 
     if (contador) contador.innerText = filtradas.length + ' mesa(s) listada(s)';
@@ -204,25 +206,30 @@ function renderMesas() {
             badgeCor = 'bg-blue-100 text-blue-800';
         }
 
+        var mIdStr = String(m.id);
+
         html += '<div class="p-4 rounded-2xl border-2 ' + corBg + ' flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md transition bg-white">';
         html += '  <div>';
         html += '    <div class="flex items-center justify-between mb-2">';
         html += '      <div>';
-        html += '        <span class="text-xs font-mono font-bold text-gray-400 block">' + (m.codigo || ('MS-' + m.id)) + '</span>';
+        html += '        <span class="text-xs font-mono font-bold text-gray-400 block">' + (m.codigo || ('MS-' + mIdStr.substring(0, 6))) + '</span>';
         html += '        <span class="text-lg font-black text-gray-900 leading-tight">' + m.numero_mesa + '</span>';
         html += '      </div>';
         html += '      <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ' + badgeCor + '">' + m.estado + '</span>';
         html += '    </div>';
-        html += '    <p class="text-xs text-gray-500 flex items-center gap-1"><i class="fa-solid fa-users text-[10px]"></i> Até ' + m.capacidade_lugares + ' pessoas</p>';
+        html += '    <p class="text-xs text-gray-500 flex items-center gap-1"><i class="fa-solid fa-users text-[10px]"></i> Até ' + (m.capacidade_lugares || 4) + ' pessoas</p>';
         html += '    <span class="text-[10px] text-gray-400 block mt-0.5">' + (m.sala_nome || 'Salão') + '</span>';
         html += '  </div>';
 
         html += '  <div class="pt-2 border-t border-gray-100 flex items-center justify-between gap-1">';
-        html += '    <button onclick="verQrCodeMesa(\'' + m.id + '\')" class="flex-1 py-1.5 px-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">';
+        html += '    <button onclick="verQrCodeMesa(\'' + mIdStr + '\')" class="flex-1 py-1.5 px-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">';
         html += '      <i class="fa-solid fa-qrcode text-amber-400"></i> QR Code';
         html += '    </button>';
-        html += '    <button onclick="alternarEstadoMesaRapido(\'' + m.id + '\')" title="Alternar Estado" class="p-1.5 border rounded-lg text-gray-600 hover:bg-gray-100 cursor-pointer">';
+        html += '    <button onclick="alternarEstadoMesaRapido(\'' + mIdStr + '\')" title="Alternar Estado" class="p-1.5 border rounded-lg text-gray-600 hover:bg-gray-100 cursor-pointer">';
         html += '      <i class="fa-solid fa-rotate text-xs"></i>';
+        html += '    </button>';
+        html += '    <button onclick="eliminarMesaPrompt(\'' + mIdStr + '\')" title="Eliminar Mesa" class="p-1.5 border border-red-200 text-red-500 hover:bg-red-50 rounded-lg cursor-pointer">';
+        html += '      <i class="fa-solid fa-trash-can text-xs"></i>';
         html += '    </button>';
         html += '  </div>';
         html += '</div>';
@@ -236,7 +243,7 @@ function renderMesas() {
 
 // VISUALIZAR QR CODE DA MESA COM GERADOR AUTOMÁTICO
 function verQrCodeMesa(mesaId) {
-    var m = window.RestauranteApp.mesas.find(function(item) { return item.id === mesaId; });
+    var m = window.RestauranteApp.mesas.find(function(item) { return String(item.id) === String(mesaId); });
     if (!m) return;
 
     var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(window.location.origin + "/portal-cliente?mesa=" + encodeURIComponent(m.numero_mesa));
@@ -247,40 +254,81 @@ function verQrCodeMesa(mesaId) {
     abrirModal('modalQrCodeMesa');
 }
 
-function alternarEstadoMesaRapido(mesaId) {
-    var m = window.RestauranteApp.mesas.find(function(item) { return item.id === mesaId; });
+async function alternarEstadoMesaRapido(mesaId) {
+    var m = window.RestauranteApp.mesas.find(function(item) { return String(item.id) === String(mesaId); });
     if (!m) return;
     if (m.estado === 'LIVRE') m.estado = 'OCUPADA';
     else if (m.estado === 'OCUPADA') m.estado = 'RESERVADA';
     else m.estado = 'LIVRE';
     renderMesas();
+
+    if (window.RestauranteApp.crud && window.RestauranteApp.crud.atualizar) {
+        try {
+            await window.RestauranteApp.crud.atualizar('mesas', m.id, { estado: m.estado });
+        } catch (e) {
+            console.warn('Erro ao atualizar estado da mesa no backend:', e);
+        }
+    } else if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
+}
+
+async function eliminarMesaPrompt(mesaId) {
+    var m = window.RestauranteApp.mesas.find(function(item) { return String(item.id) === String(mesaId); });
+    if (!m) return;
+    if (!confirm('Deseja realmente eliminar a ' + m.numero_mesa + '?')) return;
+
+    window.RestauranteApp.mesas = window.RestauranteApp.mesas.filter(function(item) {
+        return String(item.id) !== String(mesaId);
+    });
+    renderMesas();
+
+    if (window.RestauranteApp.crud && window.RestauranteApp.crud.eliminar) {
+        try {
+            await window.RestauranteApp.crud.eliminar('mesas', mesaId);
+        } catch (e) {
+            console.warn('Erro ao eliminar mesa no backend:', e);
+        }
+    } else if (window.RestauranteApp.salvarEstado) {
+        window.RestauranteApp.salvarEstado();
+    }
 }
 
 function abrirModalSala() {
-    var nextNum = window.RestauranteApp.salas.length + 1;
+    var nextNum = (window.RestauranteApp.salas || []).length + 1;
     document.getElementById('salaCodigo').value = 'SALA-0' + nextNum;
     document.getElementById('salaNome').value = '';
     document.getElementById('salaDescricao').value = '';
     abrirModal('modalSala');
 }
 
-function salvarSala() {
-    var cod = document.getElementById('salaCodigo').value.trim() || ('SALA-0' + (window.RestauranteApp.salas.length + 1));
+async function salvarSala() {
+    var cod = document.getElementById('salaCodigo').value.trim() || ('SALA-0' + ((window.RestauranteApp.salas || []).length + 1));
     var nome = document.getElementById('salaNome').value.trim();
     if (!nome) { alert('Informe o nome da sala!'); return; }
     var desc = document.getElementById('salaDescricao').value.trim();
 
     var novaSala = {
-        id: String(Date.now()),
         codigo: cod,
         nome: nome,
         descricao: desc,
         capacidade_mesas: 10
     };
 
-    window.RestauranteApp.salas.push(novaSala);
-    if (window.RestauranteApp.salvarEstado) {
-        window.RestauranteApp.salvarEstado();
+    if (window.RestauranteApp.crud && window.RestauranteApp.crud.criar) {
+        try {
+            var criado = await window.RestauranteApp.crud.criar('salas', novaSala);
+            if (criado && criado.id) novaSala.id = criado.id;
+        } catch (e) {
+            console.warn('Falha no crud direto, gravando local:', e);
+            novaSala.id = String(Date.now());
+            window.RestauranteApp.salas.push(novaSala);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        }
+    } else {
+        novaSala.id = String(Date.now());
+        window.RestauranteApp.salas.push(novaSala);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
     }
 
     fecharModal('modalSala');
@@ -290,14 +338,14 @@ function salvarSala() {
 
 function abrirModalMesa() {
     var sel = document.getElementById('mesaNovaSalaSelect');
-    var salas = window.RestauranteApp.salas;
+    var salas = window.RestauranteApp.salas || [];
     var html = '';
     for (var i = 0; i < salas.length; i++) {
         html += '<option value="' + salas[i].id + '">' + salas[i].nome + '</option>';
     }
     sel.innerHTML = html;
 
-    var nextNum = window.RestauranteApp.mesas.length + 1;
+    var nextNum = (window.RestauranteApp.mesas || []).length + 1;
     document.getElementById('mesaCodigo').value = 'MS-' + (nextNum < 10 ? '0' + nextNum : nextNum);
     document.getElementById('mesaNumero').value = 'Mesa 0' + nextNum;
     document.getElementById('mesaCapacidade').value = '4';
@@ -305,11 +353,11 @@ function abrirModalMesa() {
     abrirModal('modalMesa');
 }
 
-function salvarMesa() {
+async function salvarMesa() {
     var sel = document.getElementById('mesaNovaSalaSelect');
     var salaId = sel.value;
-    var salaNome = sel.options[sel.selectedIndex].text;
-    var cod = document.getElementById('mesaCodigo').value.trim() || ('MS-' + (window.RestauranteApp.mesas.length + 1));
+    var salaNome = sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : 'Salão';
+    var cod = document.getElementById('mesaCodigo').value.trim() || ('MS-' + ((window.RestauranteApp.mesas || []).length + 1));
     var num = document.getElementById('mesaNumero').value.trim();
     var cap = parseInt(document.getElementById('mesaCapacidade').value) || 4;
     var est = document.getElementById('mesaEstado').value;
@@ -317,7 +365,6 @@ function salvarMesa() {
     if (!num) { alert('Informe o número ou nome da mesa!'); return; }
 
     var novaMesa = {
-        id: String(Date.now()),
         codigo: cod,
         sala_id: salaId,
         sala_nome: salaNome,
@@ -327,9 +374,20 @@ function salvarMesa() {
         qrcode_token: "QR-" + cod + "-" + num.replace(/\s+/g, '-').toUpperCase()
     };
 
-    window.RestauranteApp.mesas.push(novaMesa);
-    if (window.RestauranteApp.salvarEstado) {
-        window.RestauranteApp.salvarEstado();
+    if (window.RestauranteApp.crud && window.RestauranteApp.crud.criar) {
+        try {
+            var criado = await window.RestauranteApp.crud.criar('mesas', novaMesa);
+            if (criado && criado.id) novaMesa.id = criado.id;
+        } catch (e) {
+            console.warn('Falha no crud direto de mesas, gravando local:', e);
+            novaMesa.id = String(Date.now());
+            window.RestauranteApp.mesas.push(novaMesa);
+            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        }
+    } else {
+        novaMesa.id = String(Date.now());
+        window.RestauranteApp.mesas.push(novaMesa);
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
     }
 
     fecharModal('modalMesa');

@@ -466,6 +466,14 @@ window.RestauranteApp = {
                     });
                 }
 
+                // Mapeamento das salas para enriquecer mesas vindas da BD
+                var salasMap = {};
+                if (Array.isArray(dadosDb.salas)) {
+                    dadosDb.salas.forEach(function(s) {
+                        salasMap[String(s.id)] = s;
+                    });
+                }
+
                 for (var key in dadosDb) {
                     if (dadosDb.hasOwnProperty(key) && Array.isArray(dadosDb[key])) {
                         // Se a base de dados tem registos, actualiza o estado local
@@ -478,6 +486,13 @@ window.RestauranteApp = {
                                         categoria_nome: p.categoria_nome || cMatch.nome || 'Geral',
                                         categoria_emoji: p.categoria_emoji || cMatch.emoji || '🍽️',
                                         tipo: p.tipo || (cMatch.nome && cMatch.nome.toLowerCase().includes('bebida') ? 'bebida' : 'comida')
+                                    });
+                                });
+                            } else if (key === 'mesas') {
+                                itens = itens.map(function(m) {
+                                    var sMatch = salasMap[String(m.sala_id)] || {};
+                                    return Object.assign({}, m, {
+                                        sala_nome: m.sala_nome || sMatch.nome || 'Salão Principal'
                                     });
                                 });
                             }
