@@ -1,11 +1,12 @@
 // =============================================================================
 // SERVICE WORKER ULTRA-RÁPIDO - CACHE-FIRST STALE-WHILE-REVALIDATE PARA PWA
 // =============================================================================
-var CACHE_NAME = 'rede-restaurante-v20261108';
+var CACHE_NAME = 'rede-restaurante-v20261108_2';
 
 var ASSETS_PRELOAD = [
-    '/static/js/app-data.js?v=999',
-    '/static/js/modals.js?v=999',
+    '/static/js/app-data.js?v=20261108_2',
+    '/static/js/modals.js?v=20261108_2',
+    '/static/js/spa-nav.js?v=20261108_2',
     '/static/manifest.json',
     '/favicon.ico',
     'https://cdn.tailwindcss.com',

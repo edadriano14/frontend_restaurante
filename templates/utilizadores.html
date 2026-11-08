@@ -506,7 +506,7 @@ function abrirModalUtilizador() {
 }
 
 function editarUtilizador(id) {
-    var u = (window.RestauranteApp.utilizadores || []).find(function(item) { return item.id === id; });
+    var u = (window.RestauranteApp.utilizadores || []).find(function(item) { return String(item.id) === String(id); });
     if (!u) return;
     editandoUserId = id;
     document.getElementById('modalUserTitulo').innerText = 'Editar Utilizador';
@@ -521,13 +521,13 @@ function editarUtilizador(id) {
     document.getElementById('userForcarRedefinicao').checked = false;
     popularSelectPerfisUtilizador();
     document.getElementById('userPerfil').value = u.perfil;
-    document.getElementById('userAtivo').checked = u.ativo;
+    document.getElementById('userAtivo').checked = (u.ativo !== false);
     preencherSelectRestaurantesUtilizadores();
     if (u.restaurante_id) document.getElementById('userRestaurante').value = u.restaurante_id;
     abrirModal('modalUtilizador');
 }
 
-function salvarUtilizador() {
+async function salvarUtilizador() {
     var cod = document.getElementById('userCodigo').value.trim().toUpperCase();
     var nome = document.getElementById('userNome').value.trim();
     var login = document.getElementById('userLogin').value.trim();
@@ -558,14 +558,33 @@ function salvarUtilizador() {
     };
 
     if (editandoUserId) {
-        var idx = window.RestauranteApp.utilizadores.findIndex(function(x) { return x.id === editandoUserId; });
+        var idx = window.RestauranteApp.utilizadores.findIndex(function(x) { return String(x.id) === String(editandoUserId); });
         if (idx !== -1) {
             item.id = editandoUserId;
             window.RestauranteApp.utilizadores[idx] = Object.assign({}, window.RestauranteApp.utilizadores[idx], item);
         }
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.atualizar) {
+            try {
+                await window.RestauranteApp.crud.atualizar('utilizadores', editandoUserId, item);
+            } catch (e) {
+                console.warn('Erro ao atualizar utilizador no backend:', e);
+            }
+        }
     } else {
-        item.id = String(Date.now());
-        window.RestauranteApp.utilizadores.push(item);
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.criar) {
+            try {
+                var criado = await window.RestauranteApp.crud.criar('utilizadores', item);
+                if (criado && criado.id) item.id = criado.id;
+                else item.id = String(Date.now());
+            } catch (e) {
+                console.warn('Erro ao criar utilizador no backend, usando local:', e);
+                item.id = String(Date.now());
+                window.RestauranteApp.utilizadores.push(item);
+            }
+        } else {
+            item.id = String(Date.now());
+            window.RestauranteApp.utilizadores.push(item);
+        }
     }
 
     if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
@@ -576,15 +595,22 @@ function salvarUtilizador() {
     alert('Utilizador guardado com sucesso!');
 }
 
-function removerUtilizador(id) {
+async function removerUtilizador(id) {
     if (confirm('Deseja realmente remover/desativar este utilizador?')) {
-        var idx = (window.RestauranteApp.utilizadores || []).findIndex(function(x){ return x.id === id; });
+        var idx = (window.RestauranteApp.utilizadores || []).findIndex(function(x){ return String(x.id) === String(id); });
         if (idx !== -1) {
             window.RestauranteApp.utilizadores.splice(idx, 1);
-            if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
-            renderUtilizadores();
-            renderPerfisAcesso();
         }
+        if (window.RestauranteApp.crud && window.RestauranteApp.crud.eliminar) {
+            try {
+                await window.RestauranteApp.crud.eliminar('utilizadores', id);
+            } catch (e) {
+                console.warn('Erro ao eliminar utilizador no backend:', e);
+            }
+        }
+        if (window.RestauranteApp.salvarEstado) window.RestauranteApp.salvarEstado();
+        renderUtilizadores();
+        renderPerfisAcesso();
     }
 }
 
