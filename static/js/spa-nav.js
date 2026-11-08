@@ -174,8 +174,9 @@
                 } catch(e) {}
             });
 
-            // Dispara evento DOMContentLoaded para que os módulos renderizem seus dados instantaneamente
+            // Dispara evento DOMContentLoaded e RestauranteAppDbReady para que os módulos renderizem seus dados instantaneamente
             window.dispatchEvent(new Event('DOMContentLoaded'));
+            window.dispatchEvent(new CustomEvent('RestauranteAppDbReady', { detail: window.RestauranteApp || {} }));
             window.dispatchEvent(new CustomEvent('page:loaded', { detail: { url: url } }));
 
             // Fecha sidebar móvel se estiver aberta
@@ -206,3 +207,4 @@
         carregar: carregarPaginaInstantanea
     };
 })();
+

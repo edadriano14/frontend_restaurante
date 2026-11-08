@@ -458,11 +458,30 @@ window.RestauranteApp = {
                 var alterou = false;
                 var tabelasVaziasNoBanco = false;
 
+                // Mapeamento das categorias para enriquecer produtos vindos da BD
+                var catMap = {};
+                if (Array.isArray(dadosDb.categorias)) {
+                    dadosDb.categorias.forEach(function(c) {
+                        catMap[String(c.id)] = c;
+                    });
+                }
+
                 for (var key in dadosDb) {
                     if (dadosDb.hasOwnProperty(key) && Array.isArray(dadosDb[key])) {
                         // Se a base de dados tem registos, actualiza o estado local
                         if (dadosDb[key].length > 0) {
-                            window.RestauranteApp[key] = dadosDb[key];
+                            var itens = dadosDb[key];
+                            if (key === 'produtos') {
+                                itens = itens.map(function(p) {
+                                    var cMatch = catMap[String(p.categoria_id)] || {};
+                                    return Object.assign({}, p, {
+                                        categoria_nome: p.categoria_nome || cMatch.nome || 'Geral',
+                                        categoria_emoji: p.categoria_emoji || cMatch.emoji || '🍽️',
+                                        tipo: p.tipo || (cMatch.nome && cMatch.nome.toLowerCase().includes('bebida') ? 'bebida' : 'comida')
+                                    });
+                                });
+                            }
+                            window.RestauranteApp[key] = itens;
                             alterou = true;
                         } else if (window.RestauranteApp[key] && window.RestauranteApp[key].length > 0) {
                             // Se a base de dados ainda estiver vazia nesta tabela mas o frontend tem dados iniciais, marca para semear o banco
@@ -490,23 +509,15 @@ window.RestauranteApp = {
         }
     };
 
-    // Executa em segundo plano via requestIdleCallback apenas uma vez por sessão ativa ou a cada 5 minutos
-    var lastSyncKey = 'REDE_REST_LAST_DB_FETCH';
-    var lastFetch = parseInt(sessionStorage.getItem(lastSyncKey) || '0', 10);
-    var nowTime = Date.now();
-
-    if (!lastFetch || (nowTime - lastFetch) > (5 * 60 * 1000)) {
-        if (typeof window.requestIdleCallback === 'function') {
-            window.requestIdleCallback(function() {
-                window.RestauranteApp.carregarDaBaseDeDados();
-                sessionStorage.setItem(lastSyncKey, String(Date.now()));
-            }, { timeout: 2000 });
-        } else {
-            setTimeout(function() {
-                window.RestauranteApp.carregarDaBaseDeDados();
-                sessionStorage.setItem(lastSyncKey, String(Date.now()));
-            }, 300);
-        }
+    // Executa imediatamente em background no carregamento de qualquer tela
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(function() {
+            window.RestauranteApp.carregarDaBaseDeDados();
+        }, { timeout: 1000 });
+    } else {
+        setTimeout(function() {
+            window.RestauranteApp.carregarDaBaseDeDados();
+        }, 50);
     }
 
     // =========================================================================

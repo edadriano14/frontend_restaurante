@@ -598,12 +598,23 @@
         // =========================================================================
         window.addEventListener('RestauranteAppDbReady', function() {
             if (typeof renderProdutos === 'function') renderProdutos();
+            if (typeof renderProdutosPDV === 'function') renderProdutosPDV();
+            if (typeof renderFiltroCategorias === 'function') renderFiltroCategorias();
+            if (typeof renderCarrinhoPDV === 'function') renderCarrinhoPDV();
+            if (typeof renderMetodosPagamentoPDV === 'function') renderMetodosPagamentoPDV();
             if (typeof renderCategorias === 'function') renderCategorias();
             if (typeof renderClientes === 'function') renderClientes();
             if (typeof renderFornecedores === 'function') renderFornecedores();
+            if (typeof renderPrecosFornecedores === 'function') renderPrecosFornecedores();
             if (typeof renderSalasEMesas === 'function') renderSalasEMesas();
             if (typeof renderMesas === 'function') renderMesas();
             if (typeof renderStock === 'function') renderStock();
+            if (typeof renderArmazensELocais === 'function') renderArmazensELocais();
+            if (typeof renderCompras === 'function') renderCompras();
+            if (typeof renderGuiasEntrada === 'function') renderGuiasEntrada();
+            if (typeof renderMovimentosStock === 'function') renderMovimentosStock();
+            if (typeof renderTransferenciasStock === 'function') renderTransferenciasStock();
+            if (typeof renderVeiculos === 'function') renderVeiculos();
             if (typeof renderAcompanhamentos === 'function') renderAcompanhamentos();
             if (typeof renderPostos === 'function') renderPostos();
             if (typeof renderTiposPedidos === 'function') renderTiposPedidos();
