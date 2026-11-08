@@ -1,5 +1,5 @@
 // =============================================================================
-// FUNÇÕES GLOBAIS DE MODAIS & DIÁLOGOS AMIGÁVEIS CENTRALIZADOS
+// FUNÇÕES GLOBAIS DE MODAIS & DIÁLOGOS AMIGÁVEIS CENTRALIZADOS COM CAMPO DE PESQUISA
 // =============================================================================
 
 window.abrirModal = function(id) {
@@ -7,6 +7,9 @@ window.abrirModal = function(id) {
     if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+
+        // Inicializa ou reseta a barra de pesquisa inteligente dentro do modal
+        garantirBarraPesquisaNoModal(modal);
     }
 };
 
@@ -15,8 +18,164 @@ window.fecharModal = function(id) {
     if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+
+        // Limpa o termo de pesquisa e restaura todos os campos
+        var inputBusca = modal.querySelector('.input-pesquisa-modal');
+        if (inputBusca && inputBusca.value) {
+            inputBusca.value = '';
+            filtrarConteudoDoModal(modal, '');
+        }
     }
 };
+
+// Injeta dinamicamente a barra de pesquisa rápida no topo do modal
+function garantirBarraPesquisaNoModal(modal) {
+    // Ignora diálogos simples de confirmação/alerta/preview estrito de imagens
+    if (modal.id === 'modalGaleriaImagens' || modal.id === 'modalCentralAlertasGlobal' || modal.id === 'modalQrCodeMesa') {
+        return;
+    }
+
+    var card = modal.querySelector('.rounded-2xl, .rounded-3xl, .bg-white, .bg-\\[\\#111827\\]');
+    if (!card) return;
+
+    // Se já tiver a barra injetada, apenas foca se aplicável e limpa o valor
+    var barraExistente = card.querySelector('.container-pesquisa-modal');
+    if (barraExistente) {
+        var inp = barraExistente.querySelector('input');
+        if (inp) {
+            inp.value = '';
+            filtrarConteudoDoModal(modal, '');
+        }
+        return;
+    }
+
+    // Procura o cabeçalho do modal para inserir logo abaixo
+    var header = card.querySelector('.border-b, header, .flex.items-center.justify-between');
+    if (!header) return;
+
+    var container = document.createElement('div');
+    container.className = 'container-pesquisa-modal my-2 px-1 relative';
+    container.innerHTML = [
+        '<div class="relative flex items-center">',
+        '  <i class="fa-solid fa-magnifying-glass absolute left-3 text-xs text-gray-400 pointer-events-none"></i>',
+        '  <input type="text" placeholder="Pesquisar nos campos e opções deste modal..." ',
+        '    class="input-pesquisa-modal w-full pl-8 pr-8 py-2 text-xs bg-gray-50 hover:bg-gray-100/80 focus:bg-white border border-gray-200 focus:border-red-500 rounded-xl outline-none font-medium transition shadow-inner">',
+        '  <button type="button" class="btn-limpar-pesquisa-modal absolute right-2.5 text-gray-400 hover:text-gray-600 hidden text-xs cursor-pointer" title="Limpar pesquisa">&times;</button>',
+        '</div>',
+        '<div class="status-pesquisa-modal text-[10px] text-gray-400 px-1 mt-1 hidden"></div>'
+    ].join('');
+
+    // Insere logo após o cabeçalho
+    header.insertAdjacentElement('afterend', container);
+
+    var input = container.querySelector('.input-pesquisa-modal');
+    var btnLimpar = container.querySelector('.btn-limpar-pesquisa-modal');
+    var status = container.querySelector('.status-pesquisa-modal');
+
+    input.addEventListener('input', function() {
+        var termo = this.value.trim().toLowerCase();
+        if (termo.length > 0) {
+            btnLimpar.classList.remove('hidden');
+        } else {
+            btnLimpar.classList.add('hidden');
+        }
+        var totalEncontrados = filtrarConteudoDoModal(modal, termo);
+        if (termo.length > 0) {
+            status.classList.remove('hidden');
+            status.innerText = totalEncontrados + ' item(ns) encontrado(s)';
+        } else {
+            status.classList.add('hidden');
+        }
+    });
+
+    btnLimpar.addEventListener('click', function() {
+        input.value = '';
+        btnLimpar.classList.add('hidden');
+        status.classList.add('hidden');
+        filtrarConteudoDoModal(modal, '');
+        input.focus();
+    });
+}
+
+// Filtra dinamicamente linhas de tabela, grupos de campos, opções de selects e blocos dentro do modal
+function filtrarConteudoDoModal(modal, termo) {
+    var totalVisiveis = 0;
+
+    // 1. Filtrar linhas de tabelas dentro do modal (ex: compras, requisições, guias de entrada)
+    var linhasTabela = modal.querySelectorAll('tbody tr');
+    if (linhasTabela.length > 0) {
+        linhasTabela.forEach(function(tr) {
+            if (!termo) {
+                tr.style.display = '';
+                totalVisiveis++;
+                return;
+            }
+            var textoTr = (tr.textContent || tr.innerText || '').toLowerCase();
+            if (textoTr.indexOf(termo) !== -1) {
+                tr.style.display = '';
+                totalVisiveis++;
+            } else {
+                tr.style.display = 'none';
+            }
+        });
+    }
+
+    // 2. Filtrar opções (<option>) em selects presentes no modal
+    var selects = modal.querySelectorAll('select');
+    selects.forEach(function(sel) {
+        var options = sel.querySelectorAll('option');
+        var primeiroVisivel = null;
+        options.forEach(function(opt) {
+            if (!termo) {
+                opt.style.display = '';
+                return;
+            }
+            var textoOpt = (opt.textContent || opt.innerText || '').toLowerCase();
+            if (textoOpt.indexOf(termo) !== -1) {
+                opt.style.display = '';
+                if (!primeiroVisivel) primeiroVisivel = opt;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        if (termo && primeiroVisivel && sel.value !== primeiroVisivel.value) {
+            // Seleciona a primeira opção correspondente
+            sel.value = primeiroVisivel.value;
+            sel.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // 3. Filtrar blocos de campos (divs de formulários)
+    var camposForm = modal.querySelectorAll('.space-y-3 > div, .space-y-4 > div, .grid > div');
+    camposForm.forEach(function(bloco) {
+        if (bloco.classList.contains('container-pesquisa-modal') || bloco.querySelector('.container-pesquisa-modal')) return;
+        if (bloco.querySelector('button[type="submit"]') || bloco.querySelector('button[onclick*="salvar"]')) return;
+
+        if (!termo) {
+            bloco.style.display = '';
+            totalVisiveis++;
+            return;
+        }
+
+        var textoBloco = (bloco.textContent || bloco.innerText || '').toLowerCase();
+        // Também procura no placeholder ou valor de inputs
+        var inputsInternos = bloco.querySelectorAll('input, select, textarea');
+        var textoInputs = '';
+        inputsInternos.forEach(function(inp) {
+            textoInputs += ' ' + (inp.value || '') + ' ' + (inp.placeholder || '');
+        });
+        textoBloco += ' ' + textoInputs.toLowerCase();
+
+        if (textoBloco.indexOf(termo) !== -1) {
+            bloco.style.display = '';
+            totalVisiveis++;
+        } else {
+            bloco.style.display = 'none';
+        }
+    });
+
+    return totalVisiveis;
+}
 
 // =============================================================================
 // MENSAGENS AMIGÁVEIS E DIÁLOGOS CENTRALIZADOS
