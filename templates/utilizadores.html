@@ -35,11 +35,14 @@
         <div class="p-3 bg-gray-50 border-b flex flex-wrap items-center justify-between gap-3 text-xs">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
-                <input type="text" id="filtroUtilizadorTexto" oninput="renderUtilizadores()" placeholder="Pesquisar por nome, código ou email..." class="px-3 py-1.5 border rounded-lg bg-white outline-none w-64">
+                <div class="relative flex items-center">
+                    <input type="search" id="filtroUtilizadorTexto" name="pesquisa_utilizador_filtro" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="renderUtilizadores()" placeholder="Pesquisar por nome, código ou email..." class="px-3 py-1.5 pr-7 border rounded-lg bg-white outline-none w-64 focus:border-red-500 transition">
+                    <button type="button" id="btnLimparFiltroTexto" onclick="limparFiltroTextoUtilizadores()" class="absolute right-2 text-gray-400 hover:text-gray-600 hidden text-xs font-bold cursor-pointer" title="Limpar pesquisa">&times;</button>
+                </div>
             </div>
             <div class="flex items-center gap-2">
                 <label for="filtroUtilizadorPerfil" class="text-gray-500 font-semibold">Filtrar por Perfil:</label>
-                <select id="filtroUtilizadorPerfil" name="filtroUtilizadorPerfil" title="Filtrar por Perfil de Acesso" aria-label="Filtrar por Perfil de Acesso" onchange="renderUtilizadores()" class="px-2.5 py-1.5 border rounded-lg bg-white outline-none">
+                <select id="filtroUtilizadorPerfil" name="filtroUtilizadorPerfil" title="Filtrar por Perfil de Acesso" aria-label="Filtrar por Perfil de Acesso" onchange="renderUtilizadores()" class="px-2.5 py-1.5 border rounded-lg bg-white outline-none focus:border-red-500">
                     <option value="todos">Todos os Perfis</option>
                 </select>
             </div>
@@ -371,9 +374,16 @@ function renderUtilizadores() {
     var tbody = document.getElementById('tabelaUtilizadores');
     if (!tbody) return;
 
+    var inpTexto = document.getElementById('filtroUtilizadorTexto');
+    var btnLimpar = document.getElementById('btnLimparFiltroTexto');
     var lista = window.RestauranteApp.utilizadores || [];
-    var termo = (document.getElementById('filtroUtilizadorTexto') ? document.getElementById('filtroUtilizadorTexto').value : '').toLowerCase().trim();
+    var termo = (inpTexto ? inpTexto.value : '').toLowerCase().trim();
     var perfilFiltro = document.getElementById('filtroUtilizadorPerfil') ? document.getElementById('filtroUtilizadorPerfil').value : 'todos';
+
+    if (btnLimpar) {
+        if (termo.length > 0) btnLimpar.classList.remove('hidden');
+        else btnLimpar.classList.add('hidden');
+    }
 
     var filtrados = lista.filter(function(u) {
         if (perfilFiltro !== 'todos' && String(u.perfil).toUpperCase() !== String(perfilFiltro).toUpperCase()) return false;
@@ -426,6 +436,15 @@ function renderUtilizadores() {
         html += '</tr>';
     }
     tbody.innerHTML = html || '<tr><td colspan="8" class="p-8 text-center text-gray-400 text-xs font-semibold">Nenhum utilizador encontrado com os filtros aplicados.</td></tr>';
+}
+
+function limparFiltroTextoUtilizadores() {
+    var inp = document.getElementById('filtroUtilizadorTexto');
+    if (inp) {
+        inp.value = '';
+        renderUtilizadores();
+        inp.focus();
+    }
 }
 
 function popularSelectPerfisUtilizador() {
@@ -803,6 +822,11 @@ function removerPerfilAcesso(id) {
 // INICIALIZAÇÃO
 // =============================================================================
 document.addEventListener('DOMContentLoaded', function() {
+    var inpTexto = document.getElementById('filtroUtilizadorTexto');
+    if (inpTexto) inpTexto.value = '';
+    var filtroPerfil = document.getElementById('filtroUtilizadorPerfil');
+    if (filtroPerfil) filtroPerfil.value = 'todos';
+
     popularSelectPerfisUtilizador();
     renderUtilizadores();
     renderPerfisAcesso();
