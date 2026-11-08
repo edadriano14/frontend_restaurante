@@ -226,25 +226,36 @@ window.RestauranteApp = {
     // 12. UTILIZADORES
     utilizadores: [
         {
-            id: "1",
-            codigo: "USR-001",
-            nome: "Administrador Central",
-            username: "admin",
-            email: "admin@restaurante.com",
-            perfil: "ADMIN_GERAL",
-            restaurante_id: "1",
-            estabelecimento_id: "1",
-            ativo: true
-        },
-        {
-            id: "2",
-            codigo: "USR-002",
+            id: "2fcc7a10-d5fb-47d0-fb9f-e84feebea185",
+            codigo: "USR-2FCC",
             nome: "Operador de Caixa 01",
             username: "caixa1",
             email: "caixa1@saborbrasa.com",
             perfil: "OPERADOR",
-            restaurante_id: "1",
-            estabelecimento_id: "1",
+            restaurante_id: "d35ddb74-252d-3320-78c5-df68fcf32102",
+            estabelecimento_id: "d35ddb74-252d-3320-78c5-df68fcf32102",
+            ativo: true
+        },
+        {
+            id: "9561a4ea-6470-f297-51de-e23d774bebc6",
+            codigo: "USR-9561",
+            nome: "Gestor do Restaurante",
+            username: "gestor",
+            email: "gestor@saborbrasa.com",
+            perfil: "GESTOR",
+            restaurante_id: "d35ddb74-252d-3320-78c5-df68fcf32102",
+            estabelecimento_id: "d35ddb74-252d-3320-78c5-df68fcf32102",
+            ativo: true
+        },
+        {
+            id: "e030adb3-7353-5927-59b2-609a852fb236",
+            codigo: "USR-E030",
+            nome: "Administrador Geral",
+            username: "admin",
+            email: "admin@restaurante.com",
+            perfil: "ADMIN_GERAL",
+            restaurante_id: "d35ddb74-252d-3320-78c5-df68fcf32102",
+            estabelecimento_id: "d35ddb74-252d-3320-78c5-df68fcf32102",
             ativo: true
         }
     ],
@@ -364,7 +375,7 @@ window.RestauranteApp = {
 // PERSISTÊNCIA EM BASE DE DADOS (SUPABASE & BACKEND .NET) & LOCALSTORAGE
 // =============================================================================
 (function() {
-    var STORAGE_KEY = 'REDE_RESTAURANTE_APP_DATA_V2';
+    var STORAGE_KEY = 'REDE_RESTAURANTE_APP_DATA_V3';
 
     // 1. Carrega primeiro do localStorage para renderização instantânea (sem flicker)
     try {
@@ -493,6 +504,13 @@ window.RestauranteApp = {
                                     var sMatch = salasMap[String(m.sala_id)] || {};
                                     return Object.assign({}, m, {
                                         sala_nome: m.sala_nome || sMatch.nome || 'Salão Principal'
+                                    });
+                                });
+                            } else if (key === 'utilizadores') {
+                                itens = itens.map(function(u) {
+                                    return Object.assign({}, u, {
+                                        username: u.username || (u.email ? u.email.split('@')[0] : 'utilizador'),
+                                        restaurante_id: u.restaurante_id || u.estabelecimento_id || ''
                                     });
                                 });
                             }

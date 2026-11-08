@@ -376,12 +376,13 @@ function renderUtilizadores() {
     var perfilFiltro = document.getElementById('filtroUtilizadorPerfil') ? document.getElementById('filtroUtilizadorPerfil').value : 'todos';
 
     var filtrados = lista.filter(function(u) {
-        if (perfilFiltro !== 'todos' && u.perfil !== perfilFiltro) return false;
+        if (perfilFiltro !== 'todos' && String(u.perfil).toUpperCase() !== String(perfilFiltro).toUpperCase()) return false;
         if (!termo) return true;
         var nome = (u.nome || '').toLowerCase();
         var cod = (u.codigo || '').toLowerCase();
         var email = (u.email || '').toLowerCase();
-        return nome.indexOf(termo) >= 0 || cod.indexOf(termo) >= 0 || email.indexOf(termo) >= 0;
+        var user = (u.username || '').toLowerCase();
+        return nome.indexOf(termo) >= 0 || cod.indexOf(termo) >= 0 || email.indexOf(termo) >= 0 || user.indexOf(termo) >= 0;
     });
 
     var badgeCount = document.getElementById('badgeContadorUtilizadores');
@@ -391,14 +392,17 @@ function renderUtilizadores() {
     for (var i = 0; i < filtrados.length; i++) {
         var u = filtrados[i];
         var restNome = '—';
-        if (u.restaurante_id) {
-            var rest = (window.RestauranteApp.estabelecimentos || []).find(function(e) { return e.id === u.restaurante_id; });
+        var restId = u.restaurante_id || u.estabelecimento_id;
+        if (restId) {
+            var rest = (window.RestauranteApp.estabelecimentos || []).find(function(e) { return String(e.id) === String(restId); });
             if (rest) restNome = rest.nome;
         }
         var uCod = u.codigo || ('USR-00' + (i + 1));
 
         // Encontra o perfil para pegar a cor da etiqueta
-        var perfilObj = (window.RestauranteApp.perfis_acesso || []).find(function(p){ return p.nome === u.perfil || p.id === u.perfil_id; });
+        var perfilObj = (window.RestauranteApp.perfis_acesso || []).find(function(p){ 
+            return String(p.nome).toUpperCase() === String(u.perfil).toUpperCase() || String(p.id) === String(u.perfil_id); 
+        });
         var corPerfil = perfilObj ? perfilObj.cor : 'purple';
         var corClass = 'bg-purple-100 text-purple-800';
         if (corPerfil === 'blue') corClass = 'bg-blue-100 text-blue-800';
@@ -408,13 +412,13 @@ function renderUtilizadores() {
         else if (corPerfil === 'rose') corClass = 'bg-rose-100 text-rose-800';
 
         html += '<tr class="hover:bg-gray-50 transition">';
-        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (u.id || (i + 1)) + '</td>';
+        html += '  <td class="p-4 text-xs font-mono text-gray-400 font-bold">' + (u.id ? String(u.id).substring(0, 8) + '...' : (i + 1)) + '</td>';
         html += '  <td class="p-4 font-mono text-xs font-bold text-gray-700">' + uCod + '</td>';
         html += '  <td class="p-4 font-bold text-gray-900">' + u.nome + '</td>';
         html += '  <td class="p-4 font-mono text-xs text-gray-600">' + (u.username ? '<span class="text-gray-800 font-semibold">' + u.username + '</span><br>' : '') + u.email + '</td>';
         html += '  <td class="p-4 text-xs font-semibold text-gray-800"><i class="fa-solid fa-store text-gray-400 mr-1.5"></i>' + restNome + '</td>';
         html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full ' + corClass + '"><i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i>' + u.perfil + '</span></td>';
-        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ' + (u.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800') + '">' + (u.ativo ? 'Activo' : 'Inactivo') + '</span></td>';
+        html += '  <td class="p-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ' + (u.ativo !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800') + '">' + (u.ativo !== false ? 'Activo' : 'Inactivo') + '</span></td>';
         html += '  <td class="p-4 text-right space-x-2">';
         html += '    <button onclick="editarUtilizador(\'' + u.id + '\')" title="Editar Utilizador" class="text-blue-600 hover:text-blue-800 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>';
         html += '    <button onclick="removerUtilizador(\'' + u.id + '\')" title="Excluir Utilizador" class="text-red-600 hover:text-red-800 cursor-pointer"><i class="fa-solid fa-trash"></i></button>';
