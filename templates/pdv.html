@@ -1086,34 +1086,40 @@ function calcularValorModalAcomp() {
 }
 
 function confirmarItemComAcompanhamentos() {
-    if (!produtoTempParaAcomp) return;
+    try {
+        if (!produtoTempParaAcomp) return;
 
-    // Acompanhamento selectivo selecionado (único via radiobutton)
-    var selRadio = document.querySelector('input[name="acompSelectivo"]:checked');
-    var selectivosNomes = [];
-    if (selRadio) {
-        selectivosNomes.push(selRadio.value);
+        // Acompanhamento selectivo selecionado (único via radiobutton)
+        var selRadio = document.querySelector('input[name="acompSelectivo"]:checked');
+        var selectivosNomes = [];
+        if (selRadio && selRadio.value) {
+            selectivosNomes.push(selRadio.value);
+        }
+
+        // Acompanhamentos opcionais pagos selecionados
+        var opcCheckboxes = document.querySelectorAll('input[name="acompOpcional"]:checked');
+        var opcionaisNomes = [];
+        var valorExtras = 0;
+        for (var j = 0; j < opcCheckboxes.length; j++) {
+            opcionaisNomes.push(opcCheckboxes[j].value);
+            valorExtras += parseFloat(opcCheckboxes[j].getAttribute('data-preco') || 0);
+        }
+
+        var descritivo = [];
+        if (selectivosNomes.length > 0) descritivo.push('Com: ' + selectivosNomes.join(', '));
+        if (opcionaisNomes.length > 0) descritivo.push('Extras: ' + opcionaisNomes.join(', '));
+
+        var precoBase = (produtoTempParaAcomp.tem_promocao && produtoTempParaAcomp.preco_promocional != null) 
+            ? parseFloat(produtoTempParaAcomp.preco_promocional) 
+            : parseFloat(produtoTempParaAcomp.preco || 0);
+        var precoFinal = precoBase + valorExtras;
+
+        adicionarDiretoAoCarrinho(produtoTempParaAcomp, descritivo.join(' | '), precoFinal);
+        fecharModal('modalAcompanhamentosPDV');
+        produtoTempParaAcomp = null;
+    } catch (err) {
+        console.error('Erro ao adicionar item com acompanhamentos:', err);
     }
-
-    // Acompanhamentos opcionais pagos selecionados
-    var opcCheckboxes = document.querySelectorAll('input[name="acompOpcional"]:checked');
-    var opcionaisNomes = [];
-    var valorExtras = 0;
-    for (var j = 0; j < opcCheckboxes.length; j++) {
-        opcionaisNomes.push(opcCheckboxes[j].value);
-        valorExtras += parseFloat(opcCheckboxes[j].getAttribute('data-preco') || 0);
-    }
-
-    var descritivo = [];
-    if (selectivosNomes.length > 0) descritivo.push('Com: ' + selectivosNomes.join(', '));
-    if (opcionaisNomes.length > 0) descritivo.push('Extras: ' + opcionaisNomes.join(', '));
-
-    var precoBase = produtoTempParaAcomp.tem_promocao ? produtoTempParaAcomp.preco_promocional : produtoTempParaAcomp.preco;
-    var precoFinal = precoBase + valorExtras;
-
-    adicionarDiretoAoCarrinho(produtoTempParaAcomp, descritivo.join(' | '), precoFinal);
-    fecharModal('modalAcompanhamentosPDV');
-    produtoTempParaAcomp = null;
 }
 
 function adicionarDiretoAoCarrinho(prod, acompanhamentosTexto, precoFinal) {
@@ -1180,7 +1186,10 @@ function renderCarrinhoPDV() {
     var html = '';
 
     var selectTipoAtend = document.getElementById('pdvTipoPedido');
-    var isPedidoPiscina = selectTipoAtend && (selectTipoAtend.options[selectTipoAtend.selectedIndex].text.toLowerCase().indexOf('piscina') >= 0);
+    var isPedidoPiscina = false;
+    if (selectTipoAtend && selectTipoAtend.selectedIndex >= 0 && selectTipoAtend.options[selectTipoAtend.selectedIndex]) {
+        isPedidoPiscina = (selectTipoAtend.options[selectTipoAtend.selectedIndex].text.toLowerCase().indexOf('piscina') >= 0);
+    }
 
     for (var idx = 0; idx < carrinhoPDV.length; idx++) {
         var item = carrinhoPDV[idx];

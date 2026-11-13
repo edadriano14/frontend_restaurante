@@ -30,8 +30,8 @@ window.fecharModal = function(id) {
 
 // Injeta dinamicamente a barra de pesquisa rápida no topo do modal
 function garantirBarraPesquisaNoModal(modal) {
-    // Ignora diálogos simples de confirmação/alerta/preview estrito de imagens
-    if (modal.id === 'modalGaleriaImagens' || modal.id === 'modalCentralAlertasGlobal' || modal.id === 'modalQrCodeMesa') {
+    // Ignora diálogos simples de confirmação/alerta/preview estrito de imagens e modal de acompanhamentos do PDV
+    if (modal.id === 'modalGaleriaImagens' || modal.id === 'modalCentralAlertasGlobal' || modal.id === 'modalQrCodeMesa' || modal.id === 'modalAcompanhamentosPDV') {
         return;
     }
 
