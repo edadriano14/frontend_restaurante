@@ -70,17 +70,50 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço Normal ({{ estabelecimento.moeda }}) *</label>
-                        <input type="number" step="0.01" id="prodPreco" placeholder="850.00" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold focus:border-custom-primary">
+                <!-- PREÇO DO PRATO & MARGEM BASEADA NOS INSUMOS -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div class="sm:col-span-5">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Preço Normal de Venda ({{ estabelecimento.moeda }}) *</label>
+                        <div class="relative">
+                            <input type="number" step="0.01" id="prodPreco" oninput="atualizarMargemPrecoProduto()" placeholder="850.00" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-black text-gray-900 bg-white focus:border-custom-primary">
+                            <span class="absolute right-3 top-2 text-xs font-bold text-gray-400 pointer-events-none">{{ estabelecimento.moeda }}</span>
+                        </div>
                     </div>
-                    <div>
+                    <div class="sm:col-span-4">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Margem / Markup Desejado</label>
+                        <div class="flex items-center gap-1.5">
+                            <select id="prodSugerirMargem" onchange="aplicarMargemSugeridaProduto(this.value)" class="w-full px-2 py-2 border rounded-lg text-xs outline-none bg-white font-semibold text-purple-900">
+                                <option value="">Sugerir Preço por Margem...</option>
+                                <option value="40">+40% sobre custo</option>
+                                <option value="60">+60% sobre custo</option>
+                                <option value="80">+80% sobre custo</option>
+                                <option value="100">+100% (2x Custo)</option>
+                                <option value="150">+150% (2.5x Custo)</option>
+                                <option value="200">+200% (3x Custo)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="sm:col-span-3">
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado</label>
                         <select id="prodEstado" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-semibold">
                             <option value="disponivel">Disponível no Cardápio</option>
                             <option value="indisponivel">Indisponível (Esgotado)</option>
                         </select>
+                    </div>
+                    <!-- Painel Informativo de Rentabilidade do Prato em Tempo Real -->
+                    <div id="painelRentabilidadePrato" class="sm:col-span-12 p-2.5 bg-white rounded-lg border border-purple-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500 font-semibold">Custo Total de Insumos:</span>
+                            <b id="resumoCustoInsumosPrato" class="font-mono text-purple-800 font-bold">0.00 {{ estabelecimento.moeda }}</b>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500 font-semibold">Lucro Estimado:</span>
+                            <b id="resumoLucroEstimadoPrato" class="font-mono text-emerald-700 font-bold">0.00 {{ estabelecimento.moeda }}</b>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500 font-semibold">Margem Bruta:</span>
+                            <span id="badgeMargemEstimadaPrato" class="px-2 py-0.5 rounded font-black text-[11px] bg-gray-100 text-gray-700">0.0%</span>
+                        </div>
                     </div>
                 </div>
 
@@ -301,7 +334,23 @@ function carregarCategoriasSelect() {
 function carregarUnidadesMedidaSelect(unidadePadrao) {
     var select = document.getElementById('fichaInsumoUnidade');
     if (!select) return;
-    var unidades = window.RestauranteApp.unidades_medida || [];
+    var unidades = window.RestauranteApp.unidades_medida || [
+        { codigo: "KG", nome: "Quilograma" },
+        { codigo: "G", nome: "Grama" },
+        { codigo: "LT", nome: "Litro" },
+        { codigo: "ML", nome: "Mililitro" },
+        { codigo: "DOSE", nome: "Dose / Porção" },
+        { codigo: "UN", nome: "Unidade" }
+    ];
+    // Garantir que as opções essenciais de fracionamento (G, ML, DOSE) estejam sempre presentes
+    var codigosExistentes = unidades.map(function(u) { return (u.codigo || '').toUpperCase(); });
+    ['G', 'ML', 'DOSE'].forEach(function(cod) {
+        if (!codigosExistentes.includes(cod)) {
+            var nomeExtenso = cod === 'G' ? 'Grama' : (cod === 'ML' ? 'Mililitro' : 'Dose / Porção');
+            unidades.push({ codigo: cod, nome: nomeExtenso });
+        }
+    });
+
     var html = '';
     for (var i = 0; i < unidades.length; i++) {
         var u = unidades[i];
@@ -360,7 +409,7 @@ function atualizarPreviewDoseInsumo() {
     var unidBaseStock = (opt.getAttribute('data-unidade') || 'UN').toUpperCase();
     var unidDose = (unidSelecionada || 'UN').toUpperCase();
 
-    // Conversão inteligente se a dose estiver em G (gramas) e o stock em KG, ou ML e LT
+    // Conversão inteligente se a dose estiver em G (gramas), ML, DOSE e o stock em KG, LT, etc.
     var fatorConversao = 1;
     if (unidBaseStock === 'KG' && unidDose === 'G') {
         fatorConversao = 0.001;
@@ -370,6 +419,14 @@ function atualizarPreviewDoseInsumo() {
         fatorConversao = 1000;
     } else if (unidBaseStock === 'ML' && unidDose === 'LT') {
         fatorConversao = 1000;
+    } else if (unidBaseStock === 'KG' && unidDose === 'DOSE') {
+        fatorConversao = 0.200; // dose de prato 200g
+    } else if (unidBaseStock === 'LT' && unidDose === 'DOSE') {
+        fatorConversao = 0.050; // dose bebida / shot 50ml
+    } else if (unidBaseStock === 'G' && unidDose === 'DOSE') {
+        fatorConversao = 200;
+    } else if (unidBaseStock === 'ML' && unidDose === 'DOSE') {
+        fatorConversao = 50;
     }
 
     var totalDose = (dose * fatorConversao) * custoUnit;
@@ -381,6 +438,65 @@ function atualizarPreviewDoseInsumo() {
     }
 }
 
+function calcularCustoTotalInsumosTemp() {
+    var total = 0;
+    for (var i = 0; i < insumosTempFichaTecnica.length; i++) {
+        var item = insumosTempFichaTecnica[i];
+        total += (Number(item.quantidade) || 0) * (Number(item.custo_unitario) || 0);
+    }
+    return total;
+}
+
+function atualizarMargemPrecoProduto() {
+    var inputPreco = document.getElementById('prodPreco');
+    var precoVenda = parseFloat(inputPreco ? inputPreco.value : 0) || 0;
+    var custoInsumos = calcularCustoTotalInsumosTemp();
+
+    var resumoCusto = document.getElementById('resumoCustoInsumosPrato');
+    var resumoLucro = document.getElementById('resumoLucroEstimadoPrato');
+    var badgeMargem = document.getElementById('badgeMargemEstimadaPrato');
+
+    if (resumoCusto) resumoCusto.innerText = custoInsumos.toFixed(2) + ' {{ estabelecimento.moeda }}';
+
+    var lucro = precoVenda - custoInsumos;
+    if (resumoLucro) {
+        resumoLucro.innerText = lucro.toFixed(2) + ' {{ estabelecimento.moeda }}';
+        resumoLucro.className = 'font-mono font-bold ' + (lucro >= 0 ? 'text-emerald-700' : 'text-red-600');
+    }
+
+    var margem = precoVenda > 0 ? ((lucro / precoVenda) * 100) : 0;
+    if (badgeMargem) {
+        badgeMargem.innerText = margem.toFixed(1) + '%';
+        if (margem >= 40) {
+            badgeMargem.className = 'px-2 py-0.5 rounded font-black text-[11px] bg-emerald-100 text-emerald-800';
+        } else if (margem > 0) {
+            badgeMargem.className = 'px-2 py-0.5 rounded font-black text-[11px] bg-amber-100 text-amber-800';
+        } else {
+            badgeMargem.className = 'px-2 py-0.5 rounded font-black text-[11px] bg-red-100 text-red-800';
+        }
+    }
+}
+
+function aplicarMargemSugeridaProduto(markupPerc) {
+    if (!markupPerc) return;
+    var custo = calcularCustoTotalInsumosTemp();
+    if (custo <= 0) {
+        alert('Adicione primeiro os insumos na Ficha Técnica para calcular o custo base do prato.');
+        document.getElementById('prodSugerirMargem').value = '';
+        return;
+    }
+    var perc = parseFloat(markupPerc) || 0;
+    // Preço sugerido com base no Markup: Custo * (1 + perc/100)
+    var precoSugerido = custo * (1 + (perc / 100));
+    // Arredondar para o valor comercial mais próximo
+    precoSugerido = Math.round(precoSugerido * 10) / 10;
+    var inputPreco = document.getElementById('prodPreco');
+    if (inputPreco) {
+        inputPreco.value = precoSugerido.toFixed(2);
+        atualizarMargemPrecoProduto();
+    }
+}
+
 function renderInsumosFichaTecnica() {
     var container = document.getElementById('listaInsumosFichaTecnica');
     var custoEl = document.getElementById('custoTotalFichaTecnica');
@@ -389,6 +505,7 @@ function renderInsumosFichaTecnica() {
     if (!insumosTempFichaTecnica || insumosTempFichaTecnica.length === 0) {
         container.innerHTML = '<div class="text-xs text-gray-400 italic p-2 text-center bg-white rounded border border-dashed border-gray-200">Nenhum insumo associado a este prato.</div>';
         if (custoEl) custoEl.innerText = 'Custo Insumos: 0.00 {{ estabelecimento.moeda }}';
+        atualizarMargemPrecoProduto();
         return;
     }
 
@@ -416,6 +533,7 @@ function renderInsumosFichaTecnica() {
     if (custoEl) {
         custoEl.innerText = 'Custo Insumos: ' + custoTotal.toFixed(2) + ' {{ estabelecimento.moeda }}';
     }
+    atualizarMargemPrecoProduto();
 }
 
 function adicionarInsumoFichaTecnica() {
@@ -439,20 +557,44 @@ function adicionarInsumoFichaTecnica() {
     var nome = selectedOpt.getAttribute('data-nome');
     var selectUnid = document.getElementById('fichaInsumoUnidade');
     var unidade = (selectUnid && selectUnid.value) ? selectUnid.value : (selectedOpt.getAttribute('data-unidade') || 'UN');
-    var custo = parseFloat(selectedOpt.getAttribute('data-custo')) || 0;
+    var custoUnitStock = parseFloat(selectedOpt.getAttribute('data-custo')) || 0;
+    var unidBaseStock = (selectedOpt.getAttribute('data-unidade') || 'UN').toUpperCase();
+    var unidDose = (unidade || 'UN').toUpperCase();
+
+    // Conversão inteligente do custo unitário para a unidade usada na ficha técnica
+    var fatorConversao = 1;
+    if (unidBaseStock === 'KG' && unidDose === 'G') {
+        fatorConversao = 0.001;
+    } else if (unidBaseStock === 'LT' && unidDose === 'ML') {
+        fatorConversao = 0.001;
+    } else if (unidBaseStock === 'G' && unidDose === 'KG') {
+        fatorConversao = 1000;
+    } else if (unidBaseStock === 'ML' && unidDose === 'LT') {
+        fatorConversao = 1000;
+    } else if (unidBaseStock === 'KG' && unidDose === 'DOSE') {
+        fatorConversao = 0.200; // dose de prato 200g
+    } else if (unidBaseStock === 'LT' && unidDose === 'DOSE') {
+        fatorConversao = 0.050; // dose bar 50ml
+    } else if (unidBaseStock === 'G' && unidDose === 'DOSE') {
+        fatorConversao = 200;
+    } else if (unidBaseStock === 'ML' && unidDose === 'DOSE') {
+        fatorConversao = 50;
+    }
+
+    var custoEfetivoPorUnidadeDose = custoUnitStock * fatorConversao;
 
     // Verificar se já existe na lista temporária
-    var existente = insumosTempFichaTecnica.find(function(it) { return it.stock_id === stockId; });
+    var existente = insumosTempFichaTecnica.find(function(it) { return it.stock_id === stockId && it.unidade === unidade; });
     if (existente) {
         existente.quantidade = Number((existente.quantidade + qtd).toFixed(3));
-        existente.unidade = unidade;
+        existente.custo_unitario = custoEfetivoPorUnidadeDose;
     } else {
         insumosTempFichaTecnica.push({
             stock_id: stockId,
             stock_nome: nome,
             quantidade: qtd,
             unidade: unidade,
-            custo_unitario: custo
+            custo_unitario: custoEfetivoPorUnidadeDose
         });
     }
 
@@ -514,7 +656,22 @@ function obterStockProduto(prod) {
             var dose = parseFloat(ins.quantidade || ins.qtd || 1);
             if (dose <= 0) dose = 1;
             var saldoAtual = parseFloat(stItem.qtd != null ? stItem.qtd : (stItem.quantidade != null ? stItem.quantidade : 0));
-            var porcoes = Math.floor(saldoAtual / dose);
+
+            // Conversão de unidades entre o Stock e a Ficha Técnica
+            var stUnid = (stItem.unidade || 'UN').toUpperCase();
+            var insUnid = (ins.unidade || 'UN').toUpperCase();
+            var fatorDoseParaStock = 1;
+            if (stUnid === 'KG' && insUnid === 'G') fatorDoseParaStock = 0.001;
+            else if (stUnid === 'LT' && insUnid === 'ML') fatorDoseParaStock = 0.001;
+            else if (stUnid === 'G' && insUnid === 'KG') fatorDoseParaStock = 1000;
+            else if (stUnid === 'ML' && insUnid === 'LT') fatorDoseParaStock = 1000;
+            else if (stUnid === 'KG' && insUnid === 'DOSE') fatorDoseParaStock = 0.200;
+            else if (stUnid === 'LT' && insUnid === 'DOSE') fatorDoseParaStock = 0.050;
+
+            var doseEmUnidadeStock = dose * fatorDoseParaStock;
+            if (doseEmUnidadeStock <= 0) doseEmUnidadeStock = 1;
+
+            var porcoes = Math.floor(saldoAtual / doseEmUnidadeStock);
             if (porcoes < minPorcoes) minPorcoes = porcoes;
         }
         var qtdReal = (minPorcoes === Infinity) ? 0 : Math.max(0, minPorcoes);

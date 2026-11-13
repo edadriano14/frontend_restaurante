@@ -315,7 +315,8 @@ window.RestauranteApp = {
         { id: "2", codigo: "G", nome: "Grama", permite_fracionamento: true },
         { id: "3", codigo: "LT", nome: "Litro", permite_fracionamento: true },
         { id: "4", codigo: "ML", nome: "Mililitro", permite_fracionamento: true },
-        { id: "5", codigo: "UN", nome: "Unidade", permite_fracionamento: false }
+        { id: "5", codigo: "DOSE", nome: "Dose / Porção", permite_fracionamento: true },
+        { id: "6", codigo: "UN", nome: "Unidade", permite_fracionamento: false }
     ],
 
     metodos_pagamento: [

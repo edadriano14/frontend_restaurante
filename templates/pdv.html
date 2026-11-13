@@ -830,10 +830,24 @@ function obterStockDisponivelProduto(prod) {
             }
 
             var dose = parseFloat(ins.quantidade || ins.qtd || 1);
-            var saldoAtual = parseFloat(stItem.qtd != null ? stItem.qtd : (stItem.quantidade != null ? stItem.quantidade : (stItem.stock_atual || 0)));
             if (dose <= 0) dose = 1;
+            var saldoAtual = parseFloat(stItem.qtd != null ? stItem.qtd : (stItem.quantidade != null ? stItem.quantidade : (stItem.stock_atual || 0)));
 
-            var porcoesDesteInsumo = Math.floor(saldoAtual / dose);
+            // Conversão de unidades entre Stock e Ficha Técnica (ex: KG <-> G, LT <-> ML, DOSE)
+            var stUnid = (stItem.unidade || 'UN').toUpperCase();
+            var insUnid = (ins.unidade || 'UN').toUpperCase();
+            var fatorDoseParaStock = 1;
+            if (stUnid === 'KG' && insUnid === 'G') fatorDoseParaStock = 0.001;
+            else if (stUnid === 'LT' && insUnid === 'ML') fatorDoseParaStock = 0.001;
+            else if (stUnid === 'G' && insUnid === 'KG') fatorDoseParaStock = 1000;
+            else if (stUnid === 'ML' && insUnid === 'LT') fatorDoseParaStock = 1000;
+            else if (stUnid === 'KG' && insUnid === 'DOSE') fatorDoseParaStock = 0.200;
+            else if (stUnid === 'LT' && insUnid === 'DOSE') fatorDoseParaStock = 0.050;
+
+            var doseEmUnidadeStock = dose * fatorDoseParaStock;
+            if (doseEmUnidadeStock <= 0) doseEmUnidadeStock = 1;
+
+            var porcoesDesteInsumo = Math.floor(saldoAtual / doseEmUnidadeStock);
             if (porcoesDesteInsumo < minPorcoes) {
                 minPorcoes = porcoesDesteInsumo;
                 if (saldoAtual <= 0 || porcoesDesteInsumo <= 0) {
@@ -1707,13 +1721,24 @@ function executarFinalizacaoVendaPDV() {
                 });
 
                 if (stockItem) {
-                    var qtdBaixar = (Number(insumo.quantidade) || 0) * item.qtd;
+                    var qtdDose = Number(insumo.quantidade) || 0;
+                    var stUnid = (stockItem.unidade || 'UN').toUpperCase();
+                    var insUnid = (insumo.unidade || 'UN').toUpperCase();
+                    var fatorConversao = 1;
+                    if (stUnid === 'KG' && insUnid === 'G') fatorConversao = 0.001;
+                    else if (stUnid === 'LT' && insUnid === 'ML') fatorConversao = 0.001;
+                    else if (stUnid === 'G' && insUnid === 'KG') fatorConversao = 1000;
+                    else if (stUnid === 'ML' && insUnid === 'LT') fatorConversao = 1000;
+                    else if (stUnid === 'KG' && insUnid === 'DOSE') fatorConversao = 0.200;
+                    else if (stUnid === 'LT' && insUnid === 'DOSE') fatorConversao = 0.050;
+
+                    var qtdBaixar = (qtdDose * fatorConversao) * item.qtd;
                     qtdBaixar = Math.round(qtdBaixar * 1000) / 1000;
-                    stockItem.qtd = Math.max(0, Math.round(((Number(stockItem.qtd) || 0) - qtdBaixar) * 100) / 100);
+                    stockItem.qtd = Math.max(0, Math.round(((Number(stockItem.qtd) || 0) - qtdBaixar) * 1000) / 1000);
                     abateuFichaTecnica = true;
 
                     var nomeInsumoReal = stockItem.nome || stockItem.item || insumo.stock_nome || 'Insumo';
-                    var unid = stockItem.unidade || insumo.unidade || 'UN';
+                    var unid = stockItem.unidade || 'UN';
                     itensAbatidosStock.push(nomeInsumoReal + ' (-' + qtdBaixar + ' ' + unid + ')');
 
                     window.RestauranteApp.movimentos_stock.unshift({

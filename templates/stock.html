@@ -109,21 +109,26 @@
 
                 <div class="grid grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidade</label>
-                        <select id="stockUnidade" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white">
-                            <option value="KG">KG</option>
-                            <option value="UN">UN</option>
-                            <option value="LT">LT</option>
-                            <option value="CX">CX</option>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Unidade Base *</label>
+                        <select id="stockUnidade" onchange="calcularLucroModalStock()" class="w-full px-3 py-2 border rounded-lg text-sm outline-none bg-white font-bold">
+                            <option value="KG">KG (Quilograma)</option>
+                            <option value="G">G (Grama)</option>
+                            <option value="LT">LT (Litro)</option>
+                            <option value="ML">ML (Mililitro)</option>
+                            <option value="DOSE">DOSE (Porção)</option>
+                            <option value="UN">UN (Unidade)</option>
+                            <option value="CX">CX (Caixa)</option>
+                            <option value="GARRAFA">GARRAFA</option>
+                            <option value="LATA">LATA</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Qtd Actual</label>
-                        <input type="number" step="0.1" id="stockQtd" value="10" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold">
+                        <input type="number" step="0.001" id="stockQtd" value="10" class="w-full px-3 py-2 border rounded-lg text-sm outline-none font-bold">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Qtd Mínima</label>
-                        <input type="number" step="0.1" id="stockMinimo" value="5" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                        <input type="number" step="0.001" id="stockMinimo" value="5" class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
@@ -138,6 +143,17 @@
                     <div>
                         <label class="block text-xs font-bold text-emerald-700 uppercase mb-1">Preço Venda Ref. ({{ estabelecimento.moeda }})</label>
                         <input type="number" step="0.01" id="stockPrecoVenda" value="450.00" oninput="calcularLucroModalStock()" class="w-full px-3 py-2 border border-emerald-300 rounded-lg text-sm outline-none font-bold text-emerald-900 bg-white">
+                    </div>
+                </div>
+
+                <!-- CUSTO FRACIONADO INTELIGENTE (POR G, ML, DOSE) -->
+                <div id="blocoCustoFracionadoModal" class="p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between font-bold text-purple-900 uppercase">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-calculator text-purple-600"></i> Custo Fracionado do Insumo:</span>
+                        <span id="labelUnidadeBaseFrac" class="text-[10px] bg-purple-200/80 px-2 py-0.5 rounded text-purple-950">Por KG</span>
+                    </div>
+                    <div id="gradeCustoFracionado" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 font-mono">
+                        <!-- Preenchido via calcularLucroModalStock() -->
                     </div>
                 </div>
 
@@ -243,6 +259,50 @@ function calcularLucroModalStock() {
         elMargem.innerText = margem.toFixed(1) + '%';
         elMargem.className = (margem >= 0 ? 'text-emerald-800' : 'text-red-600') + ' ml-1';
     }
+
+    // Atualizar fracionamento por G, ML, DOSE
+    var selUnid = document.getElementById('stockUnidade');
+    var unid = selUnid ? selUnid.value.toUpperCase() : 'KG';
+    var labelUnidBase = document.getElementById('labelUnidadeBaseFrac');
+    var gradeFrac = document.getElementById('gradeCustoFracionado');
+    if (labelUnidBase) labelUnidBase.innerText = 'Unidade Base: ' + unid;
+
+    if (gradeFrac) {
+        var htmlFrac = '';
+        if (unid === 'KG') {
+            var porG = custo / 1000;
+            var por100g = porG * 100;
+            var porDoseCarnes = porG * 200; // dose padrão restaurante carnes 200g
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo por Grama (1g):</span><b class="text-purple-900">' + porG.toFixed(4) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo por 100g:</span><b class="text-purple-900">' + por100g.toFixed(2) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Dose Prato (200g):</span><b class="text-purple-900">' + porDoseCarnes.toFixed(2) + ' MZN</b></div>';
+        } else if (unid === 'G') {
+            var porKg = custo * 1000;
+            var por100g = custo * 100;
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo por Grama:</span><b class="text-purple-900">' + custo.toFixed(4) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo por 100g:</span><b class="text-purple-900">' + por100g.toFixed(2) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Equivalente por 1 Kg:</span><b class="text-purple-900">' + porKg.toFixed(2) + ' MZN</b></div>';
+        } else if (unid === 'LT') {
+            var porMl = custo / 1000;
+            var porDoseBebida = porMl * 50; // shot/dose 50ml
+            var porCopo = porMl * 250; // copo 250ml
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo por Mililitro (1ml):</span><b class="text-purple-900">' + porMl.toFixed(4) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Dose Bar (50ml):</span><b class="text-purple-900">' + porDoseBebida.toFixed(2) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Copo / Porção (250ml):</span><b class="text-purple-900">' + porCopo.toFixed(2) + ' MZN</b></div>';
+        } else if (unid === 'ML') {
+            var porLt = custo * 1000;
+            var porDoseBebida = custo * 50;
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo por Mililitro:</span><b class="text-purple-900">' + custo.toFixed(4) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Dose Bar (50ml):</span><b class="text-purple-900">' + porDoseBebida.toFixed(2) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Equivalente por 1 Litro:</span><b class="text-purple-900">' + porLt.toFixed(2) + ' MZN</b></div>';
+        } else {
+            var porDose = custo;
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo 1 ' + unid + ':</span><b class="text-purple-900">' + custo.toFixed(2) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo 1/2 Dose:</span><b class="text-purple-900">' + (custo * 0.5).toFixed(2) + ' MZN</b></div>';
+            htmlFrac += '<div class="p-2 bg-white rounded-lg border border-purple-100"><span class="text-gray-400 block text-[10px]">Custo 1/4 Dose:</span><b class="text-purple-900">' + (custo * 0.25).toFixed(2) + ' MZN</b></div>';
+        }
+        gradeFrac.innerHTML = htmlFrac;
+    }
 }
 
 function renderStock() {
@@ -262,6 +322,19 @@ function renderStock() {
 
         // Custo actual no stock
         var custoActual = Number(s.custo || 0);
+        var sUnid = (s.unidade || 'UN').toUpperCase();
+        var infoFracionada = '';
+        if (sUnid === 'KG') {
+            infoFracionada = '<span class="text-[10px] text-purple-700 block font-mono font-medium">1g: ' + (custoActual / 1000).toFixed(4) + ' | 100g: ' + (custoActual / 10).toFixed(2) + ' MZN</span>';
+        } else if (sUnid === 'LT') {
+            infoFracionada = '<span class="text-[10px] text-purple-700 block font-mono font-medium">1ml: ' + (custoActual / 1000).toFixed(4) + ' | 50ml: ' + (custoActual * 0.05).toFixed(2) + ' MZN</span>';
+        } else if (sUnid === 'G') {
+            infoFracionada = '<span class="text-[10px] text-purple-700 block font-mono font-medium">100g: ' + (custoActual * 100).toFixed(2) + ' | 1kg: ' + (custoActual * 1000).toFixed(2) + ' MZN</span>';
+        } else if (sUnid === 'ML') {
+            infoFracionada = '<span class="text-[10px] text-purple-700 block font-mono font-medium">50ml: ' + (custoActual * 50).toFixed(2) + ' | 1L: ' + (custoActual * 1000).toFixed(2) + ' MZN</span>';
+        } else {
+            infoFracionada = '<span class="text-[10px] text-purple-700 block font-mono font-medium">1/2 Dose: ' + (custoActual * 0.5).toFixed(2) + ' MZN</span>';
+        }
 
         // Custo de compra registrado ou na tabela de fornecedores
         var custoCompra = Number(s.custo_compra != null ? s.custo_compra : 0);
@@ -310,7 +383,7 @@ function renderStock() {
         html += '  <td class="p-4"><span class="px-2 py-0.5 text-xs font-semibold rounded bg-gray-100 text-gray-700 capitalize">' + s.tipo + '</span></td>';
         html += '  <td class="p-4 text-xs font-mono text-gray-600"><span class="font-bold">' + (s.estante || '-') + '</span> / ' + (s.prateleira || '-') + '<br><span class="text-blue-700 font-semibold">' + (s.refrigeracao || 'Ambiente') + '</span></td>';
         html += '  <td class="p-4 font-bold ' + (critico ? 'text-red-600' : 'text-gray-800') + '">' + s.qtd + ' ' + s.unidade + '<br><span class="text-[10px] text-gray-400 font-normal">Mín: ' + s.minimo + ' ' + s.unidade + '</span></td>';
-        html += '  <td class="p-4 font-bold text-gray-900">' + custoActual.toFixed(2) + ' {{ estabelecimento.moeda }}' + badgeComparacao + '</td>';
+        html += '  <td class="p-4 font-bold text-gray-900">' + custoActual.toFixed(2) + ' {{ estabelecimento.moeda }}' + infoFracionada + badgeComparacao + '</td>';
         html += '  <td class="p-4 font-semibold text-blue-800">' + custoCompra.toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
         html += '  <td class="p-4 font-bold text-gray-900">' + precoVenda.toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
         html += '  <td class="p-4 font-black ' + (lucroLiquido >= 0 ? 'text-emerald-700' : 'text-red-600') + '">' + lucroLiquido.toFixed(2) + ' {{ estabelecimento.moeda }}</td>';
