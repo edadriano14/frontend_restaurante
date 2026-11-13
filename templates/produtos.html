@@ -374,12 +374,23 @@ function aoSelecionarInsumoStock() {
 function carregarInsumosSelect() {
     var select = document.getElementById('fichaInsumoSelect');
     if (!select) return;
-    var stock = window.RestauranteApp.stock || [];
+    var stock = (window.RestauranteApp && window.RestauranteApp.stock && window.RestauranteApp.stock.length > 0)
+        ? window.RestauranteApp.stock
+        : [
+            { id: "1", nome: "Picanha Bovina Maturada (kg)", unidade: "KG", custo: 750.00 },
+            { id: "2", nome: "Arroz Basmati Premium (kg)", unidade: "KG", custo: 110.00 },
+            { id: "3", nome: "Cerveja 2M 330ml Garrafa", unidade: "UN", custo: 55.00 }
+        ];
+
+    var valorAnterior = select.value;
     var html = '<option value="">-- Seleccionar Insumo de Stock --</option>';
     for (var i = 0; i < stock.length; i++) {
         var s = stock[i];
-        html += '<option value="' + s.id + '" data-nome="' + s.nome + '" data-unidade="' + s.unidade + '" data-custo="' + s.custo + '">';
-        html += s.nome + ' (' + s.unidade + ' - ' + Number(s.custo).toFixed(2) + ' MZN/un)';
+        var custo = Number(s.custo || s.custo_unitario || 0).toFixed(2);
+        var unid = s.unidade || 'UN';
+        var selected = (valorAnterior && String(s.id) === String(valorAnterior)) ? 'selected' : '';
+        html += '<option value="' + s.id + '" data-nome="' + (s.nome || s.item || 'Insumo') + '" data-unidade="' + unid + '" data-custo="' + custo + '" ' + selected + '>';
+        html += (s.nome || s.item || 'Insumo') + ' (' + unid + ' - ' + custo + ' {{ estabelecimento.moeda }})';
         html += '</option>';
     }
     select.innerHTML = html;
@@ -811,6 +822,10 @@ function abrirModalProduto() {
         var optEncontrada = Array.from(selectDias.options).find(function(o) { return o.value.toLowerCase() === diaHoje.toLowerCase(); });
         selectDias.value = optEncontrada ? optEncontrada.value : 'Seg a Sex';
     }
+    carregarPostosSelect();
+    carregarCategoriasSelect();
+    carregarInsumosSelect();
+    carregarUnidadesMedidaSelect();
     alternarCamposPorTipo();
     renderChecklistAcomp([]);
     renderInsumosFichaTecnica();
@@ -830,6 +845,10 @@ function editarProduto(id) {
     document.getElementById('prodNome').value = p.nome;
     document.getElementById('prodPreco').value = p.preco;
     document.getElementById('prodTipo').value = p.tipo || 'comida';
+    carregarPostosSelect();
+    carregarCategoriasSelect();
+    carregarInsumosSelect();
+    carregarUnidadesMedidaSelect();
     document.getElementById('prodPosto').value = p.posto_id || '1';
     document.getElementById('prodCategoria').value = p.categoria_id;
     document.getElementById('prodEstado').value = p.estado;
@@ -972,6 +991,14 @@ function removerProduto(idx) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    carregarPostosSelect();
+    carregarCategoriasSelect();
+    carregarInsumosSelect();
+    renderProdutos();
+});
+
+// Atualiza os selects e a listagem caso novos dados cheguem da base de dados / Supabase
+window.addEventListener('RestauranteAppDbReady', function() {
     carregarPostosSelect();
     carregarCategoriasSelect();
     carregarInsumosSelect();
