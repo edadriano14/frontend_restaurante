@@ -424,10 +424,10 @@
             </div>
 
             <div class="pt-3 border-t flex items-center justify-between">
-                <a href="/pdv" class="px-4 py-2 bg-custom-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition flex items-center gap-2 shadow">
+                <button type="button" onclick="irAoPdvValidarAlertas()" class="px-4 py-2 bg-custom-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition flex items-center gap-2 shadow cursor-pointer">
                     <i class="fa-solid fa-cash-register"></i> Ir ao PDV Validar
-                </a>
-                <button type="button" onclick="fecharModal('modalCentralAlertasGlobal')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">
+                </button>
+                <button type="button" onclick="fecharModal('modalCentralAlertasGlobal')" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer">
                     Fechar
                 </button>
             </div>
@@ -735,6 +735,25 @@
 
             container.innerHTML = html;
             atualizarContadorAlertasGlobal();
+        }
+
+        // Navega para o PDV já com o pedido pendente selecionado para preencher o Pedido de Venda
+        function irAoPdvValidarAlertas() {
+            fecharModal('modalCentralAlertasGlobal');
+            var pedidos = window.RestauranteApp.pedidos_online || [];
+            var pendente = pedidos.find(function(p) {
+                return (p.estado === 'PENDENTE_VALIDACAO' || p.estado === 'RESERVA_PENDENTE') && p.tipo_entrega !== 'RESERVA';
+            }) || pedidos[0];
+
+            if (pendente) {
+                if (window.location.pathname.indexOf('/pdv') !== -1 && typeof carregarPedidoOnlineNoCarrinhoPDV === 'function') {
+                    carregarPedidoOnlineNoCarrinhoPDV(pendente.id);
+                } else {
+                    window.location.href = '/pdv?carregar_pedido=' + encodeURIComponent(pendente.id);
+                }
+            } else {
+                window.location.href = '/pdv';
+            }
         }
 
         if ('serviceWorker' in navigator) {

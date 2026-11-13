@@ -2216,7 +2216,10 @@ function atribuirMotoristaLivrePedidoOnline(pedidoId) {
 
 // Carregar itens do pedido online diretamente para o Ponto de Venda
 function carregarPedidoOnlineNoCarrinhoPDV(pedidoId) {
-    var pedido = (window.RestauranteApp.pedidos_online || []).find(function(p) { return p.id === pedidoId; });
+    if (!window.RestauranteApp || !window.RestauranteApp.pedidos_online) return;
+    var pedido = (window.RestauranteApp.pedidos_online || []).find(function(p) {
+        return String(p.id) === String(pedidoId) || String(p.numero_pedido) === String(pedidoId);
+    });
     if (!pedido) return;
 
     carrinhoPDV = [];
@@ -2242,13 +2245,33 @@ function carregarPedidoOnlineNoCarrinhoPDV(pedidoId) {
             if (tEntrega.indexOf('TAKEAWAY') >= 0 && (txt.indexOf('TAKEAWAY') >= 0 || txt.indexOf('LEVAR') >= 0)) { selTipo.selectedIndex = i; break; }
             if (tEntrega.indexOf('MESA') >= 0 && txt.indexOf('MESA') >= 0) { selTipo.selectedIndex = i; break; }
         }
-        alternarCamposMesa();
+        if (typeof alternarCamposMesa === 'function') {
+            alternarCamposMesa();
+        }
+    }
+
+    // Se o pedido tiver indicação de mesa, selecionar a mesa correspondente
+    if (pedido.mesa_id || pedido.numero_mesa) {
+        var selMesa = document.getElementById('pdvMesaSelect');
+        if (selMesa && selMesa.options.length > 0) {
+            for (var m = 0; m < selMesa.options.length; m++) {
+                if (String(selMesa.options[m].value) === String(pedido.mesa_id) || selMesa.options[m].text.includes(pedido.numero_mesa)) {
+                    selMesa.selectedIndex = m;
+                    break;
+                }
+            }
+        }
     }
 
     renderCarrinhoPDV();
-    fecharModal('modalPedidosOnline');
+    if (typeof fecharModal === 'function') {
+        fecharModal('modalPedidosOnline');
+        fecharModal('modalCentralAlertasGlobal');
+    }
 
-    window.mostrarMensagemAmigavel('O Pedido ' + pedido.numero_pedido + ' (' + pedido.cliente_nome + ') foi puxado para o PDV com sucesso!\n\nOs itens já estão no carrinho e agora pode aplicar descontos, segmentar o atendimento ou despachar para a Cozinha, Bar e Pastelaria.', 'Pedido Carregado no PDV', 'sucesso');
+    if (window.mostrarMensagemAmigavel) {
+        window.mostrarMensagemAmigavel('O Pedido ' + pedido.numero_pedido + ' (' + (pedido.cliente_nome || 'Cliente Portal') + ') foi preenchido no Pedido de Venda com sucesso!\n\n• Itens: ' + (pedido.itens ? pedido.itens.length : 0) + '\n• Total: ' + Number(pedido.total || 0).toFixed(2) + ' ' + moedaAtual + '\n• Canal: ' + (pedido.operadora_pagamento || 'Portal'), 'Pedido de Venda Preenchido', 'sucesso');
+    }
 }
 
 // Separar itens e enviar comandas individualizadas para Cozinha, Bar e Pastelaria
@@ -3658,13 +3681,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // Auto-carregar pedido vindo da Central de Alertas
-    try {
+    function verificarECarregarPedidoUrl() {
+        try {
+            var urlParams = new URLSearchParams(window.location.search);
+            var pedIdParam = urlParams.get('carregar_pedido');
+            if (pedIdParam) {
+                carregarPedidoOnlineNoCarrinhoPDV(pedIdParam);
+                // Limpa o parâmetro da URL de forma limpa sem recarregar a página
+                urlParams.delete('carregar_pedido');
+                var restante = urlParams.toString();
+                var novaUrl = window.location.pathname + (restante ? ('?' + restante) : '') + window.location.hash;
+                window.history.replaceState({}, document.title, novaUrl);
+            }
+        } catch(e) {}
+    }
+
+    verificarECarregarPedidoUrl();
+    // Também escuta quando a navegação SPA carregar nova rota
+    window.addEventListener('page:loaded', verificarECarregarPedidoUrl);
+    window.addEventListener('RestauranteAppDbReady', function() {
         var urlParams = new URLSearchParams(window.location.search);
         var pedIdParam = urlParams.get('carregar_pedido');
-        if (pedIdParam) {
-            carregarPedidoOnlineNoCarrinhoPDV(pedIdParam);
+        if (pedIdParam && (!carrinhoPDV || carrinhoPDV.length === 0)) {
+            verificarECarregarPedidoUrl();
         }
-    } catch(e) {}
+    });
 
     // Monitorizar e notificar em tempo real novos pratos prontos confeccionados na Cozinha/Bar
     setInterval(function() {
