@@ -69,46 +69,53 @@
         </div>
     </header>
 
-    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6 space-y-6">
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 pt-3 pb-8 space-y-4">
 
         <!-- Banner Aviso Fechado -->
-        <div x-show="!estaAberto()" class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 text-red-700" x-cloak>
-            <i class="fa-solid fa-clock text-2xl text-red-400"></i>
+        <div x-show="!estaAberto()" class="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 flex items-center gap-3 text-red-700" x-cloak>
+            <i class="fa-solid fa-clock text-xl sm:text-2xl text-red-400"></i>
             <div>
-                <p class="font-bold text-sm">Restaurante Encerrado</p>
-                <p class="text-xs text-red-600">Pode consultar o cardápio, mas não é possível fazer pedidos neste momento. Horário: <strong>{{ estabelecimento.horario_abertura or '10:00 - 23:00' }}</strong></p>
+                <p class="font-bold text-xs sm:text-sm">Restaurante Encerrado</p>
+                <p class="text-[11px] sm:text-xs text-red-600">Pode consultar o cardápio, mas não é possível fazer pedidos neste momento. Horário: <strong>{{ estabelecimento.horario_abertura or '10:00 - 23:00' }}</strong></p>
             </div>
         </div>
 
-        <!-- Banner Promocional com Acesso Rápido a Reserva de Mesa -->
-        <div class="rounded-2xl p-6 text-white bg-gradient-to-r from-red-600 to-rose-700 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <!-- Banner Promocional com Acesso Rápido a Reserva de Mesa (Compacto e Puxado para Cima) -->
+        <div class="rounded-2xl p-4 sm:p-5 text-white bg-gradient-to-r from-red-600 to-rose-700 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-                <span class="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-md uppercase">Happy Hour &amp; Promoções</span>
-                <h2 class="text-2xl font-black mt-2">Pratos &amp; Bebidas com Descontos Especiais!</h2>
-                <p class="text-sm text-red-100 mt-1">Peça online para mesa, takeaway ou delivery com entrega rápida em Maputo.</p>
+                <span class="bg-white/20 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-md uppercase">Happy Hour &amp; Promoções</span>
+                <h2 class="text-xl sm:text-2xl font-black mt-1">Pratos &amp; Bebidas com Descontos Especiais!</h2>
+                <p class="text-xs text-red-100 mt-0.5">Peça online para mesa, takeaway ou delivery com entrega rápida em Maputo.</p>
             </div>
             <div class="flex-shrink-0">
-                <button type="button" @click="abrirModalReserva()" class="w-full sm:w-auto px-4 py-2.5 bg-white text-red-700 hover:bg-red-50 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-calendar-check text-purple-600 text-sm"></i>
+                <button type="button" @click="abrirModalReserva()" class="w-full sm:w-auto px-3.5 py-2 bg-white text-red-700 hover:bg-red-50 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-calendar-check text-purple-600 text-xs"></i>
                     <span>Reservar Mesa Sem Pedido</span>
                 </button>
             </div>
         </div>
 
         <!-- Barra de Categorias -->
-        <div class="flex space-x-2 overflow-x-auto pb-2">
-            <button @click="categoriaAtiva = 'todos'" :class="categoriaAtiva === 'todos' ? 'bg-custom-primary text-white' : 'bg-white text-gray-700 border'" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm">
+        <div class="flex space-x-2 overflow-x-auto pb-1 pt-1">
+            <button @click="categoriaAtiva = 'todos'" :class="categoriaAtiva === 'todos' ? 'bg-custom-primary text-white shadow-sm' : 'bg-white text-gray-700 border hover:bg-gray-50'" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-2xs transition">
                 Todos
             </button>
             <template x-for="c in categorias" :key="c.id">
-                <button @click="categoriaAtiva = c.id" :class="categoriaAtiva === c.id ? 'bg-custom-primary text-white' : 'bg-white text-gray-700 border'" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm flex items-center gap-1.5">
+                <button @click="categoriaAtiva = c.id" :class="categoriaAtiva === c.id ? 'bg-custom-primary text-white shadow-sm' : 'bg-white text-gray-700 border hover:bg-gray-50'" class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-2xs transition flex items-center gap-1.5">
                     <span x-text="c.emoji"></span> <span x-text="c.nome"></span>
                 </button>
             </template>
         </div>
 
-        <!-- Catálogo de Produtos (2 cards lado a lado: esquerda e direita) -->
-        <div class="grid grid-cols-2 gap-3 sm:gap-4" :class="carrinho.length > 0 ? 'pb-16' : ''">
+        <!-- Catálogo de Produtos do Cardápio -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" :class="carrinho.length > 0 ? 'pb-20' : ''">
+            <template x-if="produtosFiltrados().length === 0">
+                <div class="col-span-full bg-white rounded-2xl p-8 text-center border border-dashed border-gray-300 shadow-sm">
+                    <i class="fa-solid fa-utensils text-3xl text-gray-300 mb-2"></i>
+                    <p class="text-sm font-bold text-gray-700">Nenhum prato disponível nesta categoria.</p>
+                    <p class="text-xs text-gray-400 mt-1">Selecione "Todos" ou outra categoria para explorar o nosso cardápio.</p>
+                </div>
+            </template>
             <template x-for="p in produtosFiltrados()" :key="p.id">
                 <div :class="isDisponivel(p) ? 'border-emerald-200 bg-white hover:border-emerald-400' : 'border-red-200 bg-red-50/30 opacity-85'" class="rounded-2xl p-3 sm:p-4 shadow-sm border flex flex-col sm:flex-row gap-2.5 sm:gap-3.5 transition relative overflow-hidden">
                     <!-- Tag de Disponibilidade Superior -->
@@ -628,7 +635,41 @@ function portalComponent() {
         reservaMesaId: '',
 
         init() {
+            var self = this;
+            this.carregarDadosDoApp();
             this.filtrarMesasPorSala();
+
+            // Actualiza a lista quando a base de dados remota terminar o carregamento
+            window.addEventListener('RestauranteAppDbReady', function() {
+                self.carregarDadosDoApp();
+            });
+
+            // Se o utilizador aceder via QR Code de Mesa (?mesa=Mesa+01)
+            try {
+                var urlParams = new URLSearchParams(window.location.search);
+                var mesaParam = urlParams.get('mesa');
+                if (mesaParam) {
+                    self.mesaOuEndereco = mesaParam;
+                    self.tipoEntrega = 'MESA';
+                }
+            } catch(e) {}
+        },
+
+        carregarDadosDoApp() {
+            var app = window.RestauranteApp || {};
+            if (app.produtos && app.produtos.length > 0) {
+                this.produtos = app.produtos;
+            }
+            if (app.categorias && app.categorias.length > 0) {
+                this.categorias = app.categorias;
+            }
+            if (app.salas && app.salas.length > 0) {
+                this.salas = app.salas;
+            }
+            if (app.mesas && app.mesas.length > 0) {
+                this.mesas = app.mesas;
+                this.filtrarMesasPorSala();
+            }
         },
 
         abrirModalReserva() {
@@ -752,25 +793,31 @@ function portalComponent() {
                 return false;
             }
 
-            // 2. Se tiver ficha técnica, verificar se os insumos no stock têm saldo > 0
-            var stockLista = (window.RestauranteApp && window.RestauranteApp.stock) ? window.RestauranteApp.stock : [];
-            if (prod.ficha_tecnica && prod.ficha_tecnica.length > 0) {
-                for (var i = 0; i < prod.ficha_tecnica.length; i++) {
-                    var f = prod.ficha_tecnica[i];
-                    var st = stockLista.find(function(s) {
-                        return String(s.id) === String(f.stock_id) || (s.nome && f.stock_nome && s.nome.toLowerCase() === f.stock_nome.toLowerCase());
-                    });
-                    if (st && Number(st.qtd) <= 0) {
-                        return false; // Sem insumo disponível no stock
+            // 2. Se tiver ficha técnica e stock carregado, verificar se os insumos no stock têm saldo > 0
+            var stockLista = (window.RestauranteApp && window.RestauranteApp.stock && window.RestauranteApp.stock.length > 0)
+                ? window.RestauranteApp.stock
+                : [];
+
+            if (stockLista.length > 0) {
+                if (prod.ficha_tecnica && prod.ficha_tecnica.length > 0) {
+                    for (var i = 0; i < prod.ficha_tecnica.length; i++) {
+                        var f = prod.ficha_tecnica[i];
+                        var st = stockLista.find(function(s) {
+                            return String(s.id) === String(f.stock_id) || (s.nome && f.stock_nome && s.nome.toLowerCase() === f.stock_nome.toLowerCase());
+                        });
+                        // Só bloqueia se o insumo foi encontrado explicitamente com saldo 0 ou negativo
+                        if (st && Number(st.qtd) <= 0) {
+                            return false;
+                        }
                     }
-                }
-            } else {
-                // Se não tem ficha técnica, verificar item direto no stock pelo nome
-                var stDireto = stockLista.find(function(s) {
-                    return (prod.nome && s.nome && prod.nome.toLowerCase().trim() === s.nome.toLowerCase().trim()) || String(s.id) === String(prod.stock_id);
-                });
-                if (stDireto && Number(stDireto.qtd) <= 0) {
-                    return false;
+                } else {
+                    // Se não tem ficha técnica, verificar se existe item direto no stock com saldo esgotado
+                    var stDireto = stockLista.find(function(s) {
+                        return (prod.nome && s.nome && prod.nome.toLowerCase().trim() === s.nome.toLowerCase().trim()) || (prod.stock_id && String(s.id) === String(prod.stock_id));
+                    });
+                    if (stDireto && Number(stDireto.qtd) <= 0) {
+                        return false;
+                    }
                 }
             }
 
